@@ -4,7 +4,7 @@ const backendPort = parseInt(Bun.env.BACKEND_PORT || "") || 4000;
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   /* config options here */
-  reactCompiler: true,
+  reactCompiler: false,
 
   async rewrites() {
     return [
