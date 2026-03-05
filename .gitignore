@@ -1,4 +1,10 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+.dump
+.sandbox
+.local
+.logs
+*dev.db
+drizzle
 
 # dependencies
 /node_modules

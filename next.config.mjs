@@ -1,5 +1,5 @@
 
-const backendPort = parseInt(Bun.env.BACKEND_PORT || "") || 4000;
+const backendPort = parseInt(process.env.BACKEND_PORT || "") || 4000;
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {

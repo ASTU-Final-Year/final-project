@@ -3,24 +3,47 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio",
+    "db:drop": "drizzle-kit drop",
+    "db:generate:sqlite": "drizzle-kit generate --config=drizzle.config.sqlite.ts",
+    "db:migrate:sqlite": "drizzle-kit migrate --config=drizzle.config.sqlite.ts",
+    "db:push:sqlite": "drizzle-kit push --config=drizzle.config.sqlite.ts",
+    "db:studio:sqlite": "drizzle-kit studio --config=drizzle.config.sqlite.ts",
+    "db:drop:sqlite": "drizzle-kit drop --config=drizzle.config.sqlite.ts",
+    "dev": "concurrently \"bun --bun run dev:frontend\" \"bun --bun run dev:backend\"",
+    "dev:frontend": "next dev --turbopack",
+    "dev:backend": "cd backend && bun --bun --env-file='../.env' --watch --hot run index.ts",
+    "start": "concurrently \"bun --bun run start:frontend\" \"bun --bun run start:backend\"",
+    "start:frontend": "next start",
+    "start:backend": "cd backend && bun --bun --env-file='../.env' run index.ts",
     "build": "next build",
-    "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",
+    "@bepalo/cache": "^1.0.3",
+    "@bepalo/jwt": "^2.0.9",
+    "@bepalo/router": "^1.9.28",
+    "@bepalo/time": "^1.2.11",
     "@hookform/resolvers": "^5.2.2",
+    "better-sqlite3": "^12.6.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
+    "dotenv": "^17.3.1",
+    "drizzle-kit": "^0.31.9",
+    "drizzle-orm": "^0.45.1",
     "embla-carousel-react": "^8.6.0",
     "input-otp": "^1.4.2",
     "kenat": "^3.2.0",
     "lucide-react": "^0.575.0",
     "next": "16.1.6",
     "next-themes": "^0.4.6",
+    "pg": "^8.20.0",
     "radix-ui": "^1.4.3",
     "react": "19.2.3",
     "react-day-picker": "^9.13.2",
@@ -34,6 +57,8 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "concurrently": "^9.2.1",
+    "@types/bun": "^1.3.10",
     "@tailwindcss/postcss": "^4",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
@@ -47,6 +72,7 @@
   ],
   "trustedDependencies": [
     "sharp",
-    "unrs-resolver"
+    "unrs-resolver",
+    "better-sqlite3"
   ]
 }
