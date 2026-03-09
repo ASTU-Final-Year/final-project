@@ -1,5 +1,7 @@
 // app/page.jsx
-import { Button } from "@/components/ui/button"
+"use client";
+
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -7,9 +9,9 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Badge } from "@/components/ui/badge"
+} from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -17,7 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,20 +27,28 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { BellRing, Check, Globe, Info, Settings, User } from 'lucide-react'
-import Link from "next/link"
+} from "@/components/ui/select";
+import { BellRing, Check, Globe, Info, Settings, User } from "lucide-react";
+import Link from "next/link";
+import { Calendar } from "@/components/ui/calendar";
+import { EthiopianCalendar } from "@/components/ui/ethiopian-calendar";
+import React from "react";
+
+const startMonth = new Date();
+const endMonth = new Date(Date.now() + 5 * 365.25 * 24 * 60 * 60 * 1000);
 
 export default function Home() {
+  const [dates, setDates] = React.useState([new Date()]);
+
   return (
     <div className="min-h-screen bg-background font-sans">
       {/* Header with Navigation */}
@@ -51,13 +61,21 @@ export default function Home() {
           <div className="flex items-center gap-6">
             {/* <h1 className="text-xl font-bold">LyraUI</h1> */}
             <nav className="hidden md:flex gap-4">
-              <Link className="text-sm" href="/">home</Link>
-              <Link className="text-sm" href="/components">components</Link>
-              <Link className="text-sm" href="/calendar">calendar</Link>
-              <Link className="text-sm" href="/contact">contact</Link>
+              <Link className="text-sm" href="/">
+                home
+              </Link>
+              <Link className="text-sm" href="/components">
+                components
+              </Link>
+              <Link className="text-sm" href="/calendar">
+                calendar
+              </Link>
+              <Link className="text-sm" href="/contact">
+                contact
+              </Link>
             </nav>
           </div>
-          
+
           <div className="flex items-center gap-2">
             {/* Dropdown Menu */}
             <DropdownMenu>
@@ -75,7 +93,7 @@ export default function Home() {
                 <DropdownMenuItem>Subscription</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            
+
             {/* Dialog Trigger Button */}
             <Dialog>
               <DialogTrigger asChild>
@@ -101,7 +119,11 @@ export default function Home() {
                     <Label htmlFor="email" className="text-right">
                       Email
                     </Label>
-                    <Input id="email" value="user@example.com" className="col-span-3" />
+                    <Input
+                      id="email"
+                      value="user@example.com"
+                      className="col-span-3"
+                    />
                   </div>
                 </div>
               </DialogContent>
@@ -117,7 +139,8 @@ export default function Home() {
           <Info className="h-4 w-4" />
           <AlertTitle>Heads up!</AlertTitle>
           <AlertDescription>
-            This is a sample page showcasing shadcn/ui components with the Lyra style and Orange theme.
+            This is a sample page showcasing shadcn/ui components with the Lyra
+            style and Orange theme.
           </AlertDescription>
         </Alert>
 
@@ -140,6 +163,46 @@ export default function Home() {
         {/* Cards Grid */}
         <section className="mb-12">
           <h3 className="text-2xl font-semibold mb-6">Featured Components</h3>
+
+          {/* Calendar */}
+          <Card className="mb-4">
+            <CardHeader>
+              <CardTitle>Calendars</CardTitle>
+              <CardDescription>
+                Calendar components with single, multiple and range selection
+                modes and support for both ethiopian and gregorian calendars.
+              </CardDescription>
+            </CardHeader>
+            {/* <section className="flex mb-12 gap-4 justify-center items-center"> */}
+            <CardContent className="flex flex-row justify-center space-x-4">
+              <EthiopianCalendar
+                mode="single"
+                // mode="range"
+                // mode="multiple"
+                selected={dates}
+                onSelect={setDates}
+                startMonth={startMonth}
+                endMonth={endMonth}
+                reverseYears
+                className="rounded-lg border shadow"
+                captionLayout="dropdown"
+              />
+              <Calendar
+                mode="single"
+                // mode="range"
+                // mode="multiple"
+                selected={dates}
+                onSelect={setDates}
+                startMonth={startMonth}
+                endMonth={endMonth}
+                reverseYears
+                className="rounded-lg border shadow"
+                captionLayout="dropdown"
+              />
+            </CardContent>
+            {/* </section> */}
+          </Card>
+
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Card 1 - Basic Card */}
             <Card>
@@ -150,7 +213,10 @@ export default function Home() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <p>Each component is built with accessibility and customization in mind.</p>
+                <p>
+                  Each component is built with accessibility and customization
+                  in mind.
+                </p>
               </CardContent>
               <CardFooter>
                 <Button>Get Started</Button>
@@ -201,18 +267,27 @@ export default function Home() {
                 <div className="space-y-4">
                   {[1, 2, 3].map((i) => (
                     <div key={i} className="flex items-center gap-4">
-                      <Badge variant="outline" className="h-2 w-2 rounded-full p-0 bg-orange-500" />
+                      <Badge
+                        variant="outline"
+                        className="h-2 w-2 rounded-full p-0 bg-orange-500"
+                      />
                       <div className="flex-1">
                         <p className="text-sm font-medium">Notification {i}</p>
-                        <p className="text-xs text-muted-foreground">2 minutes ago</p>
+                        <p className="text-xs text-muted-foreground">
+                          2 minutes ago
+                        </p>
                       </div>
-                      <Button variant="ghost" size="sm">View</Button>
+                      <Button variant="ghost" size="sm">
+                        View
+                      </Button>
                     </div>
                   ))}
                 </div>
               </CardContent>
               <CardFooter>
-                <Button variant="outline" className="w-full">View All</Button>
+                <Button variant="outline" className="w-full">
+                  View All
+                </Button>
               </CardFooter>
             </Card>
           </div>
@@ -259,17 +334,24 @@ export default function Home() {
             <div>
               <h4 className="font-semibold mb-4">About</h4>
               <p className="text-sm text-muted-foreground">
-                Built with shadcn/ui using Lyra style, Orange theme, and Noto Sans font.
+                Built with shadcn/ui using Lyra style, Orange theme, and Noto
+                Sans font.
               </p>
             </div>
             <div>
               <h4 className="font-semibold mb-4">Links</h4>
               <div className="space-y-2">
-                <Button variant="link" className="p-0 h-auto">Documentation</Button>
+                <Button variant="link" className="p-0 h-auto">
+                  Documentation
+                </Button>
                 <br />
-                <Button variant="link" className="p-0 h-auto">Components</Button>
+                <Button variant="link" className="p-0 h-auto">
+                  Components
+                </Button>
                 <br />
-                <Button variant="link" className="p-0 h-auto">Themes</Button>
+                <Button variant="link" className="p-0 h-auto">
+                  Themes
+                </Button>
               </div>
             </div>
             <div>
@@ -283,5 +365,5 @@ export default function Home() {
         </footer>
       </main>
     </div>
-  )
+  );
 }
