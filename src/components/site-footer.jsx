@@ -14,12 +14,12 @@ import Image from "next/image";
 const BACKEND_PORT = parseInt(process.env.BACKEND_PORT || "") || 4000;
 const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || "support@servesyncplus.et";
 
-export async function SiteFooter() {
+export function SiteFooter() {
   // const systemStatus = await fetch(
   //   `http://localhost:${BACKEND_PORT}/api/v1/status`,
   // ).then(async (res) => (res.ok ? await res.json() : null));
   // const isSystemActive = systemStatus?.systemActive;
-  const isSystemActive = false;
+  const isSystemActive = true;
   return (
     <footer className="border-t bg-slate-900 text-white/90 pb-12 pt-16 mt-auto">
       <div className="container mx-auto px-4 lg:px-8">

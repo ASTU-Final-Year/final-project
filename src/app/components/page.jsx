@@ -217,7 +217,7 @@ export default function Home() {
         <section className="flex flex-col items-center text-center space-y-6 max-w-3xl mx-auto pt-10">
           <Badge
             variant="outline"
-            className="px-3 py-1 text-sm font-medium rounded-full bg-orange-500/10 text-orange-600 border-orange-500/20"
+            className="px-3 py-1 text-sm font-medium rounded-full bg-primary/10 text-primary border-primary/20"
           >
             LyraUI Showcase
           </Badge>
@@ -230,10 +230,10 @@ export default function Home() {
             flexibility.
           </p>
           <div className="flex gap-4 pt-4">
-            <Button size="lg" className="rounded-full px-8">
+            <Button size="lg" className="rounded px-8">
               Get Started
             </Button>
-            <Button size="lg" variant="outline" className="rounded-full px-8">
+            <Button size="lg" variant="outline" className="rounded px-8">
               Browse Components
             </Button>
           </div>
@@ -566,7 +566,7 @@ export default function Home() {
                       startMonth={startMonth}
                       endMonth={endMonth}
                       reverseYears
-                      className="rounded-lg border"
+                      className="rounded border"
                       captionLayout="dropdown"
                     />
                   </TabsContent>
@@ -581,7 +581,7 @@ export default function Home() {
                       startMonth={startMonth}
                       endMonth={endMonth}
                       reverseYears
-                      className="rounded-lg border"
+                      className="rounded border"
                       captionLayout="dropdown"
                     />
                   </TabsContent>
@@ -720,10 +720,10 @@ export default function Home() {
                 <CardContent>
                   <div className="relative">
                     <div className="absolute left-0 top-1/2 -translate-y-7/2 w-full h-1 bg-muted"></div>
-                    <div className="absolute left-0 top-1/2 -translate-y-7/2 w-1/2 h-1 bg-orange-600"></div>
+                    <div className="absolute left-0 top-1/2 -translate-y-7/2 w-1/2 h-1 bg-primary"></div>
                     <div className="relative flex justify-between items-center z-10">
                       <div className="flex flex-col items-center gap-2">
-                        <div className="h-8 w-8 rounded-full bg-orange-600 text-white flex items-center justify-center shadow-sm">
+                        <div className="h-8 w-8 rounded-full bg-primary text-white flex items-center justify-center shadow-sm">
                           <Check className="h-4 w-4" />
                         </div>
                         <span className="text-xs font-medium text-foreground">
@@ -731,7 +731,7 @@ export default function Home() {
                         </span>
                       </div>
                       <div className="flex flex-col items-center gap-2">
-                        <div className="h-8 w-8 rounded-full bg-orange-600 text-white flex items-center justify-center shadow-sm border-[3px] border-background">
+                        <div className="h-8 w-8 rounded-full bg-primary text-white flex items-center justify-center shadow-sm border-[3px] border-background">
                           <CircleIcon className="h-3 w-3 fill-current" />
                         </div>
                         <span className="text-xs font-medium text-foreground">
@@ -788,7 +788,7 @@ export default function Home() {
                       the upcoming service handoff. The previous sector has
                       cleared their requirements.
                     </p>
-                    <div className="bg-muted/50 rounded-lg p-3 flex items-center gap-4 text-sm border">
+                    <div className="bg-muted/50 rounded p-3 flex items-center gap-4 text-sm border">
                       <FileTextIcon className="h-5 w-5 text-muted-foreground" />
                       <div className="flex-1">
                         <p className="font-medium">Client_Tax_Forms.pdf</p>
@@ -802,7 +802,7 @@ export default function Home() {
                 </CardContent>
                 <CardFooter className="bg-muted/20 flex-col items-stretch gap-4 pt-4 border-t">
                   <div className="flex items-center gap-2 text-sm font-medium">
-                    <ArrowRightIcon className="h-4 w-4 text-orange-600" />
+                    <ArrowRightIcon className="h-4 w-4 text-primary" />
                     Assign Next Handoff
                   </div>
                   <div className="flex gap-2">
@@ -842,7 +842,7 @@ export default function Home() {
                 <div className="relative border-l-2 border-muted ml-4 mt-2 space-y-8 pb-4">
                   {/* Timeline Item 1 */}
                   <div className="relative pl-6">
-                    <span className="absolute -left-2.75 top-1 h-5 w-5 rounded-full bg-orange-600 flex items-center justify-center ring-4 ring-background">
+                    <span className="absolute -left-2.75 top-1 h-5 w-5 rounded-full bg-primary flex items-center justify-center ring-4 ring-background">
                       <Check className="h-3 w-3 text-white" />
                     </span>
                     <div className="flex flex-col gap-1">
@@ -862,7 +862,7 @@ export default function Home() {
 
                   {/* Timeline Item 2 */}
                   <div className="relative pl-6">
-                    <span className="absolute -left-2.75 top-1 h-5 w-5 rounded-full bg-orange-600 flex items-center justify-center ring-4 ring-background">
+                    <span className="absolute -left-2.75 top-1 h-5 w-5 rounded-full bg-primary flex items-center justify-center ring-4 ring-background">
                       <Check className="h-3 w-3 text-white" />
                     </span>
                     <div className="flex flex-col gap-1">
@@ -888,15 +888,15 @@ export default function Home() {
 
                   {/* Timeline Item 3 (Current) */}
                   <div className="relative pl-6">
-                    <span className="absolute -left-2.75 top-1 h-5 w-5 rounded-full bg-background border-2 border-orange-600 flex items-center justify-center ring-4 ring-background">
-                      <span className="h-2 w-2 rounded-full bg-orange-600 animate-pulse" />
+                    <span className="absolute -left-2.75 top-1 h-5 w-5 rounded-full bg-background border-2 border-primary flex items-center justify-center ring-4 ring-background">
+                      <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
                     </span>
                     <div className="flex flex-col gap-1">
                       <div className="flex justify-between items-center">
-                        <h4 className="font-semibold text-sm text-orange-600">
+                        <h4 className="font-semibold text-sm text-primary">
                           Processing Documents
                         </h4>
-                        <span className="text-xs text-orange-600 font-medium flex items-center gap-1">
+                        <span className="text-xs text-primary font-medium flex items-center gap-1">
                           In Progress
                         </span>
                       </div>
