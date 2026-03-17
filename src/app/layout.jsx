@@ -1,6 +1,7 @@
 import { Geist, Geist_Mono, Noto_Sans } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip"
 import "./globals.css";
+import { cn } from "@/lib/utils";
 
 const notoSans = Noto_Sans({variable:'--font-sans'});
 
@@ -21,7 +22,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={notoSans.variable}>
+    <html lang="en" className={cn("font-sans", notoSans.variable)}>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

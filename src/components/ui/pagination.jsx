@@ -1,12 +1,8 @@
 import * as React from "react"
-import {
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  MoreHorizontalIcon,
-} from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button"
+import { ChevronLeftIcon, ChevronRightIcon, MoreHorizontalIcon } from "lucide-react"
 
 function Pagination({
   className,
@@ -29,7 +25,7 @@ function PaginationContent({
   return (
     <ul
       data-slot="pagination-content"
-      className={cn("flex flex-row items-center gap-1", className)}
+      className={cn("flex items-center gap-0.5", className)}
       {...props} />
   );
 }
@@ -47,46 +43,50 @@ function PaginationLink({
   ...props
 }) {
   return (
-    <a
-      aria-current={isActive ? "page" : undefined}
-      data-slot="pagination-link"
-      data-active={isActive}
-      className={cn(buttonVariants({
-        variant: isActive ? "outline" : "ghost",
-        size,
-      }), className)}
-      {...props} />
+    <Button
+      asChild
+      variant={isActive ? "outline" : "ghost"}
+      size={size}
+      className={cn(className)}>
+      <a
+        aria-current={isActive ? "page" : undefined}
+        data-slot="pagination-link"
+        data-active={isActive}
+        {...props} />
+    </Button>
   );
 }
 
 function PaginationPrevious({
   className,
+  text = "Previous",
   ...props
 }) {
   return (
     <PaginationLink
       aria-label="Go to previous page"
       size="default"
-      className={cn("gap-1 px-2.5 sm:pl-2.5", className)}
+      className={cn("pl-1.5!", className)}
       {...props}>
-      <ChevronLeftIcon />
-      <span className="hidden sm:block">Previous</span>
+      <ChevronLeftIcon data-icon="inline-start" />
+      <span className="hidden sm:block">{text}</span>
     </PaginationLink>
   );
 }
 
 function PaginationNext({
   className,
+  text = "Next",
   ...props
 }) {
   return (
     <PaginationLink
       aria-label="Go to next page"
       size="default"
-      className={cn("gap-1 px-2.5 sm:pr-2.5", className)}
+      className={cn("pr-1.5!", className)}
       {...props}>
-      <span className="hidden sm:block">Next</span>
-      <ChevronRightIcon />
+      <span className="hidden sm:block">{text}</span>
+      <ChevronRightIcon data-icon="inline-end" />
     </PaginationLink>
   );
 }
@@ -99,9 +99,12 @@ function PaginationEllipsis({
     <span
       aria-hidden
       data-slot="pagination-ellipsis"
-      className={cn("flex size-9 items-center justify-center", className)}
+      className={cn(
+        "flex size-8 items-center justify-center [&_svg:not([class*='size-'])]:size-4",
+        className
+      )}
       {...props}>
-      <MoreHorizontalIcon className="size-4" />
+      <MoreHorizontalIcon />
       <span className="sr-only">More pages</span>
     </span>
   );
@@ -110,9 +113,9 @@ function PaginationEllipsis({
 export {
   Pagination,
   PaginationContent,
-  PaginationLink,
-  PaginationItem,
-  PaginationPrevious,
-  PaginationNext,
   PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
 }
