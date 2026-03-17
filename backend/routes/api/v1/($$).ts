@@ -1,3 +1,4 @@
+// ROUTE: /api/v1/**
 import {
   cors,
   CTXAddress,
@@ -27,6 +28,7 @@ export default {
         allowedHeaders: ["Content-Type", "Authorization", "Cache-Control"],
         methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
         credentials: true,
+        endHere: true,
       }),
       () => true,
     ],
