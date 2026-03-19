@@ -3,7 +3,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation"; // ADD THIS IMPORT
+import { useRouter } from "next/navigation";
 import {
   Building2,
   Mail,
@@ -61,7 +61,6 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 
 function RegistrationPage({ onBackClick, onRegisterSuccess, onLoginClick }) {
-  // ADD THIS LINE - initialize router
   const router = useRouter();
   
   // State to store all form data including selected plan
@@ -359,7 +358,7 @@ function RegistrationPage({ onBackClick, onRegisterSuccess, onLoginClick }) {
     return newErrors;
   };
 
-  // Handle registration
+  // ===== ONLY THIS FUNCTION IS CHANGED TO SAVE COMPANY DATA =====
   const handleRegister = () => {
     const newErrors = validateForm();
     
@@ -381,24 +380,40 @@ function RegistrationPage({ onBackClick, onRegisterSuccess, onLoginClick }) {
           return;
         }
         
+        // Remove confirmPassword before saving
         const { confirmPassword, acceptTerms, ...companyDataWithoutConfirm } = companyData;
         
+        // Create the new company object with all data
         const newCompany = {
           ...companyDataWithoutConfirm,
           id: Date.now(),
           registeredAt: new Date().toISOString(),
           maxEmployees: getMaxEmployees(),
           maxServices: getMaxServices(),
-          calendar: {
-            businessHours: companyData.businessHours,
-            services: companyData.services.filter(s => s.name.trim() !== '')
-          }
+          // Add empty availability array for calendar
+          availability: [],
+          // Add default rating and reviews
+          rating: 0,
+          reviews: 0,
+          // Add status
+          isActive: true,
+          isOpen: true
         };
         
+        // Save to registered companies list
         existingCompanies.push(newCompany);
         localStorage.setItem('registeredCompanies', JSON.stringify(existingCompanies));
         
-        onRegisterSuccess(newCompany);
+        // Save current company for auto-login to dashboard
+        localStorage.setItem('currentCompany', JSON.stringify(newCompany));
+        
+        // Call the success callback if provided
+        if (onRegisterSuccess) {
+          onRegisterSuccess(newCompany);
+        }
+        
+        // Redirect to dashboard
+        router.push('/dashboard');
       } catch (error) {
         console.error('Registration error:', error);
         setErrors({ form: 'Registration failed. Please try again.' });
@@ -407,6 +422,7 @@ function RegistrationPage({ onBackClick, onRegisterSuccess, onLoginClick }) {
       }
     }, 1500);
   };
+  // ===== END OF CHANGED FUNCTION =====
 
   const getPlanDisplayName = () => {
     const plan = plans.find(p => p.id === companyData.selectedPlan);
@@ -559,7 +575,7 @@ function RegistrationPage({ onBackClick, onRegisterSuccess, onLoginClick }) {
                     </Label>
                     <Input
                       id="company-name"
-                      placeholder="e.g., Samri Beauty Salon"
+                      placeholder="e.g., Helen Automobil"
                       value={companyData.name}
                       onChange={(e) => updateCompanyInfo('name', e.target.value)}
                       className={cn("h-9", errors.name && "border-destructive")}
@@ -574,7 +590,7 @@ function RegistrationPage({ onBackClick, onRegisterSuccess, onLoginClick }) {
                     </Label>
                     <Input
                       id="sector"
-                      placeholder="e.g., Beauty Salon"
+                      placeholder="e.g., Automotive"
                       value={companyData.sector}
                       onChange={(e) => updateCompanyInfo('sector', e.target.value)}
                       className="h-9"
@@ -589,7 +605,7 @@ function RegistrationPage({ onBackClick, onRegisterSuccess, onLoginClick }) {
                     <Input
                       id="email"
                       type="email"
-                      placeholder="contact@company.com"
+                      placeholder="contact@helenautomobil.com"
                       value={companyData.email}
                       onChange={(e) => updateCompanyInfo('email', e.target.value)}
                       className={cn("h-9", errors.email && "border-destructive")}
@@ -870,7 +886,7 @@ function RegistrationPage({ onBackClick, onRegisterSuccess, onLoginClick }) {
                         <div>
                           <Label className="text-xs">Service Name *</Label>
                           <Input
-                            placeholder="e.g. Haircut"
+                            placeholder="e.g. Oil Change"
                             value={service.name}
                             onChange={(e) => updateService(service.id, 'name', e.target.value)}
                             className="h-7 text-xs"
@@ -969,7 +985,6 @@ function RegistrationPage({ onBackClick, onRegisterSuccess, onLoginClick }) {
             </Tabs>
           </CardContent>
 
-          {/* UPDATED FOOTER SECTION - This is the only part that changed */}
           <CardFooter className="bg-muted/30 border-t flex-col sm:flex-row gap-3 justify-between p-4">
             <div className="flex items-center gap-1 text-xs">
               <span>Already have an account?</span>
