@@ -27,6 +27,7 @@ export const checkDBConnection = async () => {
         client.release();
       }
     } catch (error) {
+      console.error(error);
       return false;
     }
   } else {
@@ -34,6 +35,7 @@ export const checkDBConnection = async () => {
       dbSQLite.run("SELECT 1");
       return true;
     } catch (error) {
+      console.error(error);
       return false;
     }
   }
