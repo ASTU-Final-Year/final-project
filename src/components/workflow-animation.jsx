@@ -114,7 +114,7 @@ export function WorkflowAnimation() {
     <div className="w-full max-w-6xl min-h-[350] mx-auto px-4 bg-transparent font-sans flex flex-col items-center justify-between">
       <div className="flex flex-col items-center gap-4">
         <h2 className="text-3xl font-bold tracking-tight md:text-4xl mb-2">
-          <Split className="inline-block w-8 h-8 mr-2 text-primary" />
+          {/* <Split className="inline-block w-8 h-8 mr-2 text-primary" /> */}
           <span>Dynamic Workflow</span>
         </h2>
         <Alert>
