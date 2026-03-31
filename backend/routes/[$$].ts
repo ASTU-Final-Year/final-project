@@ -1,3 +1,4 @@
+// ROUTE: /.**
 import { CTXAddress, limitRate, RouterHandlers } from "@bepalo/router";
 
 export default {

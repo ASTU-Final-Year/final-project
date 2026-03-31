@@ -1,21 +1,18 @@
+// ROUTE: /api/status
 import { json, RouterHandlers, status } from "@bepalo/router";
-import { checkDBConnection } from "~/db";
+import SystemService from "~/services/system.service";
 
 export default {
   GET: {
     HANDLER: async () => {
-      const dbActive = await checkDBConnection();
+      const systemStatus = await SystemService.getSystemStatus();
       return json(
         {
-          status: dbActive,
+          ...systemStatus,
           timestamp: new Date().toISOString(),
-          checks: {
-            server: true,
-            database: dbActive,
-          },
         },
         {
-          status: !dbActive ? 500 : 200,
+          status: !systemStatus.systemActive ? 500 : 200,
         },
       );
     },

@@ -19,14 +19,12 @@ bun i
 
 ```bash
 # run database migrations for development using sqlite
-pnpm db:generate:sqlite
-pnpm db:migrate:sqlite
+pnpm db:push:sqlite
 ```
 
 ```bash
 # run database migrations for production using postgres
-pnpm db:generate
-pnpm db:migrate
+pnpm db:push
 ```
 
 ---
