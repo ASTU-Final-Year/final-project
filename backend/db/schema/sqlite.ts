@@ -59,6 +59,26 @@ export const sqSessions = sqliteTable("sessions", {
   ...basicTimestamps(),
 });
 
+export const sqPricingPlans = sqliteTable("pricing_plans", {
+  id: text("id")
+    .primaryKey()
+    .notNull()
+    .$defaultFn(() => crypto.randomUUID()),
+  name: text("name", { length: 54 }).notNull(),
+  price: numeric("price", { mode: "number" }).notNull().default(1.0),
+  monthlyDiscount: numeric("monthly_discount", { mode: "number" })
+    .notNull()
+    .default(1.0),
+  annualDiscount: numeric("annual_discount", { mode: "number" })
+    .notNull()
+    .default(1.0),
+  maxServices: integer("max_services").notNull().default(1),
+  maxEmployees: integer("max_employees").notNull().default(10),
+  features: text("features", { mode: "json" }).notNull(),
+  popular: integer("popular", { mode: "boolean" }).notNull().default(false),
+  ...basicTimestamps(),
+});
+
 export const sqOrganizations = sqliteTable("organizations", {
   id: text("id")
     .primaryKey()
@@ -75,6 +95,12 @@ export const sqOrganizations = sqliteTable("organizations", {
   email: text("email", { length: 30 }).notNull(),
   phones: text("phones", { mode: "json" }).notNull(),
   rating: real("rating"),
+  pricingPlansId: text("pricing_plans_id")
+    .notNull()
+    .references(() => sqPricingPlans.id, {
+      onUpdate: "cascade",
+      onDelete: "cascade",
+    }),
   ...basicTimestamps(),
 });
 
@@ -276,7 +302,8 @@ export const sqSessionsRelations = relations(sqSessions, ({ one }) => ({
 
 export const sqOrganizationsRelations = relations(
   sqOrganizations,
-  ({ many }) => ({
+  ({ many, one }) => ({
+    pricingPlans: one(sqPricingPlans),
     admins: many(sqOrganizationAdmins),
     branches: many(sqOrganizationBranches),
     services: many(sqOrganizationServices),
@@ -400,6 +427,7 @@ export const sqTasksRelations = relations(sqTasks, ({ one }) => ({
 export const sqliteSchema = {
   users: sqUsers,
   sessions: sqSessions,
+  pricingPlans: sqPricingPlans,
   organizations: sqOrganizations,
   organizationAdmins: sqOrganizationAdmins,
   organizationBranches: sqOrganizationBranches,

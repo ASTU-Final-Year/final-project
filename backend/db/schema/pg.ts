@@ -54,6 +54,26 @@ export const pgSessions = pgTable("sessions", {
   ...basicTimestamps(),
 });
 
+export const pgPricingPlans = pgTable("pricing_plans", {
+  id: uuid("id")
+    .primaryKey()
+    .notNull()
+    .$defaultFn(() => crypto.randomUUID()),
+  name: varchar("name", { length: 54 }).notNull(),
+  price: numeric("price", { mode: "number" }).notNull().default(1.0),
+  monthlyDiscount: numeric("monthly_discount", { mode: "number" })
+    .notNull()
+    .default(1.0),
+  annualDiscount: numeric("annual_discount", { mode: "number" })
+    .notNull()
+    .default(1.0),
+  maxServices: integer("max_services").notNull().default(1),
+  maxEmployees: integer("max_employees").notNull().default(10),
+  features: jsonb("features").notNull(),
+  popular: boolean("popular").notNull().default(false),
+  ...basicTimestamps(),
+});
+
 export const pgOrganizations = pgTable("organizations", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
   name: varchar("name", { length: 54 }).notNull(),
@@ -65,6 +85,12 @@ export const pgOrganizations = pgTable("organizations", {
   email: varchar("email", { length: 30 }).notNull(),
   phones: jsonb("phones").notNull(),
   rating: numeric("rating", { mode: "number", precision: 1 }),
+  pricingPlansId: uuid("pricing_plans_id")
+    .notNull()
+    .references(() => pgPricingPlans.id, {
+      onUpdate: "cascade",
+      onDelete: "cascade",
+    }),
   ...basicTimestamps(),
 });
 
@@ -245,7 +271,8 @@ export const pgSessionsRelations = relations(pgSessions, ({ one }) => ({
 
 export const pgOrganizationsRelations = relations(
   pgOrganizations,
-  ({ many }) => ({
+  ({ many, one }) => ({
+    pricingPlans: one(pgPricingPlans),
     admins: many(pgOrganizationAdmins),
     branches: many(pgOrganizationBranches),
     services: many(pgOrganizationServices),
@@ -369,6 +396,7 @@ export const pgTasksRelations = relations(pgTasks, ({ one }) => ({
 export const pgSchema = {
   users: pgUsers,
   sessions: pgSessions,
+  pricingPlans: pgPricingPlans,
   organizations: pgOrganizations,
   organizationAdmins: pgOrganizationAdmins,
   organizationBranches: pgOrganizationBranches,

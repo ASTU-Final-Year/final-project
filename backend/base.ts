@@ -377,6 +377,20 @@ export interface Session {
   user: User;
 }
 
+export interface PricingPlan {
+  id: string;
+  name: string;
+  price: number;
+  monthlyDiscount: number;
+  annualDiscount: number;
+  maxServices: number;
+  maxEmployees: number;
+  features: string[];
+  popular: false;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface Organization {
   id: string;
   name: string;
@@ -388,6 +402,8 @@ export interface Organization {
   email: string;
   phones: string[];
   rating: number;
+  pricingPlanId: string;
+  pricingPlan: PricingPlan;
   createdAt: Date;
   updatedAt: Date;
 }

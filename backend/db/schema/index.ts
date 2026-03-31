@@ -6,6 +6,9 @@ export const users = config.isProduction ? pgSchema.users : sqliteSchema.users;
 export const sessions = config.isProduction
   ? pgSchema.sessions
   : sqliteSchema.sessions;
+export const pricingPlans = config.isProduction
+  ? pgSchema.pricingPlans
+  : sqliteSchema.pricingPlans;
 export const organizations = config.isProduction
   ? pgSchema.organizations
   : sqliteSchema.organizations;
