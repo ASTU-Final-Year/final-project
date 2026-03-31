@@ -103,12 +103,12 @@ export default function Page() {
         <section
           className="relative bg-cover bg-center py-24 px-6"
           style={{
-            backgroundImage:
-              'url("https://images.unsplash.com/photo-1497366216548-37526070297c?ixlib=rb-4.0.3&auto=format&fit=crop&w=2069&q=100")',
+            backgroundImage: 'url("/images/pexels-lovetosmile-36200692.jpg")',
+            // 'url("https://images.unsplash.com/photo-1497366216548-37526070297c?ixlib=rb-4.0.3&auto=format&fit=crop&w=2069&q=100")',
           }}
         >
           {/* Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-black/40 z-0" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/80 to-black/70 z-0" />
 
           <div className="relative z-10 max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center justify-center">
             {/* Left Content */}
@@ -117,15 +117,15 @@ export default function Page() {
                 One of the Best Scheduling Platforms in Ethiopia
               </div> */}
 
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold leading-tight mb-6 drop-shadow-lg">
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold leading-tight mb-0 drop-shadow-lg">
                 Unified Scheduling for{" "}
                 <span className="text-primary drop-shadow-lg">
                   Every Service Sector
                 </span>
               </h1>
 
-              <p className="text-lg md:text-xl transform  rounded-full p-2 w-auto text-primary-foreground font-bold uppercase flex justify-center leading-relaxed mb-8 ring-5 ring-primary-foreground shadow">
-                Save your time and money.
+              <p className="text-lg transform  py-2 w-auto text-primary-foreground font-bold uppercase leading-relaxed mb-4 shadow">
+                Save your time and money
               </p>
 
               <p className="text-lg md:text-xl text-muted/90 leading-relaxed mb-8 max-w-xl">
