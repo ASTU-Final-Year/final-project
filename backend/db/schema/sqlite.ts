@@ -14,7 +14,6 @@ export const genderEnum = ["M", "F", "U"] as const;
 export const rolesEnum = [
   "super_admin",
   "organization_admin",
-  "organization_branch_admin",
   "employee",
   "client",
 ] as const;
@@ -59,11 +58,20 @@ export const sqSessions = sqliteTable("sessions", {
   ...basicTimestamps(),
 });
 
-export const sqPricingPlans = sqliteTable("pricing_plans", {
-  id: text("id")
-    .primaryKey()
+export const sqSessionsBlacklist = sqliteTable("sessions_blacklist", {
+  sessionId: text("session_id").primaryKey().notNull(),
+  userId: text("user_id")
     .notNull()
-    .$defaultFn(() => crypto.randomUUID()),
+    .references(() => sqUsers.id, {
+      onUpdate: "cascade",
+      onDelete: "cascade",
+    }),
+  expiresAt: integer("expires_at", { mode: "timestamp" }),
+  ...basicTimestamps(),
+});
+
+export const sqPricingPlans = sqliteTable("pricing_plans", {
+  id: text("id", { length: 16 }).primaryKey().notNull(),
   name: text("name", { length: 54 }).notNull(),
   price: numeric("price", { mode: "number" }).notNull().default(1.0),
   monthlyDiscount: numeric("monthly_discount", { mode: "number" })
@@ -91,11 +99,18 @@ export const sqOrganizations = sqliteTable("organizations", {
   isGovernment: integer("is_government", { mode: "boolean" })
     .notNull()
     .default(false),
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
   address: text("address", { length: 50 }).notNull(),
-  email: text("email", { length: 30 }).notNull(),
-  phones: text("phones", { mode: "json" }).notNull(),
+  email: text("email", { length: 30 }).unique().notNull(),
+  phone: text("phone", { length: 16 }),
   rating: real("rating"),
-  pricingPlansId: text("pricing_plans_id")
+  adminId: text("admin_id")
+    .notNull()
+    .references(() => sqUsers.id, {
+      onUpdate: "cascade",
+      onDelete: "cascade",
+    }),
+  pricingPlanId: text("pricing_plan_id")
     .notNull()
     .references(() => sqPricingPlans.id, {
       onUpdate: "cascade",
@@ -104,86 +119,21 @@ export const sqOrganizations = sqliteTable("organizations", {
   ...basicTimestamps(),
 });
 
-export const sqOrganizationAdmins = sqliteTable(
-  "organization_admins",
-  {
-    userId: text("user_id")
-      .notNull()
-      .references(() => sqUsers.id, {
-        onUpdate: "cascade",
-        onDelete: "cascade",
-      }),
-    organizationId: text("organization_id")
-      .notNull()
-      .references(() => sqOrganizations.id, {
-        onUpdate: "cascade",
-        onDelete: "cascade",
-      }),
-    ...basicTimestamps(),
-  },
-  (table) => [primaryKey({ columns: [table.userId, table.organizationId] })],
-);
-
-export const sqOrganizationBranches = sqliteTable("organization_branches", {
+export const sqOrganizationCalendars = sqliteTable("organization_calendars", {
   id: text("id")
     .primaryKey()
     .notNull()
     .$defaultFn(() => crypto.randomUUID()),
-  name: text("name", { length: 54 }).notNull(),
-  description: text("description", { length: 200 }).notNull(),
-  address: text("address", { length: 50 }).notNull(),
-  email: text("email", { length: 30 }).notNull(),
-  phones: text("phones", { mode: "json" }).notNull(),
-  rating: real("rating"),
   organizationId: text("organization_id")
     .notNull()
     .references(() => sqOrganizations.id, {
       onUpdate: "cascade",
       onDelete: "cascade",
     }),
+  available: text("available", { mode: "json" }),
+  unavailable: text("unavailable", { mode: "json" }),
   ...basicTimestamps(),
 });
-
-export const sqOrganizationBranchOffices = sqliteTable(
-  "organization_branch_offices",
-  {
-    id: text("id")
-      .primaryKey()
-      .notNull()
-      .$defaultFn(() => crypto.randomUUID()),
-    name: text("name", { length: 54 }).notNull(),
-    description: text("description", { length: 200 }).notNull(),
-    address: text("address", { length: 50 }).notNull(),
-    email: text("email", { length: 30 }).notNull(),
-    phones: text("phones", { mode: "json" }).notNull(),
-    organizationBranchId: text("organization_branch_id")
-      .notNull()
-      .references(() => sqOrganizationBranches.id, {
-        onUpdate: "cascade",
-        onDelete: "cascade",
-      }),
-    ...basicTimestamps(),
-  },
-);
-
-export const sqOrganizationBranchCalendars = sqliteTable(
-  "organization_branch_calendars",
-  {
-    id: text("id")
-      .primaryKey()
-      .notNull()
-      .$defaultFn(() => crypto.randomUUID()),
-    organizationBranchId: text("organization_branch_id")
-      .notNull()
-      .references(() => sqOrganizations.id, {
-        onUpdate: "cascade",
-        onDelete: "cascade",
-      }),
-    available: text("available", { mode: "json" }),
-    unavailable: text("unavailable", { mode: "json" }),
-    ...basicTimestamps(),
-  },
-);
 
 export const sqEmployeeCalendars = sqliteTable("employee_calendars", {
   id: text("id")
@@ -201,22 +151,27 @@ export const sqEmployeeCalendars = sqliteTable("employee_calendars", {
   ...basicTimestamps(),
 });
 
-export const sqEmployees = sqliteTable("employees", {
-  userId: text("user_id").primaryKey().notNull(),
-  jobTitle: text("job_title", { length: 50 }).notNull(),
-  jobDescription: text("job_description", { length: 200 }).notNull(),
-  calendarId: text("calendar_id").references(() => sqEmployeeCalendars.id, {
-    onUpdate: "cascade",
-    onDelete: "cascade",
-  }),
-  organizationBranchOfficeId: text("organization_branch_office_id")
-    .notNull()
-    .references(() => sqOrganizationBranchOffices.id, {
+export const sqEmployees = sqliteTable(
+  "employees",
+  {
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => sqOrganizations.id, {
+        onUpdate: "cascade",
+        onDelete: "cascade",
+      }),
+    userId: text("user_id").notNull(),
+    jobTitle: text("job_title", { length: 50 }).notNull(),
+    jobDescription: text("job_description", { length: 200 }).notNull(),
+    isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+    calendarId: text("calendar_id").references(() => sqEmployeeCalendars.id, {
       onUpdate: "cascade",
       onDelete: "cascade",
     }),
-  ...basicTimestamps(),
-});
+    ...basicTimestamps(),
+  },
+  (table) => [primaryKey({ columns: [table.organizationId, table.userId] })],
+);
 
 export const sqOrganizationServices = sqliteTable("organization_services", {
   id: text("id")
@@ -225,13 +180,11 @@ export const sqOrganizationServices = sqliteTable("organization_services", {
     .$defaultFn(() => crypto.randomUUID()),
   name: text("name", { length: 54 }).notNull(),
   description: text("description", { length: 200 }).notNull(),
-  calendarId: text("calendar_id").references(
-    () => sqOrganizationBranchCalendars.id,
-    {
-      onUpdate: "cascade",
-      onDelete: "cascade",
-    },
-  ),
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  calendarId: text("calendar_id").references(() => sqOrganizationCalendars.id, {
+    onUpdate: "cascade",
+    onDelete: "cascade",
+  }),
   organizationId: text("organization_id")
     .notNull()
     .references(() => sqOrganizations.id, {
@@ -241,8 +194,8 @@ export const sqOrganizationServices = sqliteTable("organization_services", {
   ...basicTimestamps(),
 });
 
-export const sqOrganizationServiceFirstEmployees = sqliteTable(
-  "organization_service_first_employees",
+export const sqServiceFirstEmployees = sqliteTable(
+  "service_first_employees",
   {
     serviceId: text("service_id")
       .notNull()
@@ -290,8 +243,7 @@ export const sqTasks = sqliteTable("tasks", {
 // 1. User & Session Relations
 export const sqUsersRelations = relations(sqUsers, ({ many }) => ({
   sessions: many(sqSessions),
-  adminProfiles: many(sqOrganizationAdmins),
-  employeeProfile: many(sqEmployees), // Using 'many' even if logical 1:1 to handle potential schema evolution
+  employeeProfile: many(sqEmployees),
   tasks: many(sqTasks),
   employeeCalendars: many(sqEmployeeCalendars),
 }));
@@ -304,46 +256,7 @@ export const sqOrganizationsRelations = relations(
   sqOrganizations,
   ({ many, one }) => ({
     pricingPlans: one(sqPricingPlans),
-    admins: many(sqOrganizationAdmins),
-    branches: many(sqOrganizationBranches),
     services: many(sqOrganizationServices),
-  }),
-);
-
-export const sqOrganizationAdminsRelations = relations(
-  sqOrganizationAdmins,
-  ({ one }) => ({
-    user: one(sqUsers, {
-      fields: [sqOrganizationAdmins.userId],
-      references: [sqUsers.id],
-    }),
-    organization: one(sqOrganizations, {
-      fields: [sqOrganizationAdmins.organizationId],
-      references: [sqOrganizations.id],
-    }),
-  }),
-);
-
-export const sqOrganizationBranchesRelations = relations(
-  sqOrganizationBranches,
-  ({ one, many }) => ({
-    organization: one(sqOrganizations, {
-      fields: [sqOrganizationBranches.organizationId],
-      references: [sqOrganizations.id],
-    }),
-    offices: many(sqOrganizationBranchOffices),
-    calendars: many(sqOrganizationBranchCalendars),
-  }),
-);
-
-export const sqOrganizationBranchOfficesRelations = relations(
-  sqOrganizationBranchOffices,
-  ({ one, many }) => ({
-    branch: one(sqOrganizationBranches, {
-      fields: [sqOrganizationBranchOffices.organizationBranchId],
-      references: [sqOrganizationBranches.id],
-    }),
-    employees: many(sqEmployees),
   }),
 );
 
@@ -352,33 +265,33 @@ export const sqEmployeesRelations = relations(sqEmployees, ({ one, many }) => ({
     fields: [sqEmployees.userId],
     references: [sqUsers.id],
   }),
-  office: one(sqOrganizationBranchOffices, {
-    fields: [sqEmployees.organizationBranchOfficeId],
-    references: [sqOrganizationBranchOffices.id],
-  }),
   calendar: one(sqEmployeeCalendars, {
     fields: [sqEmployees.calendarId],
     references: [sqEmployeeCalendars.id],
   }),
-  firstEmployeeOfServices: many(sqOrganizationServiceFirstEmployees),
+  firstEmployeeOfServices: many(sqServiceFirstEmployees),
 }));
 
 export const sqEmployeeCalendarsRelations = relations(
   sqEmployeeCalendars,
   ({ one }) => ({
-    employee: one(sqUsers, {
+    user: one(sqUsers, {
       fields: [sqEmployeeCalendars.employeeId],
       references: [sqUsers.id],
+    }),
+    employee: one(sqEmployees, {
+      fields: [sqEmployeeCalendars.employeeId],
+      references: [sqEmployees.userId],
     }),
   }),
 );
 
-export const sqOrganizationBranchCalendarsRelations = relations(
-  sqOrganizationBranchCalendars,
+export const sqOrganizationCalendarsRelations = relations(
+  sqOrganizationCalendars,
   ({ one }) => ({
-    branch: one(sqOrganizationBranches, {
-      fields: [sqOrganizationBranchCalendars.organizationBranchId],
-      references: [sqOrganizationBranches.id],
+    organization: one(sqOrganizations, {
+      fields: [sqOrganizationCalendars.organizationId],
+      references: [sqOrganizations.id],
     }),
   }),
 );
@@ -390,24 +303,24 @@ export const sqOrganizationServicesRelations = relations(
       fields: [sqOrganizationServices.organizationId],
       references: [sqOrganizations.id],
     }),
-    calendar: one(sqOrganizationBranchCalendars, {
+    calendar: one(sqOrganizationCalendars, {
       fields: [sqOrganizationServices.calendarId],
-      references: [sqOrganizationBranchCalendars.id],
+      references: [sqOrganizationCalendars.id],
     }),
-    assignedEmployees: many(sqOrganizationServiceFirstEmployees),
+    firstEmployees: many(sqServiceFirstEmployees),
     tasks: many(sqTasks),
   }),
 );
 
-export const sqOrganizationServiceFirstEmployeesRelations = relations(
-  sqOrganizationServiceFirstEmployees,
+export const sqServiceFirstEmployeesRelations = relations(
+  sqServiceFirstEmployees,
   ({ one }) => ({
     service: one(sqOrganizationServices, {
-      fields: [sqOrganizationServiceFirstEmployees.serviceId],
+      fields: [sqServiceFirstEmployees.serviceId],
       references: [sqOrganizationServices.id],
     }),
     employee: one(sqEmployees, {
-      fields: [sqOrganizationServiceFirstEmployees.employeeId],
+      fields: [sqServiceFirstEmployees.employeeId],
       references: [sqEmployees.userId],
     }),
   }),
@@ -427,30 +340,24 @@ export const sqTasksRelations = relations(sqTasks, ({ one }) => ({
 export const sqliteSchema = {
   users: sqUsers,
   sessions: sqSessions,
+  sessionsBlacklist: sqSessionsBlacklist,
   pricingPlans: sqPricingPlans,
   organizations: sqOrganizations,
-  organizationAdmins: sqOrganizationAdmins,
-  organizationBranches: sqOrganizationBranches,
-  organizationBranchOffices: sqOrganizationBranchOffices,
-  organizationBranchCalendars: sqOrganizationBranchCalendars,
+  organizationCalendars: sqOrganizationCalendars,
   employeeCalendars: sqEmployeeCalendars,
   employees: sqEmployees,
   organizationServices: sqOrganizationServices,
-  organizationServiceFirstEmployees: sqOrganizationServiceFirstEmployees,
+  serviceFirstEmployees: sqServiceFirstEmployees,
   tasks: sqTasks,
 
   usersRelations: sqUsersRelations,
   sessionsRelations: sqSessionsRelations,
   organizationsRelations: sqOrganizationsRelations,
-  organizationAdminsRelations: sqOrganizationAdminsRelations,
-  organizationBranchesRelations: sqOrganizationBranchesRelations,
-  organizationBranchOfficesRelations: sqOrganizationBranchOfficesRelations,
   employeesRelations: sqEmployeesRelations,
   employeeCalendarsRelations: sqEmployeeCalendarsRelations,
-  organizationBranchCalendarsRelations: sqOrganizationBranchCalendarsRelations,
+  organizationCalendarsRelations: sqOrganizationCalendarsRelations,
   organizationServicesRelations: sqOrganizationServicesRelations,
-  organizationServiceFirstEmployeesRelations:
-    sqOrganizationServiceFirstEmployeesRelations,
+  serviceFirstEmployeesRelations: sqServiceFirstEmployeesRelations,
   tasksRelations: sqTasksRelations,
 };
 

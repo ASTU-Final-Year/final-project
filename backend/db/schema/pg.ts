@@ -19,7 +19,6 @@ export const genderEnum = pgEnum("gender", ["M", "F", "U"]);
 export const roleEnum = pgEnum("role", [
   "super_admin",
   "organization_admin",
-  "organization_branch_admin",
   "employee",
   "client",
 ]);
@@ -54,11 +53,20 @@ export const pgSessions = pgTable("sessions", {
   ...basicTimestamps(),
 });
 
-export const pgPricingPlans = pgTable("pricing_plans", {
-  id: uuid("id")
-    .primaryKey()
+export const pgSessionsBlacklist = pgTable("sessions_blacklist", {
+  sessionId: uuid("session_id").primaryKey().notNull(),
+  userId: uuid("user_id")
     .notNull()
-    .$defaultFn(() => crypto.randomUUID()),
+    .references(() => pgUsers.id, {
+      onUpdate: "cascade",
+      onDelete: "cascade",
+    }),
+  expiresAt: timestamp("expires_at", { mode: "date" }),
+  ...basicTimestamps(),
+});
+
+export const pgPricingPlans = pgTable("pricing_plans", {
+  id: varchar("id", { length: 16 }).primaryKey().notNull(),
   name: varchar("name", { length: 54 }).notNull(),
   price: numeric("price", { mode: "number" }).notNull().default(1.0),
   monthlyDiscount: numeric("monthly_discount", { mode: "number" })
@@ -81,11 +89,18 @@ export const pgOrganizations = pgTable("organizations", {
   description: varchar("description", { length: 200 }).notNull(),
   sector: varchar("sector", { length: 30 }).notNull(),
   isGovernment: boolean("is_government").notNull().default(false),
+  isActive: boolean("is_active").notNull().default(true),
   address: varchar("address", { length: 50 }).notNull(),
-  email: varchar("email", { length: 30 }).notNull(),
-  phones: jsonb("phones").notNull(),
+  email: varchar("email", { length: 30 }).unique().notNull(),
+  phone: varchar("phone", { length: 16 }),
   rating: numeric("rating", { mode: "number", precision: 1 }),
-  pricingPlansId: uuid("pricing_plans_id")
+  adminId: uuid("admin_id")
+    .notNull()
+    .references(() => pgUsers.id, {
+      onUpdate: "cascade",
+      onDelete: "cascade",
+    }),
+  pricingPlanId: uuid("pricing_plan_id")
     .notNull()
     .references(() => pgPricingPlans.id, {
       onUpdate: "cascade",
@@ -94,75 +109,18 @@ export const pgOrganizations = pgTable("organizations", {
   ...basicTimestamps(),
 });
 
-export const pgOrganizationAdmins = pgTable(
-  "organization_admins",
-  {
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => pgUsers.id, {
-        onUpdate: "cascade",
-        onDelete: "cascade",
-      }),
-    organizationId: uuid("organization_id")
-      .notNull()
-      .references(() => pgOrganizations.id, {
-        onUpdate: "cascade",
-        onDelete: "cascade",
-      }),
-    ...basicTimestamps(),
-  },
-  (table) => [primaryKey({ columns: [table.userId, table.organizationId] })],
-);
-
-export const pgOrganizationBranches = pgTable("organization_branches", {
+export const pgOrganizationCalendars = pgTable("organization_calendars", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
-  name: varchar("name", { length: 54 }).notNull(),
-  description: varchar("description", { length: 200 }).notNull(),
-  address: varchar("address", { length: 50 }).notNull(),
-  email: varchar("email", { length: 30 }).notNull(),
-  phones: jsonb("phones").notNull(),
-  rating: numeric("rating", { mode: "number", precision: 1 }),
   organizationId: uuid("organization_id")
     .notNull()
     .references(() => pgOrganizations.id, {
       onUpdate: "cascade",
       onDelete: "cascade",
     }),
+  available: jsonb("available"),
+  unavailable: jsonb("unavailable"),
   ...basicTimestamps(),
 });
-
-export const pgOrganizationBranchOffices = pgTable(
-  "organization_branch_offices",
-  {
-    id: uuid("id").primaryKey().notNull().defaultRandom(),
-    name: varchar("name", { length: 54 }).notNull(),
-    description: varchar("description", { length: 200 }).notNull(),
-    address: varchar("address", { length: 50 }).notNull(),
-    organizationBranchId: uuid("organization_branch_id")
-      .notNull()
-      .references(() => pgOrganizationBranches.id, {
-        onUpdate: "cascade",
-        onDelete: "cascade",
-      }),
-    ...basicTimestamps(),
-  },
-);
-
-export const pgOrganizationBranchCalendars = pgTable(
-  "organization_branch_calendars",
-  {
-    id: uuid("id").primaryKey().notNull().defaultRandom(),
-    organizationBranchId: uuid("organization_branch_id")
-      .notNull()
-      .references(() => pgOrganizationBranches.id, {
-        onUpdate: "cascade",
-        onDelete: "cascade",
-      }),
-    available: jsonb("available"),
-    unavailable: jsonb("unavailable"),
-    ...basicTimestamps(),
-  },
-);
 
 export const pgEmployeeCalendars = pgTable("employee_calendars", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
@@ -177,34 +135,37 @@ export const pgEmployeeCalendars = pgTable("employee_calendars", {
   ...basicTimestamps(),
 });
 
-export const pgEmployees = pgTable("employees", {
-  userId: uuid("user_id").primaryKey().notNull(),
-  jobTitle: varchar("job_title", { length: 50 }).notNull(),
-  jobDescription: varchar("job_description", { length: 200 }).notNull(),
-  calendarId: uuid("calendar_id").references(() => pgEmployeeCalendars.id, {
-    onUpdate: "cascade",
-    onDelete: "cascade",
-  }),
-  organizationBranchOfficeId: uuid("organization_branch_office_id")
-    .notNull()
-    .references(() => pgOrganizationBranchOffices.id, {
+export const pgEmployees = pgTable(
+  "employees",
+  {
+    organizationId: uuid("organization_office_id")
+      .notNull()
+      .references(() => pgOrganizations.id, {
+        onUpdate: "cascade",
+        onDelete: "cascade",
+      }),
+    userId: uuid("user_id").notNull(),
+    jobTitle: varchar("job_title", { length: 50 }).notNull(),
+    jobDescription: varchar("job_description", { length: 200 }).notNull(),
+    isActive: boolean("is_active").notNull().default(true),
+    calendarId: uuid("calendar_id").references(() => pgEmployeeCalendars.id, {
       onUpdate: "cascade",
       onDelete: "cascade",
     }),
-  ...basicTimestamps(),
-});
+    ...basicTimestamps(),
+  },
+  (table) => [primaryKey({ columns: [table.organizationId, table.userId] })],
+);
 
 export const pgOrganizationServices = pgTable("organization_services", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
   name: varchar("name", { length: 54 }).notNull(),
   description: varchar("description", { length: 200 }).notNull(),
-  calendarId: uuid("calendar_id").references(
-    () => pgOrganizationBranchCalendars.id,
-    {
-      onUpdate: "cascade",
-      onDelete: "cascade",
-    },
-  ),
+  isActive: boolean("is_active").notNull().default(true),
+  calendarId: uuid("calendar_id").references(() => pgOrganizationCalendars.id, {
+    onUpdate: "cascade",
+    onDelete: "cascade",
+  }),
   organizationId: uuid("organization_id")
     .notNull()
     .references(() => pgOrganizations.id, {
@@ -214,8 +175,8 @@ export const pgOrganizationServices = pgTable("organization_services", {
   ...basicTimestamps(),
 });
 
-export const pgOrganizationServiceFirstEmployees = pgTable(
-  "organization_service_first_employees",
+export const pgServiceFirstEmployees = pgTable(
+  "service_first_employees",
   {
     serviceId: uuid("service_id")
       .notNull()
@@ -259,9 +220,8 @@ export const pgTasks = pgTable("tasks", {
 
 export const pgUsersRelations = relations(pgUsers, ({ many }) => ({
   sessions: many(pgSessions),
-  adminProfiles: many(pgOrganizationAdmins),
   employeeProfile: many(pgEmployees),
-  tasksAsClient: many(pgTasks),
+  tasks: many(pgTasks),
   employeeCalendars: many(pgEmployeeCalendars),
 }));
 
@@ -273,46 +233,7 @@ export const pgOrganizationsRelations = relations(
   pgOrganizations,
   ({ many, one }) => ({
     pricingPlans: one(pgPricingPlans),
-    admins: many(pgOrganizationAdmins),
-    branches: many(pgOrganizationBranches),
     services: many(pgOrganizationServices),
-  }),
-);
-
-export const pgOrganizationAdminsRelations = relations(
-  pgOrganizationAdmins,
-  ({ one }) => ({
-    user: one(pgUsers, {
-      fields: [pgOrganizationAdmins.userId],
-      references: [pgUsers.id],
-    }),
-    organization: one(pgOrganizations, {
-      fields: [pgOrganizationAdmins.organizationId],
-      references: [pgOrganizations.id],
-    }),
-  }),
-);
-
-export const pgOrganizationBranchesRelations = relations(
-  pgOrganizationBranches,
-  ({ one, many }) => ({
-    organization: one(pgOrganizations, {
-      fields: [pgOrganizationBranches.organizationId],
-      references: [pgOrganizations.id],
-    }),
-    offices: many(pgOrganizationBranchOffices),
-    calendars: many(pgOrganizationBranchCalendars),
-  }),
-);
-
-export const pgOrganizationBranchOfficesRelations = relations(
-  pgOrganizationBranchOffices,
-  ({ one, many }) => ({
-    branch: one(pgOrganizationBranches, {
-      fields: [pgOrganizationBranchOffices.organizationBranchId],
-      references: [pgOrganizationBranches.id],
-    }),
-    employees: many(pgEmployees),
   }),
 );
 
@@ -321,15 +242,11 @@ export const pgEmployeesRelations = relations(pgEmployees, ({ one, many }) => ({
     fields: [pgEmployees.userId],
     references: [pgUsers.id],
   }),
-  office: one(pgOrganizationBranchOffices, {
-    fields: [pgEmployees.organizationBranchOfficeId],
-    references: [pgOrganizationBranchOffices.id],
-  }),
   calendar: one(pgEmployeeCalendars, {
     fields: [pgEmployees.calendarId],
     references: [pgEmployeeCalendars.id],
   }),
-  serviceAssignments: many(pgOrganizationServiceFirstEmployees),
+  firstEmployeeOfServices: many(pgServiceFirstEmployees),
 }));
 
 export const pgEmployeeCalendarsRelations = relations(
@@ -339,15 +256,19 @@ export const pgEmployeeCalendarsRelations = relations(
       fields: [pgEmployeeCalendars.employeeId],
       references: [pgUsers.id],
     }),
+    employee: one(pgEmployees, {
+      fields: [pgEmployeeCalendars.employeeId],
+      references: [pgEmployees.userId],
+    }),
   }),
 );
 
-export const pgOrganizationBranchCalendarsRelations = relations(
-  pgOrganizationBranchCalendars,
+export const pgOrganizationCalendarsRelations = relations(
+  pgOrganizationCalendars,
   ({ one }) => ({
-    branch: one(pgOrganizationBranches, {
-      fields: [pgOrganizationBranchCalendars.organizationBranchId],
-      references: [pgOrganizationBranches.id],
+    organization: one(pgOrganizations, {
+      fields: [pgOrganizationCalendars.organizationId],
+      references: [pgOrganizations.id],
     }),
   }),
 );
@@ -359,24 +280,24 @@ export const pgOrganizationServicesRelations = relations(
       fields: [pgOrganizationServices.organizationId],
       references: [pgOrganizations.id],
     }),
-    calendar: one(pgOrganizationBranchCalendars, {
+    calendar: one(pgOrganizationCalendars, {
       fields: [pgOrganizationServices.calendarId],
-      references: [pgOrganizationBranchCalendars.id],
+      references: [pgOrganizationCalendars.id],
     }),
-    firstEmployees: many(pgOrganizationServiceFirstEmployees),
+    firstEmployees: many(pgServiceFirstEmployees),
     tasks: many(pgTasks),
   }),
 );
 
-export const pgOrganizationServiceFirstEmployeesRelations = relations(
-  pgOrganizationServiceFirstEmployees,
+export const pgServiceFirstEmployeesRelations = relations(
+  pgServiceFirstEmployees,
   ({ one }) => ({
     service: one(pgOrganizationServices, {
-      fields: [pgOrganizationServiceFirstEmployees.serviceId],
+      fields: [pgServiceFirstEmployees.serviceId],
       references: [pgOrganizationServices.id],
     }),
     employee: one(pgEmployees, {
-      fields: [pgOrganizationServiceFirstEmployees.employeeId],
+      fields: [pgServiceFirstEmployees.employeeId],
       references: [pgEmployees.userId],
     }),
   }),
@@ -396,30 +317,24 @@ export const pgTasksRelations = relations(pgTasks, ({ one }) => ({
 export const pgSchema = {
   users: pgUsers,
   sessions: pgSessions,
+  sessionsBlacklist: pgSessionsBlacklist,
   pricingPlans: pgPricingPlans,
   organizations: pgOrganizations,
-  organizationAdmins: pgOrganizationAdmins,
-  organizationBranches: pgOrganizationBranches,
-  organizationBranchOffices: pgOrganizationBranchOffices,
-  organizationBranchCalendars: pgOrganizationBranchCalendars,
+  organizationCalendars: pgOrganizationCalendars,
   employeeCalendars: pgEmployeeCalendars,
   employees: pgEmployees,
   organizationServices: pgOrganizationServices,
-  organizationServiceFirstEmployees: pgOrganizationServiceFirstEmployees,
+  serviceFirstEmployees: pgServiceFirstEmployees,
   tasks: pgTasks,
 
   usersRelations: pgUsersRelations,
   sessionsRelations: pgSessionsRelations,
   organizationsRelations: pgOrganizationsRelations,
-  organizationAdminsRelations: pgOrganizationAdminsRelations,
-  organizationBranchesRelations: pgOrganizationBranchesRelations,
-  organizationBranchOfficesRelations: pgOrganizationBranchOfficesRelations,
   employeesRelations: pgEmployeesRelations,
   employeeCalendarsRelations: pgEmployeeCalendarsRelations,
-  organizationBranchCalendarsRelations: pgOrganizationBranchCalendarsRelations,
+  organizationCalendarsRelations: pgOrganizationCalendarsRelations,
   organizationServicesRelations: pgOrganizationServicesRelations,
-  organizationServiceFirstEmployeesRelations:
-    pgOrganizationServiceFirstEmployeesRelations,
+  serviceFirstEmployeesRelations: pgServiceFirstEmployeesRelations,
   tasksRelations: pgTasksRelations,
 };
 
