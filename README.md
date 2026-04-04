@@ -19,14 +19,12 @@ bun i
 
 ```bash
 # run database migrations for development using sqlite
-pnpm db:generate:sqlite
-pnpm db:migrate:sqlite
+pnpm db:push:sqlite
 ```
 
 ```bash
 # run database migrations for production using postgres
-pnpm db:generate
-pnpm db:migrate
+pnpm db:push
 ```
 
 ---
@@ -90,12 +88,16 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 
 URL=http://localhost
 EMAIL_DOMAIN=servesyncplus.et
+SMTP_EMAIL=your-email@example.com
+SMTP_PASSWORD=your-app-password
 
 ## Backend
 
 BACKEND_PORT=4000
 JWT_AUTH_KEY=fSuwkiibZGgROT9gukjqBDNi-u3aRo3jhruNBvK4gfyaZfyjDzlzZY3VAexry-xa
 JWT_AUTH_ALG=HS256
+JWT_EMPLOYEE_HIRE_KEY=fSuwkiibZGgROT9gukjqBDNi-u3aRo3jhruNBvK4gfyaZfyjDzlzZY3VAexry-xa
+JWT_EMPLOYEE_HIRE_ALG=HS256
 SALT_ROUNDS=10
 
 ## Frontend
