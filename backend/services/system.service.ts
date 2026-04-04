@@ -1,3 +1,5 @@
+// services/system.service.ts
+
 import { checkDBConnection } from "~/db";
 
 export default class SystemService {

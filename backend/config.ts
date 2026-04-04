@@ -1,6 +1,6 @@
 import { Time } from "@bepalo/time";
 import path from "path";
-import type { JwtSymmetricAlgorithm } from "@bepalo/jwt";
+import { JWT, JwtPayload, type JwtSymmetricAlgorithm } from "@bepalo/jwt";
 import { config as dotenvConfig } from "dotenv";
 dotenvConfig({ path: "../.env" });
 
@@ -20,21 +20,21 @@ export const cacheConfig = {
   authTokenMaxAge: Time.for(1).Minutes,
   user: {
     maxAge: Time.for(60).Seconds,
-    lruMaxSize: 40_000,
-    cleanupInterval: Time.every(2).Seconds,
-    expiryBucketSize: Time.every(2).Seconds,
+    lruMaxSize: 4000,
+    cleanupInterval: Time.every(30).Minutes,
+    expiryBucketSize: 30,
   },
   session: {
-    maxAge: Time.for(60).Seconds,
-    lruMaxSize: 40_000,
-    cleanupInterval: Time.every(2).Seconds,
-    expiryBucketSize: Time.every(2).Seconds,
+    maxAge: Time.for(1).Day,
+    lruMaxSize: 4000,
+    cleanupInterval: Time.every(30).Minutes,
+    expiryBucketSize: 30,
   },
   sessionBlacklist: {
-    maxAge: Time.for(60).Seconds,
-    lruMaxSize: 40_000,
-    cleanupInterval: Time.every(2).Seconds,
-    expiryBucketSize: Time.every(2).Seconds,
+    maxAge: Time.for(1).Day,
+    lruMaxSize: 4000,
+    cleanupInterval: Time.every(30).Minutes,
+    expiryBucketSize: 30,
   },
 };
 
@@ -43,8 +43,15 @@ if (!process.env.JWT_AUTH_KEY) throw new Error("null env JWT_AUTH_KEY");
 export const securityConfig = {
   saltRounds: parseInt(process.env.SALT_ROUNDS || "") || 0,
   sessionCookie: "session",
-  authJwtKey: Bun.env.JWT_AUTH_KEY,
-  authJwtAlg: (Bun.env.JWT_AUTH_ALG as JwtSymmetricAlgorithm) || "HS256",
+  sessionMaxAge: Time.for(1).day._ms,
+  smtpEmail: process.env.SMTP_EMAIL || "your-email@gmail.com",
+  smtpPassword: process.env.SMTP_PASSWORD || "your-app-password",
+  authJwtKey: process.env.JWT_AUTH_KEY,
+  authJwtAlg: (process.env.JWT_AUTH_ALG as JwtSymmetricAlgorithm) || "HS256",
+  employeeHireKey: process.env.JWT_EMPLOYEE_HIRE_KEY,
+  employeeHireAlg:
+    (process.env.JWT_EMPLOYEE_HIRE_ALG as JwtSymmetricAlgorithm) || "HS256",
+  employeeHireMaxAge: Time.for(1).day._ms,
 };
 
 export const dbConfig = {
@@ -61,3 +68,17 @@ export const dbConfig = {
   superAdminLastname: process.env.SUPER_ADMIN_LASTNAME || "Admin",
   superAdminPassword: process.env.SUPER_ADMIN_PASSWORD || "SuperAdmin@12345",
 };
+
+export type EmployeeHirePayload = Required<
+  Pick<JwtPayload<{}>, "iat" | "sub" | "exp"> & {
+    from: string;
+    to: string;
+    jobTitle: string;
+    jobDescription: string;
+    organizationId: string;
+  }
+>;
+export const employeeHireJwt = JWT.createSymmetric<EmployeeHirePayload>(
+  securityConfig.employeeHireKey,
+  securityConfig.authJwtAlg,
+);

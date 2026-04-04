@@ -30,7 +30,6 @@ export default {
         credentials: true,
         endHere: true,
       }),
-      () => true,
     ],
     CATCHER: [
       (req, { error }) => {
