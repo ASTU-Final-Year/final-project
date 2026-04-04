@@ -14,60 +14,17 @@ export interface CTXSession {
 }
 
 export type Gender = "M" | "F" | "U";
-export type Role =
-  | "super_admin"
-  | "organization_admin"
-  | "organization_branch_admin"
-  | "employee"
-  | "client";
+export type Role = "super_admin" | "organization_admin" | "employee" | "client";
 export interface CTXSession {
   session: Session;
 }
 
-export type Gender = "M" | "F" | "U";
-export type Role =
-  | "super_admin"
-  | "organization_admin"
-  | "organization_branch_admin"
-  | "employee"
-  | "client";
-
 export const ROLES: Role[] = [
   "super_admin",
   "organization_admin",
-  "organization_branch_admin",
-  "organization_branch_admin",
   "employee",
   "client",
 ];
-
-export enum WeekDay {
-  Sunday = 0,
-  Monday = 1,
-  Tuesday = 2,
-  Wednsday = 3,
-  Thursday = 4,
-  Friday = 5,
-  Saturday = 6,
-}
-
-export interface DateRange {
-  from: Date;
-  to: Date;
-}
-
-export interface CalendarBase {
-  available?: {
-    ranges?: DateRange[];
-    weekly?: WeekDay[];
-    yearly?: Date[];
-  };
-  unavailable?: {
-    ranges?: DateRange[];
-    weekly?: WeekDay[];
-    yearly?: Date[];
-  };
-}
 
 export enum WeekDay {
   Sunday = 0,
@@ -103,38 +60,19 @@ export type PermissionTarget =
   | "self"
   | "organization"
   | "organization_own"
+  | "organization_admin"
+  | "organization_admin_own"
   | "organization_service"
   | "organization_service_own"
-  | "organization_branch"
-  | "organization_branch_own"
-  | "organization_branch_calendar"
-  | "organization_branch_calendar_own"
-  | "organization_branch_admin"
-  | "organization_branch_admin_own"
-  | "organization_own"
-  | "organization_service"
-  | "organization_service_own"
-  | "organization_branch"
-  | "organization_branch_own"
-  | "organization_branch_calendar"
-  | "organization_branch_calendar_own"
-  | "organization_branch_admin"
-  | "organization_branch_admin_own"
+  | "organization_calendar"
+  | "organization_calendar_own"
   | "employee"
-  | "employee_self"
-  | "employee_own"
-  | "employee_calendar"
-  | "employee_calendar_own"
   | "employee_self"
   | "employee_own"
   | "employee_calendar"
   | "employee_calendar_own"
   | "client"
   | "appointment"
-  | "task"
-  | "task_own"
-  | "task_progress"
-  | "task_progress_own"
   | "task"
   | "task_own"
   | "task_progress"
@@ -153,21 +91,13 @@ export const PERMISSIONS: Permissions = {
     create: {
       self: true,
       organization: true,
-      organization_branch: true,
-      organization_branch_admin: true,
-      organization_branch_calendar: true,
-      organization_branch: true,
-      organization_branch_admin: true,
-      organization_branch_calendar: true,
+      organization_admin: true,
+      organization_calendar: true,
       employee: true,
-      employee_calendar: true,
       employee_calendar: true,
       client: true,
       organization_service: true,
-      organization_service: true,
       appointment: true,
-      task: true,
-      task_progress: true,
       task: true,
       task_progress: true,
       payment_gateway: true,
@@ -176,21 +106,13 @@ export const PERMISSIONS: Permissions = {
     view: {
       self: true,
       organization: true,
-      organization_branch: true,
-      organization_branch_admin: true,
-      organization_branch_calendar: true,
-      organization_branch: true,
-      organization_branch_admin: true,
-      organization_branch_calendar: true,
+      organization_admin: true,
+      organization_calendar: true,
       employee: true,
-      employee_calendar: true,
       employee_calendar: true,
       client: true,
       organization_service: true,
-      organization_service: true,
       appointment: true,
-      task: true,
-      task_progress: true,
       task: true,
       task_progress: true,
       payment_gateway: true,
@@ -199,21 +121,13 @@ export const PERMISSIONS: Permissions = {
     update: {
       self: true,
       organization: true,
-      organization_branch: true,
-      organization_branch_admin: true,
-      organization_branch_calendar: true,
-      organization_branch: true,
-      organization_branch_admin: true,
-      organization_branch_calendar: true,
+      organization_admin: true,
+      organization_calendar: true,
       employee: true,
-      employee_calendar: true,
       employee_calendar: true,
       client: true,
       organization_service: true,
-      organization_service: true,
       appointment: true,
-      task: true,
-      task_progress: true,
       task: true,
       task_progress: true,
       payment_gateway: true,
@@ -222,21 +136,13 @@ export const PERMISSIONS: Permissions = {
     delete: {
       self: true,
       organization: true,
-      organization_branch: true,
-      organization_branch_admin: true,
-      organization_branch_calendar: true,
-      organization_branch: true,
-      organization_branch_admin: true,
-      organization_branch_calendar: true,
+      organization_admin: true,
+      organization_calendar: true,
       employee: true,
-      employee_calendar: true,
       employee_calendar: true,
       client: true,
       organization_service: true,
-      organization_service: true,
       appointment: true,
-      task: true,
-      task_progress: true,
       task: true,
       task_progress: true,
       payment_gateway: true,
@@ -251,23 +157,8 @@ export const PERMISSIONS: Permissions = {
     create: {
       self: true,
       organization_own: true,
-      organization_branch_own: true,
-      organization_branch_admin_own: true,
-      organization_branch_calendar_own: true,
-      employee_own: true,
-      client: true,
-      organization_service_own: true,
-      appointment: true,
-      task: true,
-      task_progress: true,
-      payment: true,
-    },
-    view: {
-      self: true,
-      organization_own: true,
-      organization_branch_own: true,
-      organization_branch_admin_own: true,
-      organization_branch_calendar_own: true,
+      organization_admin_own: true,
+      organization_calendar_own: true,
       employee_own: true,
       client: true,
       organization_service_own: true,
@@ -280,9 +171,8 @@ export const PERMISSIONS: Permissions = {
       self: true,
       organization: true,
       organization_own: true,
-      organization_branch_own: true,
-      organization_branch_admin_own: true,
-      organization_branch_calendar_own: true,
+      organization_admin_own: true,
+      organization_calendar_own: true,
       employee_own: true,
       employee_calendar_own: true,
       organization_service: true,
@@ -296,9 +186,8 @@ export const PERMISSIONS: Permissions = {
     update: {
       self: true,
       organization_own: true,
-      organization_branch_own: true,
-      organization_branch_admin_own: true,
-      organization_branch_calendar_own: true,
+      organization_admin_own: true,
+      organization_calendar_own: true,
       employee_own: true,
       organization_service_own: true,
       appointment: true,
@@ -309,140 +198,11 @@ export const PERMISSIONS: Permissions = {
     delete: {
       self: true,
       organization_own: true,
-      organization_branch_own: true,
-      organization_branch_admin_own: true,
-      organization_branch_calendar_own: true,
+      organization_admin_own: true,
+      organization_calendar_own: true,
       employee_own: true,
       organization_service_own: true,
       appointment: true,
-      task: true,
-      task_progress: true,
-      payment: true,
-    },
-    make: {
-      appointment: true,
-      payment: true,
-    },
-  },
-  organization_branch_admin: {
-    create: {
-      self: true,
-      organization_branch_admin_own: true,
-      organization_branch_calendar: true,
-      employee_own: true,
-      organization_own: true,
-      organization_branch_own: true,
-      organization_branch_admin_own: true,
-      organization_branch_calendar_own: true,
-      employee_own: true,
-      employee_calendar_own: true,
-      organization_service: true,
-      organization_service_own: true,
-      appointment: true,
-      task: true,
-      task_progress: true,
-      payment_gateway: true,
-      payment: true,
-    },
-    update: {
-      self: true,
-      organization_own: true,
-      organization_branch_own: true,
-      organization_branch_admin_own: true,
-      organization_branch_calendar_own: true,
-      employee_own: true,
-      organization_service_own: true,
-      appointment: true,
-      task: true,
-      task_progress: true,
-      payment: true,
-    },
-    delete: {
-      self: true,
-      organization_own: true,
-      organization_branch_own: true,
-      organization_branch_admin_own: true,
-      organization_branch_calendar_own: true,
-      employee_own: true,
-      organization_service_own: true,
-      appointment: true,
-      task: true,
-      task_progress: true,
-      payment: true,
-    },
-    make: {
-      appointment: true,
-      payment: true,
-    },
-  },
-  organization_branch_admin: {
-    create: {
-      self: true,
-      organization_branch_admin_own: true,
-      organization_branch_calendar: true,
-      employee_own: true,
-      client: true,
-      appointment: true,
-      task: true,
-      task_progress: true,
-      task: true,
-      task_progress: true,
-      payment: true,
-    },
-    view: {
-      self: true,
-      organization: true,
-      organization_branch_own: true,
-      organization_branch_admin_own: true,
-      organization_branch_calendar_own: true,
-      employee_own: true,
-      employee_calendar_own: true,
-      organization_service: true,
-      organization_service_own: true,
-      organization_branch_own: true,
-      organization_branch_admin_own: true,
-      organization_branch_calendar_own: true,
-      employee_own: true,
-      employee_calendar_own: true,
-      organization_service: true,
-      organization_service_own: true,
-      appointment: true,
-      task: true,
-      task_progress: true,
-      task: true,
-      task_progress: true,
-      payment_gateway: true,
-      payment: true,
-    },
-    update: {
-      self: true,
-      organization: true,
-      organization_branch_own: true,
-      organization_branch_admin_own: true,
-      organization_branch_calendar_own: true,
-      employee_own: true,
-      organization_branch_own: true,
-      organization_branch_admin_own: true,
-      organization_branch_calendar_own: true,
-      employee_own: true,
-      appointment: true,
-      task: true,
-      task_progress: true,
-      task: true,
-      task_progress: true,
-      payment: true,
-    },
-    delete: {
-      self: true,
-      organization_branch_admin_own: true,
-      organization_branch_calendar_own: true,
-      employee_own: true,
-      organization_branch_admin_own: true,
-      organization_branch_calendar_own: true,
-      employee_own: true,
-      appointment: true,
-      task: true,
-      task_progress: true,
       task: true,
       task_progress: true,
       payment: true,
@@ -457,25 +217,16 @@ export const PERMISSIONS: Permissions = {
       self: true,
       employee_calendar_own: true,
       task_progress_own: true,
-      employee_calendar_own: true,
-      task_progress_own: true,
     },
     view: {
       self: true,
-      organization_own: true,
-      employee_self: true,
       organization_own: true,
       employee_self: true,
       client: true,
       organization_service: true,
       organization_service_own: true,
       employee_calendar_own: true,
-      organization_service: true,
-      organization_service_own: true,
-      employee_calendar_own: true,
       appointment: true,
-      task_own: true,
-      task_progress_own: true,
       task_own: true,
       task_progress_own: true,
       payment_gateway: true,
@@ -484,16 +235,12 @@ export const PERMISSIONS: Permissions = {
     update: {
       self: true,
       employee_calendar_own: true,
-      employee_calendar_own: true,
       appointment: true,
-      task_own: true,
-      task_progress_own: true,
       task_own: true,
       task_progress_own: true,
     },
     delete: {
       self: true,
-      employee_calendar_own: true,
       employee_calendar_own: true,
       payment: true,
     },
@@ -505,19 +252,14 @@ export const PERMISSIONS: Permissions = {
   client: {
     create: {
       self: true,
-      organization_branch_calendar: true,
-      organization_branch_calendar: true,
+      organization_calendar: true,
     },
     view: {
       self: true,
       organization: true,
       organization_service: true,
-      organization_branch_calendar: true,
-      organization_service: true,
-      organization_branch_calendar: true,
+      organization_calendar: true,
       appointment: true,
-      task_own: true,
-      task_progress_own: true,
       task_own: true,
       task_progress_own: true,
       payment_gateway: true,
@@ -538,14 +280,11 @@ export const PERMISSIONS: Permissions = {
     },
   },
 } as const;
-} as const;
 
 export interface UserSec {
   id: string;
   firstname: string;
   lastname: string;
-  gender: Gender;
-  role: Role;
   gender: Gender;
   role: Role;
   email: string;
@@ -570,8 +309,11 @@ export interface Session {
   user: User;
 }
 
-export type SessionInit = Omit<Session, "id" | "createdAt" | "updatedAt"> &
-  Partial<Pick<Session, "id" | "createdAt" | "updatedAt">>;
+export type SessionInit = Omit<
+  Session,
+  "id" | "createdAt" | "updatedAt" | "user"
+> &
+  Partial<Pick<Session, "id" | "createdAt" | "updatedAt" | "user">>;
 
 export interface SessionBlacklist {
   sessionId: string;
@@ -599,16 +341,13 @@ export interface PricingPlan {
   maxServices: number;
   maxEmployees: number;
   features: string[];
-  popular: false;
+  popular: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
 
-export type PricingPlanInit = Omit<
-  PricingPlan,
-  "id" | "createdAt" | "updatedAt"
-> &
-  Partial<Pick<PricingPlan, "id" | "createdAt" | "updatedAt">>;
+export type PricingPlanInit = Omit<PricingPlan, "createdAt" | "updatedAt"> &
+  Partial<Pick<PricingPlan, "createdAt" | "updatedAt">>;
 
 export interface Organization {
   id: string;
@@ -619,8 +358,11 @@ export interface Organization {
   isGovernment: boolean;
   address: string;
   email: string;
-  phones: string[];
-  rating: number;
+  phone?: string | null;
+  rating?: number | null;
+  isActive: boolean;
+  adminId: string;
+  admin: User;
   pricingPlanId: string;
   pricingPlan: PricingPlan;
   createdAt: Date;
@@ -629,106 +371,74 @@ export interface Organization {
 
 export type OrganizationInit = Omit<
   Organization,
-  "id" | "createdAt" | "updatedAt"
+  "id" | "createdAt" | "updatedAt" | "admin" | "pricingPlan"
 > &
-  Partial<Pick<Organization, "id" | "createdAt" | "updatedAt">>;
+  Partial<
+    Pick<
+      Organization,
+      "id" | "createdAt" | "updatedAt" | "admin" | "pricingPlan"
+    >
+  >;
 
-export interface OrganizationAdmin extends User {
+export type OrganizationUpdate = Partial<OrganizationInit> &
+  Pick<Organization, "id">;
+
+export type OrganizationPure = Partial<
+  Omit<Organization, "admin" | "pricingPlan">
+>;
+
+export type CTXOrganization = {
+  organization: Organization;
+};
+
+export interface OrganizationCalendar extends CalendarBase {
   id: string;
   organizationId: string;
   organization?: Organization;
-}
-
-export type OrganizationAdminInit = Omit<
-  OrganizationAdmin,
-  "id" | "createdAt" | "updatedAt"
-> &
-  Partial<Pick<OrganizationAdmin, "id" | "createdAt" | "updatedAt">>;
-
-export interface OrganizationBranch {
-  id: string;
-  name: string;
-  description: string;
-  address: string;
-  email: string;
-  phones: string[];
-  organizationId: string;
-  organization?: Organization;
   createdAt: Date;
   updatedAt: Date;
 }
 
-export type OrganizationBranchInit = Omit<
-  OrganizationBranch,
+export type OrganizationCalendarInit = Omit<
+  OrganizationCalendar,
   "id" | "createdAt" | "updatedAt"
 > &
-  Partial<Pick<OrganizationBranch, "id" | "createdAt" | "updatedAt">>;
+  Partial<Pick<OrganizationCalendar, "id" | "createdAt" | "updatedAt">>;
 
-export interface OrganizationBranchOffice {
-  id: string;
-  name: string;
-  description: string;
-  address: string;
-  organizationBranchId: string;
-  organizationBranch?: OrganizationBranch;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export type OrganizationBranchOfficeInit = Omit<
-  OrganizationBranchOffice,
-  "id" | "createdAt" | "updatedAt"
-> &
-  Partial<Pick<OrganizationBranchOffice, "id" | "createdAt" | "updatedAt">>;
-
-export interface OrganizationBranchCalendar extends CalendarBase {
-  id: string;
-  organizationBranchId: string;
-  organizationBranch?: OrganizationBranch;
-  organizationId?: string;
-  organization?: Organization;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export type OrganizationBranchCalendarInit = Omit<
-  OrganizationBranchCalendar,
-  "id" | "createdAt" | "updatedAt"
-> &
-  Partial<Pick<OrganizationBranchCalendar, "id" | "createdAt" | "updatedAt">>;
-
-export interface OrganizationBranchAdmin extends User {
-  id: string;
-  organizationBranchId: string;
-  organizationBranch?: OrganizationBranch;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export type OrganizationBranchAdminInit = Omit<
-  OrganizationBranchAdmin,
-  "id" | "createdAt" | "updatedAt"
-> &
-  Partial<Pick<OrganizationBranchAdmin, "id" | "createdAt" | "updatedAt">>;
-
-export interface Employee extends User {
-  id: string;
+export interface Employee {
   jobTitle: string;
   jobDescription: string;
-  calendarId?: string;
+  isActive: boolean;
+  calendarId?: string | null;
   calendar?: EmployeeCalendar;
-  organizationBranchOfficeId: string;
-  organizationBranchOffice?: OrganizationBranchOffice;
-  organizationId?: string;
-  organization?: Organization;
-  organizationBranchId?: string;
-  organizationBranch?: OrganizationBranch;
+  userId: string;
+  user: User;
+  organizationId: string;
+  organization: Organization;
   createdAt: Date;
   updatedAt: Date;
 }
 
-export type EmployeeInit = Omit<Employee, "id" | "createdAt" | "updatedAt"> &
-  Partial<Pick<Employee, "id" | "createdAt" | "updatedAt">>;
+export type EmployeeInit = Omit<
+  Employee,
+  "createdAt" | "updatedAt" | "user" | "organization"
+> &
+  Partial<Pick<Employee, "createdAt" | "updatedAt" | "user" | "organization">>;
+
+export type EmployeeUpdate = Partial<
+  Omit<
+    EmployeeInit,
+    "calendar" | "userId" | "user" | "organizationId" | "organization"
+  >
+> &
+  Pick<Employee, "userId">;
+
+export type EmployeePure = Omit<Employee, "organization" | "user"> &
+  Partial<Pick<Employee, "organization" | "user">>;
+
+export type CTXEmployee = {
+  employee: Employee;
+};
 
 export interface EmployeeCalendar extends CalendarBase {
   id: string;
@@ -748,21 +458,42 @@ export interface OrganizationService {
   id: string;
   name: string;
   description: string;
+  isActive: boolean;
   organizationId: string;
-  organization?: Organization;
-  calendarId?: string;
-  calendar?: OrganizationBranchCalendar;
-  firstEmployeesId: string[];
-  firstEmployees?: Employee[];
+  organization: Organization;
+  calendarId?: string | null;
+  calendar?: OrganizationCalendar | null;
+  // firstEmployeesId?: string[];
+  // firstEmployees?: Employee[];
   createdAt: Date;
   updatedAt: Date;
 }
 
 export type OrganizationServiceInit = Omit<
   OrganizationService,
-  "id" | "createdAt" | "updatedAt"
+  "id" | "createdAt" | "updatedAt" | "organization"
 > &
   Partial<Pick<OrganizationService, "id" | "createdAt" | "updatedAt">>;
+
+export type OrganizationServiceUpdate = Partial<
+  Omit<OrganizationServiceInit, "organization" | "calendar">
+> &
+  Pick<OrganizationService, "id">;
+
+export type OrganizationServiceWithOrganization = Omit<
+  OrganizationService,
+  "calendar" | "organization"
+> & { organization: OrganizationPure };
+
+export type OrganizationServiceWithCalendar = Omit<
+  OrganizationService,
+  "organization"
+>;
+
+export type OrganizationServicePure = Omit<
+  OrganizationService,
+  "organization" | "calendar"
+>;
 
 export interface TaskProgress {
   index: number;
@@ -785,17 +516,14 @@ export interface Task {
   status: string;
   serviceId: string;
   service?: OrganizationService;
-  organizationBranchId: string;
-  organizationBranch?: OrganizationBranch;
+  organizationId: string;
+  organization?: Organization;
   clientId: string;
   client?: User;
   progress: TaskProgress[];
   createdAt: Date;
   updatedAt: Date;
 }
-
-export type TaskInit = Omit<Task, "id" | "createdAt" | "updatedAt"> &
-  Partial<Pick<Task, "id" | "createdAt" | "updatedAt">>;
 
 export type TaskInit = Omit<Task, "id" | "createdAt" | "updatedAt"> &
   Partial<Pick<Task, "id" | "createdAt" | "updatedAt">>;
