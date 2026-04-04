@@ -1,0 +1,539 @@
+openapi: 3.0.3
+info:
+  title: Backend API
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:4000/api/v1
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: connect.session
+
+  responses:
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            message: Unauthorized
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            message: Not found
+
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            message: Validation error
+
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+
+    UUID:
+      type: string
+      format: uuid
+      example: 3a91382c-e50d-426a-8106-fed7bfaa0651
+
+    # ================= USER =================
+
+    CreateUserRequest:
+      type: object
+      required: [firstname, lastname, gender, role, phone, email, password]
+      properties:
+        firstname: { type: string, example: Abebe }
+        lastname: { type: string, example: Bekele }
+        gender:
+          type: string
+          enum: [M, F, U]
+          example: M
+        role:
+          type: string
+          enum: [employee, client]
+          example: employee
+        phone:
+          type: string
+          example: "+251903987654"
+        email:
+          type: string
+          format: email
+          example: abebe.kebede@example.com
+        password:
+          type: string
+          minLength: 8
+          example: Abebe@1234
+
+    UserResponse:
+      type: object
+      required: [id, firstname, lastname, email]
+      properties:
+        id: { $ref: "#/components/schemas/UUID" }
+        firstname: { type: string }
+        lastname: { type: string }
+        gender: { type: string }
+        role: { type: string }
+        phone: { type: string }
+        email:
+          type: string
+          format: email
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: abebe.kebede@example.com
+        password:
+          type: string
+          example: Abebe@1234
+
+    # ================= PRICING PLAN =================
+    PricingPlanResponse:
+      type: object
+      required:
+        - id
+        - name
+        - price
+        - maxServices
+        - maxEmployees
+      properties:
+        id:
+          type: string
+          example: free
+        name:
+          type: string
+          example: Free
+        price:
+          type: number
+          example: 0
+        monthlyDiscount:
+          type: number
+          example: 0
+        annualDiscount:
+          type: number
+          example: 0
+        maxServices:
+          type: integer
+          example: 1
+        maxEmployees:
+          type: integer
+          example: 10
+        features:
+          type: array
+          items:
+            type: string
+          example:
+            - 1 service included
+            - Up to 10 employees
+            - Attachments
+            - Basic analytics
+        popular:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    # ================= ORGANIZATION =================
+
+    CreateOrganizationRequest:
+      type: object
+      required:
+        [admin, name, description, address, email, phone, slug, pricingPlanId]
+      properties:
+        admin:
+          type: object
+          required: [firstname, lastname, gender, email, phone, password]
+          properties:
+            firstname: { type: string, example: Derartu }
+            lastname: { type: string, example: Tulu }
+            gender:
+              type: string
+              enum: [M, F, U]
+              example: F
+            email:
+              type: string
+              format: email
+              example: derartu.tulu@gmail.com
+            phone:
+              type: string
+              example: "+251987654321"
+            password:
+              type: string
+              example: Derartu@1234
+        name: { type: string, example: Fayda }
+        slug: { type: string, example: fayda }
+        description:
+          type: string
+          nullable: true
+          example: National ID
+        sector:
+          type: string
+          nullable: true
+          example: Identity
+        isGovernment:
+          type: boolean
+          example: true
+        address:
+          type: string
+          nullable: true
+          example: Mexico, Addis Abeba
+        email:
+          type: string
+          format: email
+          example: fayda@example.com
+        phone:
+          type: string
+          example: "+251987654321"
+        rating:
+          type: number
+          nullable: true
+          example: null
+        pricingPlanId:
+          type: string
+          example: free
+
+    OrganizationResponse:
+      type: object
+      properties:
+        id: { $ref: "#/components/schemas/UUID" }
+        name: { type: string }
+        slug: { type: string }
+        description: { type: string, nullable: true }
+        sector: { type: string, nullable: true }
+        isGovernment: { type: boolean }
+        address: { type: string, nullable: true }
+        email: { type: string }
+        phone: { type: string }
+        rating: { type: number, nullable: true }
+        adminId: { type: string }
+        admin: { $ref: "#/components/schemas/UserResponse" }
+        pricingPlanId: { type: string }
+        pricingPlan: { $ref: "#/components/schemas/PricingPlanResponse" }
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    # ================= EMPLOYEE INVITE =================
+
+    EmployeeInviteRequest:
+      type: object
+      required: [email, jobTitle, jobDescription]
+      properties:
+        email:
+          type: string
+          format: email
+          example: abebe.kebede@example.com
+        jobTitle:
+          type: string
+          example: Photo
+        jobDescription:
+          type: string
+          example: Takes photos
+
+    HireToken:
+      type: string
+      description: JWT hire token
+      example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+    # ================= SERVICES =================
+
+    CreateServiceRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          example: Fayda ID Service
+        description:
+          type: string
+          example: National ID
+        isActive:
+          type: boolean
+          example: true
+        organizationId:
+          type: string
+          format: uuid
+
+    UpdateServiceRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name: { type: string }
+        description: { type: string }
+        isActive: { type: boolean }
+
+    ServiceResponse:
+      type: object
+      properties:
+        id: { $ref: "#/components/schemas/UUID" }
+        name: { type: string }
+        description: { type: string }
+        isActive: { type: boolean }
+        organizationId: { $ref: "#/components/schemas/UUID" }
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+security:
+  - cookieAuth: []
+
+paths:
+  /user:
+    post:
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        "400": { $ref: "#/components/responses/BadRequest" }
+
+    get:
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+    delete:
+      responses:
+        "204": { description: Deleted }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /session:
+    post:
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200": { description: Logged in }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+    get:
+      responses:
+        "200": { description: Session active }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+    delete:
+      responses:
+        "204": { description: Logged out }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /organization:
+    post:
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrganizationRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrganizationResponse"
+        "400": { $ref: "#/components/responses/BadRequest" }
+
+    get:
+      responses:
+        "200":
+          description: Current organization
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrganizationResponse"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+    delete:
+      responses:
+        "204": { description: Deleted }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /organization/{orgId}/employees:
+    get:
+      responses:
+        "200": { description: Employees list }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/EmployeeInviteRequest"
+      responses:
+        "200": { description: Invitations sent }
+        "400": { $ref: "#/components/responses/BadRequest" }
+
+  /organization/{orgId}/employee/{employeeId}:
+    delete:
+      responses:
+        "204": { description: Removed }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /employee/hire:
+    get:
+      parameters:
+        - in: query
+          name: t
+          required: true
+          schema:
+            $ref: "#/components/schemas/HireToken"
+      responses:
+        "200": { description: Token valid }
+        "400": { $ref: "#/components/responses/BadRequest" }
+
+    post:
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              $ref: "#/components/schemas/HireToken"
+      responses:
+        "201": { description: Employee hired }
+        "400": { $ref: "#/components/responses/BadRequest" }
+
+  /organization/{orgId}/services:
+    get:
+      responses:
+        "200":
+          description: Services list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ServiceResponse"
+
+  /organization/{orgId}/service:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateServiceRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceResponse"
+
+  /organization/{orgId}/service/{serviceId}:
+    get:
+      responses:
+        "200":
+          description: Service
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceResponse"
+
+    patch:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateServiceRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceResponse"
+
+    delete:
+      responses:
+        "204": { description: Deleted }
+
+  /organizations:
+    get:
+      responses:
+        "200": { description: Organizations list }
+
+  /services:
+    get:
+      responses:
+        "200": { description: Services list }
+
+  /pricing-plans:
+    get:
+      responses:
+        "200": { description: Pricing plans }
+
+  /pricing-plans/{id}:
+    get:
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            example: small
+      responses:
+        "200": { description: Pricing plan }
+        "404": { $ref: "#/components/responses/NotFound" }
