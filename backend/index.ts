@@ -1,15 +1,22 @@
-import { RouterFramework, status, type SocketAddress } from "@bepalo/router";
+import {
+  blob,
+  RouterFramework,
+  status,
+  type SocketAddress,
+} from "@bepalo/router";
 import type { CTXMain } from "./base";
 import { config } from "./config";
 import { initDb } from "./db";
 import fs from "fs";
-import path from "path";
+import path, { resolve } from "path";
 import { LOGE, LOGI } from "./lib";
+import { join } from "path";
 
 console.log("-".repeat(80));
 console.log(`💫 Launching...`);
 const router = new RouterFramework<CTXMain>({
   rootPath: "./routes",
+  normalizeTrailingSlash: true,
   defaultHeaders: [["x-powered-by", "@bepalo/router"]],
   defaultCatcher: config.isProduction
     ? undefined
@@ -58,15 +65,31 @@ await initDb()
     console.error("❌ Failed to initialize database", error);
   });
 
+const swaggerUICSS = Bun.file(
+  join(import.meta.dir, "../node_modules/swagger-ui-dist/swagger-ui.css"),
+);
+const swaggerUIBundle = Bun.file(
+  join(import.meta.dir, "../node_modules/swagger-ui-dist/swagger-ui-bundle.js"),
+);
+
 const server = Bun.serve({
   port: config.port,
   development: !config.isProduction,
   reusePort: true,
+  routes: {
+    "/api/swagger-ui.css": swaggerUICSS,
+    "/api/swagger-ui-bundle.js": swaggerUIBundle,
+  },
   fetch: async (req, server) => {
     const address = server.requestIP(req) as SocketAddress | null;
     if (!address) throw new Error("null client address");
     const resp = await router.respond(req, { address });
-    console.log(`${req.method} ${req.url} ${resp.status} ${resp.statusText}`);
+    const urlLog = `${req.method} ${req.url.substring(0, 180)} ${resp.status} ${resp.statusText}`;
+    // if (config.isProduction) {
+    //   LOGI(urlLog);
+    // } else {
+    console.log(urlLog);
+    // }
     return resp;
   },
 });
@@ -81,8 +104,10 @@ const cleanup = () => {
   try {
     LOGI("BACKEND-SERVER STOPPED");
   } catch {}
-  if (config.errorFd) fs.closeSync(config.errorFd);
-  if (config.infoFd) fs.closeSync(config.infoFd);
+  try {
+    if (config.errorFd) fs.closeSync(config.errorFd);
+    if (config.infoFd) fs.closeSync(config.infoFd);
+  } catch {}
   console.log("🧹 Cleaning done");
 };
 
