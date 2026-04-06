@@ -1,4 +1,3 @@
-import { unknown } from "arktype/internal/keywords/ts.ts";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
@@ -15,6 +14,19 @@ export const usePricingPlanStore = create(
     }),
     {
       name: "pricing-plan"
+    },
+  ),
+);
+
+export const useSessionStore = create(
+  persist(
+    (set) => ({
+      session: null,
+
+      setSession: (session) => set({ session }),
+    }),
+    {
+      name: "session"
     },
   ),
 );
