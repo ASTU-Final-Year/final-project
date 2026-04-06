@@ -12,10 +12,12 @@ import {
   status,
   Status,
 } from "@bepalo/router";
+import { Time } from "@bepalo/time";
 import { ArkErrors, type } from "arktype";
 import { CTXSession, OrganizationInit, Role, UserSecInit } from "~/base";
 import { parseAuth, parseSession } from "~/middleware";
 import OrganizationService from "~/services/organization.service";
+import PaymentService from "~/services/payment.service";
 import UserService from "~/services/user.service";
 
 const TOrganizationRegistration = type({
@@ -37,6 +39,9 @@ const TOrganizationRegistration = type({
   phone: /^\+\d{2,3}\s?\d{9,10}$/,
   "rating?": "number|null",
   pricingPlanId: "string",
+  "billingPeriod?": "'monthly'|'annually'",
+  // "billingStart?": "Date|null",
+  // "billingEnd?": "Date|null",
 });
 
 const TOrganizationUpdate = type({
@@ -51,7 +56,10 @@ const TOrganizationUpdate = type({
   "email?": "string.email <= 30",
   "phone?": /^\+\d{2,3}\s?\d{9,10}$/,
   "rating?": "number|null",
-  "pricingPlanId?": "string",
+  // "pricingPlanId?": "string",
+  // "billingPeriod?": "'monthly'|'annually'",
+  // "billingStart?": "number.integer < 30",
+  // "billingEnd?": "number.integer < 30",
 });
 
 type OrganizationRegistration = typeof TOrganizationRegistration.infer;
@@ -90,6 +98,12 @@ export default {
             "Organization with the same email already exists",
           );
         }
+        const plan = await PaymentService.getPricingPlansById(
+          body.pricingPlanId,
+        );
+        if (plan == null) {
+          return status(Status._403_Forbidden, "Invalid pricing plan");
+        }
         // Register
         const admin = await UserService.createAdminUser({
           firstname: body.admin.firstname,
@@ -112,6 +126,17 @@ export default {
           rating: body.rating,
           adminId: admin.id,
           pricingPlanId: body.pricingPlanId,
+          billingPeriod: body.billingPeriod,
+          billingStart:
+            plan.price > 0 ? new Date(Time.after(7).days.fromNow()._ms) : null,
+          billingEnd:
+            plan.price > 0
+              ? new Date(
+                  Time.after(
+                    body.billingPeriod === "annually" ? 365.25 : 30,
+                  ).days.fromNow()._ms,
+                )
+              : null,
         });
         return json(
           {

@@ -16,6 +16,11 @@ import {
 
 export const genderEnum = pgEnum("gender", ["M", "F", "U"]);
 
+export const billingPeriodEnum = pgEnum("billing_period", [
+  "monthly",
+  "annually",
+]);
+
 export const roleEnum = pgEnum("role", [
   "super_admin",
   "organization_admin",
@@ -106,6 +111,9 @@ export const pgOrganizations = pgTable("organizations", {
       onUpdate: "cascade",
       onDelete: "cascade",
     }),
+  billingPeriod: billingPeriodEnum("billing_period"),
+  billingStart: timestamp("billing_start", { mode: "date" }).defaultNow(),
+  billingEnd: timestamp("billing_end", { mode: "date" }),
   ...basicTimestamps(),
 });
 

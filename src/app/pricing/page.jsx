@@ -21,15 +21,17 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Check,
-  Zap,
   Building2,
   Users,
   Server,
   Tag,
-  CircleDollarSign,
+  DollarSign,
+  CircleCheckBig,
+  Minus,
 } from "lucide-react";
 import { usePricingPlanStore } from "@/store";
 import Link from "next/link";
+import RequestHandler from "@/lib/request-handler";
 
 // Compact Discount Badge for inline usage
 function CompactDiscountBadge({ value }) {
@@ -50,7 +52,6 @@ function CompactDiscountBadge({ value }) {
 function SavingsBadge({ monthlyPrice, annualPrice }) {
   const monthlyCost = monthlyPrice * 12;
   const savings = monthlyCost - annualPrice;
-  // const savingsPercentage = Math.round((savings / monthlyCost) * 100);
 
   if (savings <= 0) return null;
 
@@ -76,18 +77,6 @@ function SavingsBadge({ monthlyPrice, annualPrice }) {
         <Tag className="h-3 w-3 mr-1" />
         Save {formatPrice(savings)}/year
       </Badge>
-
-      {/* Tooltip on hover */}
-      {/* <div className="absolute top-full left-1/2 -translate-x-1/2 mb-2 w-48 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-        <div className="bg-popover text-popover-foreground text-xs rounded-lg p-2 shadow-lg border border-border">
-          <p className="font-medium mb-1">You save:</p>
-          <p>{formatPrice(savings)} per year</p>
-          <p className="text-muted-foreground mt-1">
-            ({savingsPercentage}% off monthly rate)
-          </p>
-          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 rotate-45 bg-popover border-r border-b border-border" />
-        </div>
-      </div> */}
     </div>
   );
 }
@@ -113,7 +102,6 @@ export function PricingSelect({
       >
         <SelectGroup>
           {Object.entries(pricingPlans)?.map(([id, plan], idx) => {
-            // const Icon = plan.icon;
             return (
               <SelectItem
                 key={idx}
@@ -122,7 +110,7 @@ export function PricingSelect({
               >
                 <div className="flex items-center gap-3">
                   <div className="p-1.5 rounded bg-primary/10">
-                    <Building2 className="h-3.5 w-3.5 text-primary" />
+                    <CircleCheckBig className="h-3.5 w-3.5 text-primary" />
                   </div>
                   <span className="font-medium">{plan.name}</span>
                   {plan.popular && (
@@ -143,12 +131,7 @@ export function PricingSelect({
   );
 }
 
-export function PricingPlanView({
-  // selectedPlan,
-  // setSelectedPlan,
-  className,
-  ...props
-}) {
+export function PricingPlanView({ className, ...props }) {
   const pricingPlans = usePricingPlanStore((state) => state.pricingPlans);
   const setPricingPlans = usePricingPlanStore((state) => state.setPricingPlans);
   const selectedPlan = usePricingPlanStore((state) => state.selectedPlan);
@@ -157,7 +140,7 @@ export function PricingPlanView({
 
   useEffect(() => {
     if (hasHydrated && Object.entries(pricingPlans).length === 0) {
-      fetch("/api/v1/pricing-plans").then(async (res) => {
+      RequestHandler.Get("/api/v1/pricing-plans").then(async (res) => {
         if (res.ok) {
           const data = await res.json();
           if (data.pricingPlans.length > 0) {
@@ -168,7 +151,6 @@ export function PricingPlanView({
             setPricingPlans(plans);
             if (!selectedPlan) {
               const popular = data.pricingPlans.find((plan) => plan.popular);
-              console.log(popular);
               setSelectedPlan(popular ? popular.id : data.pricingPlans[0].id);
             }
           }
@@ -197,30 +179,29 @@ export function PricingPlanView({
     }).format(price);
   };
 
-  const monthlyDiscount = plan.discounts?.monthly ?? 1.0;
-  const annualDiscount = plan.discounts?.annual ?? 1.0;
+  const monthlyDiscount = plan.monthlyDiscount ?? 1.0;
+  const annualDiscount = plan.annualDiscount ?? 1.0;
 
   const monthlyPrice = plan.price * monthlyDiscount;
   const annualPrice = plan.price * annualDiscount * 12;
 
   return (
-    <div>
-      <div className="flex flex-col gap-2 justify-center items-center p-2 mb-10">
-        <div className="text-primary">
-          <CircleDollarSign size={64} />
+    <div className="w-full max-w-xl">
+      <div className="text-center mb-10">
+        <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-primary/10 mb-4">
+          <DollarSign className="h-8 w-8 text-primary" />
         </div>
-        <h2 className="text-xl">
-          choose the right pricing plan for your business
-        </h2>
+        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+          Choose the right plan for your business
+        </h1>
       </div>
       <Card
         className={cn(
-          "group relative px-8 w-full min-w-lg sm:max-w-xl overflow-hidden border-border bg-card shadow-lg transition-all duration-500 hover:shadow-xl",
+          "group relative px-8 w-full overflow-hidden border-border bg-card shadow-lg transition-all duration-500 hover:shadow-xl",
           className,
         )}
         {...props}
       >
-        {/* Decorative gradient elements using theme colors */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
         <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary/15 blur-3xl group-hover:scale-150 transition-transform duration-1000 pointer-events-none" />
         <div className="absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-primary/20 blur-3xl group-hover:scale-150 transition-transform duration-1000 pointer-events-none" />
@@ -239,7 +220,6 @@ export function PricingPlanView({
         </CardHeader>
 
         <CardContent className="relative space-y-6 border-none rounded px-16">
-          {/* Price section with Savings Badge */}
           <div className="relative">
             <div className="text-center p-5 rounded-lg bg-muted/30 border-none">
               {monthlyPrice > 0 && monthlyDiscount <= 0.99 && (
@@ -249,7 +229,7 @@ export function PricingPlanView({
                 <span className="text-4xl font-bold text-foreground">
                   {formatPrice(monthlyPrice)}
                 </span>
-                <span className="text-sm text-muted-foreground">/ month</span>
+                <span className="text-sm text-muted-foreground">/ monthly</span>
               </div>
               {plan.price > 0 && (
                 <div className="flex flex-col items-center gap-2 mt-2">
@@ -261,11 +241,10 @@ export function PricingPlanView({
                       {formatPrice(annualPrice)}
                     </span>{" "}
                     <span className="text-sm text-muted-foreground">
-                      / year
+                      / annually
                     </span>
                   </p>
 
-                  {/* Savings Badge */}
                   <SavingsBadge
                     monthlyPrice={monthlyPrice}
                     annualPrice={annualPrice}
@@ -275,12 +254,8 @@ export function PricingPlanView({
             </div>
           </div>
 
-          {/* Quick stats */}
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded p-3 bg-muted/30 border border-border relative">
-              {/* {discounts.monthly < 1 && (
-              <CompactDiscountBadge value={discounts.monthly} />
-            )} */}
               <p className="text-xl font-semibold text-foreground">
                 {plan.maxServices}
               </p>
@@ -290,9 +265,6 @@ export function PricingPlanView({
               </div>
             </div>
             <div className="p-3 rounded bg-muted/30 border border-border relative">
-              {/* {discounts.annual < 1 && (
-              <CompactDiscountBadge value={discounts.annual} />
-            )} */}
               <p className="text-xl font-semibold text-foreground">
                 {plan.maxEmployees}
               </p>
@@ -303,7 +275,6 @@ export function PricingPlanView({
             </div>
           </div>
 
-          {/* Features list */}
           <div className="space-y-3">
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               Included features
@@ -322,36 +293,172 @@ export function PricingPlanView({
             </ul>
           </div>
 
-          {/* CTA Button */}
           <div className="w-full flex items-stretch justify-center">
             <Link
-              href={`/register?plan=${plan.id}`}
+              href={`/register/organization?plan=${plan.id}`}
               className="p-2 text-center rounded flex-1 text-lg font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-300 shadow-sm hover:shadow"
             >
               Get Started with {plan.name}
             </Link>
           </div>
         </CardContent>
-        <CardFooter className="flex justify-center">
-          {/* Trust indicator */}
-          {/* <p className="text-center text-xs text-muted-foreground">
-          No credit card required • Cancel anytime
-        </p> */}
-        </CardFooter>
+        <CardFooter className="flex justify-center" />
       </Card>
     </div>
   );
 }
+export function PricingComparisonTable() {
+  const pricingPlans = usePricingPlanStore((state) => state.pricingPlans);
+  const hasHydrated = usePricingPlanStore.persist?.hasHydrated();
 
-export default function PricingPlansPage() {
-  // const [selectedPlan, setSelectedPlan] = React.useState(0);
+  if (!hasHydrated || Object.keys(pricingPlans).length === 0) {
+    return null;
+  }
+
+  // Sort plans by price so they appear in logical order (Free -> Small -> Medium -> Large)
+  const plans = Object.values(pricingPlans).sort((a, b) => a.price - b.price);
+
+  // Extract all unique features, but FILTER OUT the ones that mention
+  // "services included" or "employees" since we have hardcoded rows for those.
+  const allFeatures = Array.from(
+    new Set(plans.flatMap((plan) => plan.features)),
+  ).filter(
+    (feature) =>
+      !feature.toLowerCase().includes("service included") &&
+      !feature.toLowerCase().includes("services included") &&
+      !feature.toLowerCase().includes("employees"),
+  );
+
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "ETB",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(price);
+  };
 
   return (
-    <div className="min-h-screen p-8 flex flex-col gap-6 justify-center items-center bg-background">
-      <PricingPlanView
-      // selectedPlan={selectedPlan}
-      // setSelectedPlan={setSelectedPlan}
-      />
+    <div className="w-full max-w-6xl mx-auto mt-24">
+      <div className="text-center mb-10">
+        <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+          Compare all features
+        </h2>
+        <p className="text-slate-500 mt-2">
+          Find the perfect fit for your team's size and needs.
+        </p>
+      </div>
+
+      <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
+        <table className="w-full text-left border-collapse min-w-[800px]">
+          <thead>
+            <tr>
+              <th className="p-6 border-b border-r border-border bg-muted/30 w-[20%] align-bottom">
+                <span className="font-semibold text-lg text-foreground">
+                  Features overview
+                </span>
+              </th>
+              {plans.map((plan) => {
+                const monthlyPrice = plan.price * (plan.monthlyDiscount ?? 1.0);
+                return (
+                  <th
+                    key={plan.id}
+                    className="p-6 border-b border-border bg-muted/30 flex-1 text-center min-w-[180px]"
+                  >
+                    <div className="flex justify-center h-6 mb-2">
+                      {plan.popular && (
+                        <Badge
+                          variant="secondary"
+                          className="bg-primary/10 text-primary border-0"
+                        >
+                          Most Popular
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="font-bold text-xl text-foreground mb-1">
+                      {plan.name}
+                    </div>
+                    <div className="text-muted-foreground text-sm font-normal mb-4">
+                      {monthlyPrice > 0
+                        ? `${formatPrice(monthlyPrice)} / mo`
+                        : "Free Forever"}
+                    </div>
+                    <Link
+                      href={`/register/organization?plan=${plan.id}`}
+                      className={cn(
+                        "inline-block w-full py-2.5 px-4 rounded text-sm font-medium transition-all",
+                        plan.popular
+                          ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
+                          : "border border-border hover:bg-muted text-foreground",
+                      )}
+                    >
+                      Choose {plan.name}
+                    </Link>
+                  </th>
+                );
+              })}
+            </tr>
+          </thead>
+          <tbody>
+            {/* Limit Rows - Pulled directly from maxEmployees / maxServices */}
+            <tr className="hover:bg-muted/10 transition-colors">
+              <td className="p-4 border-b border-r border-border font-medium text-slate-700">
+                Max Employees
+              </td>
+              {plans.map((plan) => (
+                <td
+                  key={`emp-${plan.id}`}
+                  className="p-4 border-b border-border text-center font-semibold text-foreground"
+                >
+                  {plan.maxEmployees}
+                </td>
+              ))}
+            </tr>
+            <tr className="hover:bg-muted/10 transition-colors">
+              <td className="p-4 border-b border-r border-border font-medium text-slate-700">
+                Max Services
+              </td>
+              {plans.map((plan) => (
+                <td
+                  key={`srv-${plan.id}`}
+                  className="p-4 border-b border-border text-center font-semibold text-foreground"
+                >
+                  {plan.maxServices}
+                </td>
+              ))}
+            </tr>
+
+            {/* Dynamic Features Rows - Filtered to prevent duplicates */}
+            {allFeatures.map((feature, idx) => (
+              <tr key={idx} className="hover:bg-muted/10 transition-colors">
+                <td className="p-4 border-b border-r border-border font-medium text-slate-600 text-sm">
+                  {feature}
+                </td>
+                {plans.map((plan) => (
+                  <td
+                    key={`${plan.id}-${idx}`}
+                    className="p-4 border-b border-border text-center"
+                  >
+                    {plan.features.includes(feature) ? (
+                      <Check className="h-5 w-5 text-primary mx-auto" />
+                    ) : (
+                      <Minus className="h-5 w-5 text-muted-foreground/30 mx-auto" />
+                    )}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+export default function PricingPlansPage() {
+  return (
+    <div className="min-h-screen py-16 px-4 md:px-8 flex flex-col items-center bg-background">
+      <PricingPlanView />
+      <PricingComparisonTable />
     </div>
   );
 }
