@@ -349,6 +349,8 @@ export interface PricingPlan {
 export type PricingPlanInit = Omit<PricingPlan, "createdAt" | "updatedAt"> &
   Partial<Pick<PricingPlan, "createdAt" | "updatedAt">>;
 
+export type OrganizationBillingPeriod = "monthly" | "annually";
+
 export interface Organization {
   id: string;
   name: string;
@@ -365,6 +367,9 @@ export interface Organization {
   admin: User;
   pricingPlanId: string;
   pricingPlan: PricingPlan;
+  billingPeriod?: OrganizationBillingPeriod | null;
+  billingStart?: Date | null;
+  billingEnd?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }

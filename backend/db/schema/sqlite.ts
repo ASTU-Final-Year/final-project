@@ -11,6 +11,8 @@ import {
 
 export const genderEnum = ["M", "F", "U"] as const;
 
+export const billingPeriodEnum = ["monthly", "annually"] as const;
+
 export const rolesEnum = [
   "super_admin",
   "organization_admin",
@@ -116,6 +118,11 @@ export const sqOrganizations = sqliteTable("organizations", {
       onUpdate: "cascade",
       onDelete: "cascade",
     }),
+  billingPeriod: text("billing_period", { enum: billingPeriodEnum }),
+  billingStart: integer("billing_start", { mode: "timestamp" }).$defaultFn(
+    () => new Date(),
+  ),
+  billingEnd: integer("billing_end", { mode: "timestamp" }),
   ...basicTimestamps(),
 });
 

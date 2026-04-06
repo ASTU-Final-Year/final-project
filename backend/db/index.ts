@@ -107,6 +107,7 @@ const defaultPricingPlans: PricingPlanInit[] = [
     features: [
       "3 services included",
       "Up to 30 employees",
+      "Attachments",
       "Working hours phone support",
       "Advanced analytics",
     ],
@@ -123,6 +124,7 @@ const defaultPricingPlans: PricingPlanInit[] = [
     features: [
       "20 services included",
       "Up to 200 employees",
+      "Attachments",
       "Working hours phone support",
       "Advanced analytics",
       "Payment Integration",
@@ -140,6 +142,7 @@ const defaultPricingPlans: PricingPlanInit[] = [
     features: [
       "100 services included",
       "Up to 1000 employees",
+      "Attachments",
       "Working hours phone support",
       "Advanced analytics",
       "Payment Integration",
