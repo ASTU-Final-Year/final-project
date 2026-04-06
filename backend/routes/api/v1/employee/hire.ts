@@ -9,6 +9,7 @@ import {
   parseBody,
   parseCookie,
   parseQuery,
+  redirect,
   RouterHandlers,
   Status,
   status,
@@ -22,15 +23,15 @@ import OrganizationService from "~/services/organization.service";
 export default {
   GET: {
     FILTER: [
-      parseQuery(),
       parseCookie(),
       authenticate({ parseAuth }),
       authorize({
         allowRole: (role) => role === "employee",
       }),
       parseSession(),
+      // parseQuery(),
       async (req, ctx) => {
-        const token = ctx.query.t || "";
+        const token = ctx.url.searchParams.get("t") || "";
         if (!token) {
           return status(Status._400_BadRequest);
         }
@@ -44,24 +45,38 @@ export default {
         }
         ctx.invite = payload;
       },
-    ],
-    HANDLER: [
-      async (req, { invite, session }) => {
-        console.log("...");
+      async (req, { session, invite }) => {
         const { organizationId, jobTitle, jobDescription } = invite;
         const organization =
           await OrganizationService.getOrganizationById(organizationId);
         if (organization == null) {
           return status(Status._403_Forbidden, "Organization not found");
         }
-        await EmployeeService.createEmployee({
-          userId: session.userId,
-          organizationId: organizationId,
-          jobTitle,
-          jobDescription,
-          isActive: true,
-        });
-        return status(201);
+        const existingEmployee =
+          await EmployeeService.getEmployeeByIdPureByOrganizationId(
+            organizationId,
+            session.user.id,
+          );
+        if (!existingEmployee) {
+          await EmployeeService.createEmployee({
+            userId: session.userId,
+            organizationId: organizationId,
+            jobTitle,
+            jobDescription,
+            isActive: true,
+          });
+        }
+        const welcomeInfo = btoa(
+          JSON.stringify({
+            firstname: session.user.firstname,
+            lastname: session.user.lastname,
+            organization: organization.name,
+            jobTitle,
+            jobDescription,
+          }),
+        );
+        console.log("/welcome/employee?i=" + welcomeInfo);
+        return redirect("/welcome/employee?i=" + welcomeInfo);
       },
     ],
   },
