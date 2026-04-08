@@ -144,8 +144,8 @@ export default {
         }
         const employee =
           await OrganizationEmployeesService.getEmployeeByIdByOrganizationId(
-            employee_id,
             organization.id,
+            employee_id,
           );
         if (employee == null) {
           return status(Status._404_NotFound, "Employee not found");
