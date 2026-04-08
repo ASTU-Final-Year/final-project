@@ -15,23 +15,23 @@ import {
 } from "@/components/ui/card";
 import { ArrowLeft, Home } from "lucide-react";
 
-import "./globals.css";
-import { Inter } from "next/font/google";
+// import "./globals.css";
+// import { Inter } from "next/font/google";
 
-const inter = Inter({ subsets: ["latin"] });
+// const inter = Inter({ subsets: ["latin"] });
 
-export const metadata = {
-  title: "404 - Page Not Found",
-  description: "The page you are looking for does not exist.",
-};
+// export const metadata = {
+//   title: "404 - Page Not Found",
+//   description: "The page you are looking for does not exist.",
+// };
 
 export default function GlobalNotFound() {
   return (
-    <html lang="en" className={inter.className}>
-      <body>
-        <NotFound />
-      </body>
-    </html>
+    // <html lang="en" className={inter.className}>
+    //   <body>
+    <NotFound />
+    //   </body>
+    // </html>
   );
 }
 
@@ -59,13 +59,11 @@ function NotFound() {
 
           <CardContent className="p-8 sm:p-10 bg-white space-y-4">
             <Button
-              asChild
+              onClick={() => router.push("/")}
               className="w-full h-12 text-base font-bold shadow-md hover:shadow-lg transition-all"
             >
-              <Link href="/">
-                <Home className="mr-2 h-4 w-4" />
-                Go to Home
-              </Link>
+              <Home className="mr-2 h-4 w-4" />
+              Go to Home
             </Button>
 
             <Button

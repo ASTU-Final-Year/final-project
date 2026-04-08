@@ -130,7 +130,7 @@ export default function UserRegistrationPage() {
 
         {/* Role Toggle Switcher */}
         <div className="flex justify-center mb-8">
-          <div className="bg-slate-200/50 p-1 rounded inline-flex">
+          <div className="bg-slate-200/50 p-1 rounded inline-flex flex-col sm:flex-row">
             <button
               type="button"
               onClick={() => {
@@ -357,7 +357,7 @@ export default function UserRegistrationPage() {
               </div>
             </div>
 
-            <div className="mt-10 pt-8 border-t border-slate-100">
+            <div className="pt-8 border-t border-slate-100">
               <Button
                 type="submit"
                 className="w-full h-12 font-bold shadow-md hover:shadow-lg transition-all text-base"

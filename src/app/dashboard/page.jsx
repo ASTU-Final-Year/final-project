@@ -23,6 +23,8 @@ export default function PortalDashboard() {
     return redirect("/dashboard/employee", RedirectType.push);
   } else if (session.user?.role === "organization_admin") {
     return redirect("/dashboard/organization", RedirectType.push);
+  } else if (session.user?.role === "client") {
+    return redirect("/dashboard/client", RedirectType.push);
   }
   return (
     <div className="min-h-dvh flex flex-col p-4 bg-accent">
