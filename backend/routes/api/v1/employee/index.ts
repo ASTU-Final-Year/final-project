@@ -16,6 +16,7 @@ import { ArkErrors, type } from "arktype";
 import { CTXSession } from "~/base";
 import { parseAuth, parseSession } from "~/middleware";
 import EmployeeService from "~/services/organization.employees.service";
+import OrganizationService from "~/services/organization.service";
 
 const TEmployeeUpdater = type({
   "calendarId?": "string.uuid|null",
@@ -34,7 +35,7 @@ export default {
       parseSession(),
     ],
     HANDLER: [
-      async (req, { session }) => {
+      async (req, { auth, session }) => {
         const employee = await EmployeeService.getEmployeeById(session.userId);
         return json({ employee });
       },
@@ -45,7 +46,7 @@ export default {
       parseCookie(),
       authenticate({ parseAuth }),
       authorize({
-        allowRole: (role) => role === "organization_admin",
+        allowRole: (role) => role === "employee",
       }),
       parseSession(),
       parseBody({

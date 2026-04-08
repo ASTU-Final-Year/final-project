@@ -64,7 +64,7 @@ export default {
         const service = await OrganizationServicesService.createService({
           name: serviceForm.name,
           description: serviceForm.description,
-          isActive: serviceForm.isActive || true,
+          isActive: serviceForm.isActive ?? true,
           calendarId: serviceForm.calendarId,
           organizationId: organization.id,
         });

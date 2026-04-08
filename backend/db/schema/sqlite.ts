@@ -96,7 +96,7 @@ export const sqOrganizations = sqliteTable("organizations", {
     .$defaultFn(() => crypto.randomUUID()),
   name: text("name", { length: 54 }).notNull(),
   slug: text("slug", { length: 30 }).notNull(),
-  description: text("description", { length: 200 }).notNull(),
+  description: text("description", { length: 200 }).notNull().default(""),
   sector: text("sector", { length: 30 }).notNull(),
   isGovernment: integer("is_government", { mode: "boolean" })
     .notNull()
@@ -137,6 +137,8 @@ export const sqOrganizationCalendars = sqliteTable("organization_calendars", {
       onUpdate: "cascade",
       onDelete: "cascade",
     }),
+  name: text("name", { length: 54 }).notNull(),
+  description: text("description", { length: 200 }).notNull().default(""),
   available: text("available", { mode: "json" }),
   unavailable: text("unavailable", { mode: "json" }),
   ...basicTimestamps(),
@@ -153,6 +155,8 @@ export const sqEmployeeCalendars = sqliteTable("employee_calendars", {
       onUpdate: "cascade",
       onDelete: "cascade",
     }),
+  name: text("name", { length: 54 }).notNull(),
+  description: text("description", { length: 200 }).notNull().default(""),
   available: text("available", { mode: "json" }),
   unavailable: text("unavailable", { mode: "json" }),
   ...basicTimestamps(),
@@ -169,7 +173,9 @@ export const sqEmployees = sqliteTable(
       }),
     userId: text("user_id").notNull(),
     jobTitle: text("job_title", { length: 50 }).notNull(),
-    jobDescription: text("job_description", { length: 200 }).notNull(),
+    jobDescription: text("job_description", { length: 200 })
+      .notNull()
+      .default(""),
     isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
     calendarId: text("calendar_id").references(() => sqEmployeeCalendars.id, {
       onUpdate: "cascade",
@@ -186,7 +192,7 @@ export const sqOrganizationServices = sqliteTable("organization_services", {
     .notNull()
     .$defaultFn(() => crypto.randomUUID()),
   name: text("name", { length: 54 }).notNull(),
-  description: text("description", { length: 200 }).notNull(),
+  description: text("description", { length: 200 }).notNull().default(""),
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
   calendarId: text("calendar_id").references(() => sqOrganizationCalendars.id, {
     onUpdate: "cascade",

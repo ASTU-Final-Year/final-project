@@ -25,7 +25,7 @@ import UserService from "~/services/user.service";
 const TUserLogin = type({
   email: "string.email",
   password: "8 <= string <= 30",
-});
+}).pipe((v) => ({ ...v, email: v.email.toLowerCase() }));
 
 type UserLogin = typeof TUserLogin.infer;
 

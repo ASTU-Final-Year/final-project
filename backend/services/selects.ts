@@ -55,6 +55,8 @@ export const pureOrganizationSelect = {
 export const pureOrganizationCalendarSelect = {
   id: organizationCalendars.id,
   organizationId: organizationCalendars.organizationId,
+  name: organizationCalendars.name,
+  description: organizationCalendars.description,
   available: organizationCalendars.available,
   unavailable: organizationCalendars.unavailable,
   createdAt: organizationCalendars.createdAt,
@@ -86,6 +88,8 @@ export const pureEmployeeSelect = {
 export const pureEmployeeCalendarSelect = {
   id: employeeCalendars.id,
   employeeId: employeeCalendars.employeeId,
+  name: employeeCalendars.name,
+  description: employeeCalendars.description,
   available: employeeCalendars.available,
   unavailable: employeeCalendars.unavailable,
   createdAt: employeeCalendars.createdAt,
@@ -100,6 +104,11 @@ export const employeeWithUserSelect = {
 export const employeeWithOrganizationSelect = {
   ...pureEmployeeSelect,
   organization: pureOrganizationSelect,
+};
+
+export const employeeWithCalendarSelect = {
+  ...pureEmployeeSelect,
+  calendar: pureEmployeeCalendarSelect,
 };
 
 export const fullEmployeeSelect = {

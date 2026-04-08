@@ -6,6 +6,7 @@ import {
   CTXBody,
   CTXCookie,
   json,
+  parseBody,
   parseCookie,
   RouterHandlers,
   Status,
@@ -18,8 +19,8 @@ import EmployeeService from "~/services/organization.employees.service";
 import OrganizationService from "~/services/organization.service";
 
 const TEmployeeUpdater = type({
-  "jobTitle?": "string",
-  "jobDescription?": "string",
+  "jobTitle?": "string|null",
+  "jobDescription?": "string|null",
   "calendarId?": "string.uuid|null",
 });
 
@@ -31,7 +32,7 @@ export default {
       parseCookie(),
       authenticate({ parseAuth }),
       authorize({
-        allowRole: (role) => role === "organization_admin",
+        allowRole: (role) => role === "employee",
       }),
       parseSession(),
     ],
@@ -39,7 +40,6 @@ export default {
       async (req, { session, params }) => {
         const userId = params.id;
         const adminId = session.userId;
-        const employee = await EmployeeService.getEmployeeById(userId);
         if (!(await EmployeeService.hasEmployeeById(userId))) {
           return status(Status._404_NotFound, "Employee not found");
         }
@@ -48,6 +48,7 @@ export default {
         ) {
           return status(Status._403_Forbidden, "Not own employee");
         }
+        const employee = await EmployeeService.getEmployeeById(userId);
         return json({ employee });
       },
     ],
@@ -57,7 +58,12 @@ export default {
       parseCookie(),
       authenticate({ parseAuth }),
       authorize({
-        allowRole: (role) => role === "organization_admin",
+        allowRole: (role) => role === "employee",
+      }),
+      parseBody({
+        accept: ["application/x-www-form-urlencoded", "application/json"],
+        maxSize: 1024,
+        once: true,
       }),
       parseSession(),
       (req, { body }) => {
@@ -69,9 +75,9 @@ export default {
     ],
     HANDLER: [
       async (req, { session, body, params }) => {
-        const userId = params.id;
+        const userId = session.user.id;
         const adminId = session.userId;
-        const employeeUpdateInit = { userId, body };
+        const employeeUpdateInit = { userId, ...body };
         if (!(await EmployeeService.hasEmployeeById(userId))) {
           return status(Status._404_NotFound, "Employee not found");
         }
@@ -90,7 +96,7 @@ export default {
       parseCookie(),
       authenticate({ parseAuth }),
       authorize({
-        allowRole: (role) => role === "organization_admin",
+        allowRole: (role) => role === "employee",
       }),
       parseSession(),
     ],

@@ -61,7 +61,7 @@ export default {
           return status(Status._403_Forbidden, "Organization not found");
         }
         const existingEmployee =
-          await EmployeeService.getEmployeeByIdPureByOrganizationId(
+          await EmployeeService.getEmployeeByIdByOrganizationIdPure(
             organizationId,
             session.user.id,
           );

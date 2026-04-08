@@ -1,6 +1,6 @@
 // services/organization.employees.service.ts
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNotNull, sql } from "drizzle-orm";
 import {
   Employee,
   EmployeeCalendar,
@@ -10,6 +10,8 @@ import {
   EmployeeInit,
   EmployeePure,
   EmployeeUpdate,
+  EmployeeWithCalendar,
+  EmployeeWithOrganization,
 } from "~/base";
 import { db } from "~/db";
 import {
@@ -19,6 +21,7 @@ import {
   users,
 } from "~/db/schema";
 import {
+  employeeWithCalendarSelect,
   employeeWithOrganizationSelect,
   employeeWithUserSelect,
   fullEmployeeCalendarSelect,
@@ -27,6 +30,7 @@ import {
   pureEmployeeSelect,
 } from "./selects";
 import calendar from "~/routes/api/v1/organization/[id]/calendar";
+import user from "~/routes/api/v1/user";
 
 export default class OrganizationEmployeesService {
   static async createEmployee(
@@ -63,6 +67,16 @@ export default class OrganizationEmployeesService {
     return employeesResult;
   }
 
+  static async getEmployeeCountByOrganizationId(
+    organizationId: string,
+  ): Promise<number> {
+    const countResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(employees)
+      .where(eq(employees.organizationId, organizationId));
+    return countResult[0]?.count ?? 0;
+  }
+
   static async getAllEmployeesByOrganizationId(
     organizationId: string,
     {
@@ -76,8 +90,12 @@ export default class OrganizationEmployeesService {
     const employeesResult = (await db
       .select(fullEmployeeSelect)
       .from(employees)
-      .leftJoin(organizations, eq(employees.organizationId, organizations.id))
-      .rightJoin(users, eq(employees.userId, users.id))
+      .leftJoin(users, eq(employees.userId, users.id))
+      .innerJoin(organizations, eq(employees.organizationId, organizations.id))
+      .leftJoin(
+        employeeCalendars,
+        eq(employees.calendarId, employeeCalendars.id),
+      )
       .where(eq(employees.organizationId, organizationId))
       .limit(limit)
       .offset(offset)) as Employee[];
@@ -97,7 +115,7 @@ export default class OrganizationEmployeesService {
     const employeesResult = (await db
       .select(employeeWithUserSelect)
       .from(employees)
-      .rightJoin(users, eq(employees.userId, users.id))
+      .leftJoin(users, eq(employees.userId, users.id))
       .where(eq(employees.organizationId, organizationId))
       .limit(limit)
       .offset(offset)) as Omit<Employee, "organization">[];
@@ -113,18 +131,60 @@ export default class OrganizationEmployeesService {
       offset: number;
       limit: number;
     },
-  ): Promise<Omit<Employee, "user">[]> {
+  ): Promise<EmployeeWithOrganization[]> {
     const employeesResult = (await db
       .select(employeeWithOrganizationSelect)
       .from(employees)
       .leftJoin(organizations, eq(employees.organizationId, organizations.id))
       .where(eq(employees.organizationId, organizationId))
       .limit(limit)
-      .offset(offset)) as Omit<Employee, "user">[];
+      .offset(offset)) as EmployeeWithOrganization[];
     return employeesResult;
   }
 
-  static async getEmployeeByIdPureByOrganizationId(
+  static async getAllEmployeesWithCalendarByOrganizationId(
+    organizationId: string,
+    {
+      offset,
+      limit,
+    }: {
+      offset: number;
+      limit: number;
+    },
+  ): Promise<EmployeeWithCalendar[]> {
+    const employeesResult = (await db
+      .select(employeeWithCalendarSelect)
+      .from(employees)
+      .leftJoin(
+        employeeCalendars,
+        eq(employees.calendarId, employeeCalendars.id),
+      )
+      .where(eq(employees.organizationId, organizationId))
+      .limit(limit)
+      .offset(offset)) as EmployeeWithCalendar[];
+    return employeesResult;
+  }
+
+  static async getEmployeeByIdByOrganizationId(
+    organizationId: string,
+    employeeId: string,
+  ): Promise<Omit<Employee, "user" | "organization">> {
+    const [employee] = (await db
+      .select(fullEmployeeSelect)
+      .from(employees)
+      .leftJoin(users, eq(employees.userId, users.id))
+      .innerJoin(organizations, eq(employees.organizationId, organizations.id))
+      .where(
+        and(
+          eq(employees.organizationId, organizationId),
+          eq(employees.userId, employeeId),
+        ),
+      )
+      .limit(1)) as Omit<Employee, "user" | "organization">[];
+    return employee;
+  }
+
+  static async getEmployeeByIdByOrganizationIdPure(
     organizationId: string,
     employeeId: string,
   ): Promise<Omit<Employee, "user" | "organization">> {
@@ -228,6 +288,8 @@ export default class OrganizationEmployeesService {
     const [calendar] = (await db
       .insert(employeeCalendars)
       .values({
+        name: calendarInit.name,
+        description: calendarInit.description,
         employeeId: calendarInit.employeeId,
         available: calendarInit.available,
         unavailable: calendarInit.unavailable,
@@ -274,6 +336,16 @@ export default class OrganizationEmployeesService {
       .limit(limit)
       .offset(offset)) as EmployeeCalendarPure[];
     return calendarsResult;
+  }
+
+  static async getCalendarCountByEmployeeId(
+    employeeId: string,
+  ): Promise<number> {
+    const countResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(employeeCalendars)
+      .where(eq(employeeCalendars.employeeId, employeeId));
+    return countResult[0]?.count ?? 0;
   }
 
   static async getCalendarById(calendarId: string): Promise<EmployeeCalendar> {

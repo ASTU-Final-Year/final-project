@@ -1,5 +1,5 @@
 // services/organization.services.service.ts
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import {
   OrganizationService,
   OrganizationServiceInit,
@@ -84,15 +84,15 @@ export default class OrganizationServicesService {
     offset: number;
     limit: number;
   }): Promise<OrganizationServiceWithCalendar[]> {
-    const servicesResult = await db
+    const servicesResult = (await db
       .select(organizationServiceWithCalendarSelect)
       .from(organizationServices)
-      .leftJoin(
+      .innerJoin(
         organizationCalendars,
         eq(organizationServices.calendarId, organizationCalendars.id),
       )
       .limit(limit)
-      .offset(offset);
+      .offset(offset)) as OrganizationServiceWithCalendar[];
     return servicesResult;
   }
 
@@ -201,6 +201,17 @@ export default class OrganizationServicesService {
       .limit(limit)
       .offset(offset);
     return servicesResult;
+  }
+
+  static async getServiceCountByOrganizationId(
+    organizationId: string,
+  ): Promise<number> {
+    const countResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(organizationServices)
+      .where(eq(organizationServices.organizationId, organizationId));
+
+    return countResult[0]?.count ?? 0;
   }
 
   static async getServiceById(

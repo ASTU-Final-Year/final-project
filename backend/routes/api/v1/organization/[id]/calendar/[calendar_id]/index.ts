@@ -19,22 +19,23 @@ import OrganizationService from "~/services/organization.service";
 
 const TWeekDay = type("number.integer");
 
-const TYearly = type("Date");
-
 const TCalendarDateRange = type({
-  from: "Date",
-  to: "Date",
+  from: "string.date",
+  to: "string.date",
 });
 
 const TCalendarOptions = type({
-  "ranges?": TCalendarDateRange.array(),
-  "weekly?": TWeekDay.array(),
-  "yearly?": TYearly.array(),
+  "ranges?": TCalendarDateRange.array().or("null"),
+  "weekly?": TWeekDay.array().or("null"),
+  "monthly?": "number[]|null",
+  "exactly?": "string.date[]|null",
 });
 
 const TCalendarUpdate = type({
-  "available?": TCalendarOptions,
-  "unavailable?": TCalendarOptions,
+  "name?": "3 < string <= 54",
+  "description?": "string <= 200",
+  "available?": TCalendarOptions.or("null"),
+  "unavailable?": TCalendarOptions.or("null"),
 });
 
 type CalendarUpdate = typeof TCalendarUpdate.infer;
@@ -91,6 +92,7 @@ export default {
       }),
       (req, ctx) => {
         const calendarForm = TCalendarUpdate(ctx.body);
+        console.log(calendarForm.toString());
         if (calendarForm instanceof ArkErrors) {
           return status(Status._400_BadRequest, "Invalid body");
         }
@@ -113,13 +115,15 @@ export default {
         const calendar = await OrganizationService.updateCalendar({
           id: calendar_id,
           organizationId: organization.id,
+          name: calendarForm.name,
+          description: calendarForm.description,
           available: calendarForm.available,
           unavailable: calendarForm.unavailable,
         });
         if (calendar == null) {
           return status(Status._404_NotFound, "Calendar not found");
         }
-        return json({ calendar }, { status: Status._201_Created });
+        return json({ calendar });
       },
     ],
   },

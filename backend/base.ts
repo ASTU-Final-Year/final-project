@@ -42,15 +42,19 @@ export interface DateRange {
 }
 
 export interface CalendarBase {
+  name: string;
+  description: string;
   available?: {
-    ranges?: DateRange[];
-    weekly?: WeekDay[];
-    yearly?: Date[];
+    ranges?: DateRange[] | null;
+    weekly?: WeekDay[] | null;
+    monthly?: number[] | null;
+    exactly?: Date[] | null;
   } | null;
   unavailable?: {
-    ranges?: DateRange[];
-    weekly?: WeekDay[];
-    yearly?: Date[];
+    ranges?: DateRange[] | null;
+    weekly?: WeekDay[] | null;
+    monthly?: number[] | null;
+    exactly?: Date[] | null;
   } | null;
 }
 
@@ -438,7 +442,12 @@ export type EmployeeInit = Omit<
   Employee,
   "createdAt" | "updatedAt" | "user" | "organization"
 > &
-  Partial<Pick<Employee, "createdAt" | "updatedAt" | "user" | "organization">>;
+  Partial<
+    Pick<
+      Employee,
+      "createdAt" | "updatedAt" | "user" | "organization" | "calendar"
+    >
+  >;
 
 export type EmployeeUpdate = Partial<
   Omit<
@@ -448,8 +457,13 @@ export type EmployeeUpdate = Partial<
 > &
   Pick<Employee, "userId">;
 
-export type EmployeePure = Omit<Employee, "organization" | "user"> &
-  Partial<Pick<Employee, "organization" | "user">>;
+export type EmployeePure = Omit<Employee, "organization" | "user" | "calendar">;
+
+export type EmployeeWithCalendar = Omit<Employee, "organization" | "user">;
+
+export type EmployeeWithOrganization = Omit<Employee, "calendar" | "user">;
+
+export type EmployeeWithUser = Omit<Employee, "calendar" | "organization">;
 
 export type CTXEmployee = {
   employee: Employee;

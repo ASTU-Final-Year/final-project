@@ -22,22 +22,23 @@ import EmployeeService from "~/services/organization.employees.service";
 
 const TWeekDay = type("number.integer");
 
-const TYearly = type("Date");
-
 const TCalendarDateRange = type({
-  from: "Date",
-  to: "Date",
+  from: "string.date",
+  to: "string.date",
 });
 
 const TCalendarOptions = type({
   "ranges?": TCalendarDateRange.array(),
   "weekly?": TWeekDay.array(),
-  "yearly?": TYearly.array(),
+  "monthly?": "number[]",
+  "exactly?": "string.date[]|null",
 });
 
 const TCalendarRegistration = type({
-  "available?": TCalendarOptions,
-  "unavailable?": TCalendarOptions,
+  name: "3 < string <= 54",
+  description: "string <= 200",
+  "available?": TCalendarOptions.or("null"),
+  "unavailable?": TCalendarOptions.or("null"),
 });
 
 type CalendarRegistration = typeof TCalendarRegistration.infer;
@@ -72,6 +73,8 @@ export default {
         }
         const calendar = await EmployeeService.createCalendar({
           employeeId: employee.userId,
+          name: calendarForm.name,
+          description: calendarForm.description,
           available: calendarForm.available,
           unavailable: calendarForm.unavailable,
         });

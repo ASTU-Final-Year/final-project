@@ -188,6 +188,8 @@ export default class OrganizationService {
     const [calendar] = (await db
       .insert(organizationCalendars)
       .values({
+        name: calendarInit.name,
+        description: calendarInit.description,
         organizationId: calendarInit.organizationId,
         available: calendarInit.available,
         unavailable: calendarInit.unavailable,
@@ -242,6 +244,16 @@ export default class OrganizationService {
     return calendarsResult;
   }
 
+  static async getCalendarCountByOrganizationId(
+    organizationId: string,
+  ): Promise<number> {
+    const countResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(organizationCalendars)
+      .where(eq(organizationCalendars.organizationId, organizationId));
+    return countResult[0]?.count ?? 0;
+  }
+
   static async getCalendarById(
     calendarId: string,
   ): Promise<OrganizationCalendar> {
@@ -276,6 +288,8 @@ export default class OrganizationService {
     const [calendar] = (await db
       .update(organizationCalendars)
       .set({
+        name: calendarUpdate.name,
+        description: calendarUpdate.description,
         available: calendarUpdate.available,
         unavailable: calendarUpdate.unavailable,
         updatedAt: new Date(),
@@ -311,6 +325,23 @@ export default class OrganizationService {
       .from(organizations)
       .innerJoin(employees, eq(organizations.id, employees.organizationId))
       .where(eq(employees.userId, employeeId));
+    return employee?.userId === employeeId;
+  }
+
+  static async hasEmployeeByIdByOrganizationId(
+    employeeId: string,
+    organizationId: string,
+  ): Promise<boolean> {
+    const [employee] = await db
+      .select({ userId: employees.userId })
+      .from(organizations)
+      .innerJoin(employees, eq(organizations.id, employees.organizationId))
+      .where(
+        and(
+          eq(employees.userId, employeeId),
+          eq(employees.organizationId, organizationId),
+        ),
+      );
     return employee?.userId === employeeId;
   }
 
