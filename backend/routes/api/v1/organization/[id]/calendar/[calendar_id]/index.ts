@@ -1,4 +1,4 @@
-// ROUTE /api/v1/organization/:id/service/:service_id
+// ROUTE /api/v1/organization/:id/calendar/:service_id
 import {
   authenticate,
   authorize,
@@ -16,16 +16,28 @@ import { ArkErrors, type } from "arktype";
 import { CTXSession } from "~/base";
 import { parseAuth, parseSession } from "~/middleware";
 import OrganizationService from "~/services/organization.service";
-import OrganizationServicesService from "~/services/organization.services.service";
 
-const TServiceUpdate = type({
-  "name?": "string <= 54",
-  "description?": "string <= 200",
-  "isActive?": "boolean",
-  "calendarId?": "string.uuid|null",
+const TWeekDay = type("number.integer");
+
+const TYearly = type("Date");
+
+const TCalendarDateRange = type({
+  from: "Date",
+  to: "Date",
 });
 
-type ServiceUpdate = typeof TServiceUpdate.infer;
+const TCalendarOptions = type({
+  "ranges?": TCalendarDateRange.array(),
+  "weekly?": TWeekDay.array(),
+  "yearly?": TYearly.array(),
+});
+
+const TCalendarUpdate = type({
+  "available?": TCalendarOptions,
+  "unavailable?": TCalendarOptions,
+});
+
+type CalendarUpdate = typeof TCalendarUpdate.infer;
 
 export default {
   GET: {
@@ -39,7 +51,7 @@ export default {
     ],
     HANDLER: [
       async (req, { session, params }) => {
-        const { id, service_id } = params;
+        const { id, calendar_id } = params;
         const organization =
           await OrganizationService.getOrganizationByAdminIdPure(
             session.userId,
@@ -50,16 +62,16 @@ export default {
         if (organization.id !== id) {
           return status(Status._403_Forbidden);
         }
-        const service =
-          await OrganizationServicesService.getServiceByIdByOrganizationId(
-            service_id,
+        const calendar =
+          await OrganizationService.getCalendarByIdByOrganizationId(
+            calendar_id,
             organization.id,
           );
-        if (service == null) {
-          return status(Status._404_NotFound, "Service not found");
+        if (calendar == null) {
+          return status(Status._404_NotFound, "Calendar not found");
         }
         return json({
-          service,
+          calendar,
         });
       },
     ],
@@ -78,16 +90,16 @@ export default {
         once: true,
       }),
       (req, ctx) => {
-        const serviceForm = TServiceUpdate(ctx.body);
-        if (serviceForm instanceof ArkErrors) {
+        const calendarForm = TCalendarUpdate(ctx.body);
+        if (calendarForm instanceof ArkErrors) {
           return status(Status._400_BadRequest, "Invalid body");
         }
-        ctx.serviceForm = serviceForm;
+        ctx.calendarForm = calendarForm;
       },
     ],
     HANDLER: [
-      async (req, { session, params, serviceForm }) => {
-        const { id, service_id } = params;
+      async (req, { session, params, calendarForm }) => {
+        const { id, calendar_id } = params;
         const organization =
           await OrganizationService.getOrganizationByAdminIdPure(
             session.userId,
@@ -98,18 +110,16 @@ export default {
         if (organization.id !== id) {
           return status(Status._403_Forbidden);
         }
-        const service = await OrganizationServicesService.updateService({
-          id: service_id,
-          name: serviceForm.name,
-          description: serviceForm.description,
-          isActive: serviceForm.isActive,
-          calendarId: serviceForm.calendarId,
+        const calendar = await OrganizationService.updateCalendar({
+          id: calendar_id,
           organizationId: organization.id,
+          available: calendarForm.available,
+          unavailable: calendarForm.unavailable,
         });
-        if (service == null) {
-          return status(Status._404_NotFound, "Service not found");
+        if (calendar == null) {
+          return status(Status._404_NotFound, "Calendar not found");
         }
-        return json({ service }, { status: Status._201_Created });
+        return json({ calendar }, { status: Status._201_Created });
       },
     ],
   },
@@ -117,8 +127,8 @@ export default {
   CTXCookie & CTXAuth & CTXSession,
   {
     PATCH: CTXBody & {
-      body: ServiceUpdate;
-      serviceForm: ServiceUpdate;
+      body: CalendarUpdate;
+      calendarForm: CalendarUpdate;
     };
   }
 >;

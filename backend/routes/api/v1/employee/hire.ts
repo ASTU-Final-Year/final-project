@@ -16,6 +16,7 @@ import {
 } from "@bepalo/router";
 import { CTXSession } from "~/base";
 import { employeeHireJwt, EmployeeHirePayload } from "~/config";
+import { toMainUrl } from "~/lib";
 import { parseAuth, parseSession } from "~/middleware";
 import EmployeeService from "~/services/organization.employees.service";
 import OrganizationService from "~/services/organization.service";
@@ -24,7 +25,15 @@ export default {
   GET: {
     FILTER: [
       parseCookie(),
-      authenticate({ parseAuth }),
+      authenticate({ parseAuth, checkOnly: true }),
+      (req, { url, auth }) => {
+        console.log(toMainUrl(url));
+        if (auth == null) {
+          return redirect(
+            "/login?r=" + encodeURIComponent(toMainUrl(url).toString()),
+          );
+        }
+      },
       authorize({
         allowRole: (role) => role === "employee",
       }),
@@ -36,8 +45,7 @@ export default {
           return status(Status._400_BadRequest);
         }
         const { payload, valid, error } = employeeHireJwt.verifySync(token);
-        if (!valid || !payload) {
-          // || payload.sub != "hire-request") {
+        if (!valid || !payload || payload.sub != "hire-request") {
           return status(Status._400_BadRequest, error?.message || undefined);
         }
         if (ctx.session.user.email !== payload.to) {
@@ -94,7 +102,6 @@ export default {
         once: true,
       }),
       async (req, ctx) => {
-        console.log(ctx.body);
         const token = ctx.body.text || "";
         if (!token) {
           return status(Status._400_BadRequest);

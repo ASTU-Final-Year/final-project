@@ -94,7 +94,7 @@ const server = Bun.serve({
   },
 });
 
-console.log(`🟢 Backend server listening on ${config.url}:${config.port}`);
+console.log(`🟢 Backend server listening on ${config.url}`);
 console.log(`🚀 Lift off`);
 console.log("-".repeat(80));
 LOGI("BACKEND-SERVER STARTED");

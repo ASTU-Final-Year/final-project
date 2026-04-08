@@ -1,15 +1,32 @@
 // services/organization.employees.service.ts
 
 import { and, eq } from "drizzle-orm";
-import { Employee, EmployeeInit, EmployeePure, EmployeeUpdate } from "~/base";
+import {
+  Employee,
+  EmployeeCalendar,
+  EmployeeCalendarInit,
+  EmployeeCalendarPure,
+  EmployeeCalendarUpdate,
+  EmployeeInit,
+  EmployeePure,
+  EmployeeUpdate,
+} from "~/base";
 import { db } from "~/db";
-import { employees, organizations, users } from "~/db/schema";
+import {
+  employeeCalendars,
+  employees,
+  organizations,
+  users,
+} from "~/db/schema";
 import {
   employeeWithOrganizationSelect,
   employeeWithUserSelect,
+  fullEmployeeCalendarSelect,
   fullEmployeeSelect,
+  pureEmployeeCalendarSelect,
   pureEmployeeSelect,
 } from "./selects";
+import calendar from "~/routes/api/v1/organization/[id]/calendar";
 
 export default class OrganizationEmployeesService {
   static async createEmployee(
@@ -110,8 +127,8 @@ export default class OrganizationEmployeesService {
   static async getEmployeeByIdPureByOrganizationId(
     organizationId: string,
     employeeId: string,
-  ): Promise<Omit<Employee, "user" | "organization">[]> {
-    const employeesResult = (await db
+  ): Promise<Omit<Employee, "user" | "organization">> {
+    const [employee] = (await db
       .select(pureEmployeeSelect)
       .from(employees)
       .where(
@@ -121,7 +138,25 @@ export default class OrganizationEmployeesService {
         ),
       )
       .limit(1)) as Omit<Employee, "user" | "organization">[];
-    return employeesResult;
+    return employee;
+  }
+
+  static async getEmployeeByEmailPureByOrganizationId(
+    organizationId: string,
+    employeeEmail: string,
+  ): Promise<Omit<Employee, "user" | "organization">> {
+    const [employee] = (await db
+      .select(pureEmployeeSelect)
+      .from(employees)
+      .leftJoin(users, eq(employees.userId, users.id))
+      .where(
+        and(
+          eq(employees.organizationId, organizationId),
+          eq(users.email, employeeEmail),
+        ),
+      )
+      .limit(1)) as Omit<Employee, "user" | "organization">[];
+    return employee;
   }
 
   static async getEmployeeByEmail(
@@ -182,5 +217,114 @@ export default class OrganizationEmployeesService {
 
   static async deleteEmployeeById(employeeId: string): Promise<void> {
     await db.delete(employees).where(eq(employees.userId, employeeId));
+  }
+
+  //
+  // Calendar
+  //
+  static async createCalendar(
+    calendarInit: EmployeeCalendarInit,
+  ): Promise<EmployeeCalendar> {
+    const [calendar] = (await db
+      .insert(employeeCalendars)
+      .values({
+        employeeId: calendarInit.employeeId,
+        available: calendarInit.available,
+        unavailable: calendarInit.unavailable,
+      })
+      .returning()) as EmployeeCalendar[];
+    return calendar;
+  }
+
+  static async getAllCalendarsByEmployeeId(
+    employeeId: string,
+    {
+      offset,
+      limit,
+    }: {
+      offset: number;
+      limit: number;
+    },
+  ): Promise<EmployeeCalendar[]> {
+    const calendarsResult = (await db
+      .select(fullEmployeeCalendarSelect)
+      .from(employeeCalendars)
+      .leftJoin(employees, eq(employeeCalendars.employeeId, employees.userId))
+      .where(eq(employeeCalendars.employeeId, employeeId))
+      .limit(limit)
+      .offset(offset)) as EmployeeCalendar[];
+    return calendarsResult;
+  }
+
+  static async getAllCalendarsByEmployeeIdPure(
+    employeeId: string,
+    {
+      offset,
+      limit,
+    }: {
+      offset: number;
+      limit: number;
+    },
+  ): Promise<EmployeeCalendarPure[]> {
+    const calendarsResult = (await db
+      .select(pureEmployeeCalendarSelect)
+      .from(employeeCalendars)
+      .leftJoin(employees, eq(employeeCalendars.employeeId, employees.userId))
+      .where(eq(employeeCalendars.employeeId, employeeId))
+      .limit(limit)
+      .offset(offset)) as EmployeeCalendarPure[];
+    return calendarsResult;
+  }
+
+  static async getCalendarById(calendarId: string): Promise<EmployeeCalendar> {
+    const [calendar] = (await db
+      .select()
+      .from(employeeCalendars)
+      .where(eq(employeeCalendars.id, calendarId))
+      .limit(1)) as EmployeeCalendar[];
+    return calendar;
+  }
+
+  static async getCalendarByIdByEmployeeId(
+    calendarId: string,
+    employeeId: string,
+  ): Promise<EmployeeCalendar> {
+    const [calendar] = (await db
+      .select()
+      .from(employeeCalendars)
+      .where(
+        and(
+          eq(employeeCalendars.id, calendarId),
+          eq(employeeCalendars.employeeId, employeeId),
+        ),
+      )
+      .limit(1)) as EmployeeCalendar[];
+    return calendar;
+  }
+
+  static async updateCalendar(
+    calendarUpdate: EmployeeCalendarUpdate,
+  ): Promise<EmployeeCalendar> {
+    const [calendar] = (await db
+      .update(employeeCalendars)
+      .set({
+        available: calendarUpdate.available,
+        unavailable: calendarUpdate.unavailable,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(employeeCalendars.id, calendarUpdate.id),
+          eq(employeeCalendars.employeeId, calendarUpdate.employeeId),
+        ),
+      )
+      .returning()) as EmployeeCalendar[];
+    return calendar;
+  }
+
+  static async deleteCalendarById(calendarId: string): Promise<void> {
+    await db
+      .delete(employeeCalendars)
+      .where(eq(employeeCalendars.id, calendarId));
   }
 }

@@ -93,9 +93,11 @@ function RegisterFormContent() {
     }
   };
   const [errors, setErrors] = useState({});
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    if (pricingPlans == null || pricingPlans.length === 0) {
+    if (!loaded) (async () => setLoaded(true))();
+    if (loaded) {
       RequestHandler.Get("/api/v1/pricing-plans").then(async (res) => {
         if (res.ok) {
           const data = await res.json();
@@ -106,7 +108,7 @@ function RegisterFormContent() {
         }
       });
     }
-  }, [pricingPlans, setPricingPlans, setSelectedPlan]);
+  }, [loaded, setPricingPlans, setSelectedPlan]);
 
   useEffect(() => {
     const initialPlanId =

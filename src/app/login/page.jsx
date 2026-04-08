@@ -1,7 +1,12 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import {
+  redirect,
+  RedirectType,
+  useRouter,
+  useSearchParams,
+} from "next/navigation";
 import {
   Mail,
   Lock,
@@ -31,22 +36,36 @@ import Auth from "@/lib/auth";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectUrl =
+    searchParams.has("r") && decodeURIComponent(searchParams.get("r"));
 
-  const session = useSessionStore((state) => state.session);
-  const setSession = useSessionStore((state) => state.setSession);
+  const session = useSessionStore(({ session }) => session);
+  const [_loaded, _setLoaded] = useState(false);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    Auth.isLoggedIn().then((isLoggedIn) => {
-      if (isLoggedIn) {
-        router.push("/dashboard");
-      }
-    });
-  }, [router]);
+    if (!_loaded) (async () => _setLoaded(true))();
+    if (_loaded && session?.user != null) {
+      return redirect(redirectUrl || "/dashboard", RedirectType.push);
+    }
+  }, [_loaded, session?.user, redirectUrl]);
 
+  // useEffect(() => {
+  //   Auth.isLoggedIn().then((isLoggedIn) => {
+  //     if (isLoggedIn) {
+  //       router.push(redirectUrl || "/dashboard");
+  //     }
+  //   });
+  // }, [router, redirectUrl]);
+
+  if (!_loaded) {
+    return <div>Loading...</div>;
+  }
   const handleLogin = (e) => {
     if (e) e.preventDefault();
     // Validation
@@ -57,9 +76,9 @@ export default function LoginPage() {
     const body = { email, password };
     Auth.login(body)
       .then(({ session }) => {
-        setSession(session);
-        router.push("/dashboard");
+        // setSession(session);
         setError("");
+        router.push(redirectUrl || "/dashboard");
       })
       .catch(({ message }) => {
         setError(message);

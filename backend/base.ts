@@ -46,12 +46,12 @@ export interface CalendarBase {
     ranges?: DateRange[];
     weekly?: WeekDay[];
     yearly?: Date[];
-  };
+  } | null;
   unavailable?: {
     ranges?: DateRange[];
     weekly?: WeekDay[];
     yearly?: Date[];
-  };
+  } | null;
 }
 
 export type PermissionType = "create" | "view" | "update" | "delete" | "make";
@@ -399,16 +399,26 @@ export type CTXOrganization = {
 export interface OrganizationCalendar extends CalendarBase {
   id: string;
   organizationId: string;
-  organization?: Organization;
+  organization: Organization;
   createdAt: Date;
   updatedAt: Date;
 }
 
+export type OrganizationCalendarPure = Omit<
+  OrganizationCalendar,
+  "organization"
+>;
+
 export type OrganizationCalendarInit = Omit<
   OrganizationCalendar,
-  "id" | "createdAt" | "updatedAt"
+  "id" | "createdAt" | "updatedAt" | "organization"
 > &
   Partial<Pick<OrganizationCalendar, "id" | "createdAt" | "updatedAt">>;
+
+export type OrganizationCalendarUpdate = Partial<
+  Omit<OrganizationCalendar, "organization" | "createdAt" | "updatedAt">
+> &
+  Pick<OrganizationCalendar, "id" | "organizationId">;
 
 export interface Employee {
   jobTitle: string;
@@ -448,16 +458,23 @@ export type CTXEmployee = {
 export interface EmployeeCalendar extends CalendarBase {
   id: string;
   employeeId: string;
-  employee?: Employee;
+  employee: Employee;
   createdAt: Date;
   updatedAt: Date;
 }
 
+export type EmployeeCalendarPure = Omit<EmployeeCalendar, "employee">;
+
 export type EmployeeCalendarInit = Omit<
   EmployeeCalendar,
-  "id" | "createdAt" | "updatedAt"
+  "id" | "createdAt" | "updatedAt" | "employee"
 > &
   Partial<Pick<EmployeeCalendar, "id" | "createdAt" | "updatedAt">>;
+
+export type EmployeeCalendarUpdate = Partial<
+  Omit<EmployeeCalendar, "id" | "employee" | "createdAt" | "updatedAt">
+> &
+  Pick<EmployeeCalendar, "id" | "employeeId">;
 
 export interface OrganizationService {
   id: string;

@@ -4,13 +4,15 @@ import RequestHandler from "./request-handler";
 const Auth = {
   async isLoggedIn() {
     if (useSessionStore.getState().session) {
-      const res = await RequestHandler.Get("/api/v1/user")
+      const res = await RequestHandler.Get("/api/v1/session")
         .then(res => {
           if (!res.ok) {
             useSessionStore.setState({ session: null });
+            return false;
           }
+          return true;
         });
-      return res.ok;
+      return res;
     }
     return false;
   },
@@ -21,9 +23,9 @@ const Auth = {
       RequestHandler.Post("/api/v1/session", { body })
         .then(async (response) => {
           if (response.ok) {
-            const session = await response.json();
+            const { session } = await response.json();
             useSessionStore.setState({ session });
-            resolve({ session });
+            return resolve({ session });
           } else {
             const status = {
               code: response.status,

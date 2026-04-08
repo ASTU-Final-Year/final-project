@@ -76,7 +76,7 @@ export default {
             await Promise.all(
               employeesForm.map(async (employeeForm) => {
                 const employee =
-                  await EmployeeService.getEmployeeByIdPureByOrganizationId(
+                  await EmployeeService.getEmployeeByEmailPureByOrganizationId(
                     organization.id,
                     employeeForm.email,
                   );

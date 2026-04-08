@@ -1,4 +1,5 @@
 import {
+  employeeCalendars,
   employees,
   organizationCalendars,
   organizations,
@@ -54,6 +55,8 @@ export const pureOrganizationSelect = {
 export const pureOrganizationCalendarSelect = {
   id: organizationCalendars.id,
   organizationId: organizationCalendars.organizationId,
+  available: organizationCalendars.available,
+  unavailable: organizationCalendars.unavailable,
   createdAt: organizationCalendars.createdAt,
   updatedAt: organizationCalendars.updatedAt,
 };
@@ -80,6 +83,15 @@ export const pureEmployeeSelect = {
   updatedAt: employees.updatedAt,
 };
 
+export const pureEmployeeCalendarSelect = {
+  id: employeeCalendars.id,
+  employeeId: employeeCalendars.employeeId,
+  available: employeeCalendars.available,
+  unavailable: employeeCalendars.unavailable,
+  createdAt: employeeCalendars.createdAt,
+  updatedAt: employeeCalendars.updatedAt,
+};
+
 export const employeeWithUserSelect = {
   ...pureEmployeeSelect,
   user: pureUserSelect,
@@ -96,6 +108,11 @@ export const fullEmployeeSelect = {
   organization: pureOrganizationSelect,
 };
 
+export const fullEmployeeCalendarSelect = {
+  ...pureEmployeeCalendarSelect,
+  employee: pureEmployeeSelect,
+};
+
 export const fullOrganizationSelect = {
   ...pureOrganizationSelect,
   admin: pureUserSelect,
@@ -110,6 +127,11 @@ export const organizationWithAdminsSelect = {
 export const organizationWithPricingPlanSelect = {
   ...pureOrganizationSelect,
   pricingPlan: purePricingPlanSelect,
+};
+
+export const fullOrganizationCalendarSelect = {
+  ...pureOrganizationCalendarSelect,
+  organization: pureOrganizationSelect,
 };
 
 export const fullOrganizationServiceSelect = {

@@ -1,4 +1,4 @@
-// ROUTE /api/v1/organization/:id/service
+// ROUTE /api/v1/organization/:id/calendar
 
 import {
   authenticate,
@@ -19,16 +19,28 @@ import { ArkErrors, type } from "arktype";
 import { CTXSession } from "~/base";
 import { parseAuth, parseSession } from "~/middleware";
 import OrganizationService from "~/services/organization.service";
-import OrganizationServicesService from "~/services/organization.services.service";
 
-const TServiceRegistration = type({
-  name: "string <= 54",
-  description: "string <= 200",
-  "isActive?": "boolean|null",
-  "calendarId?": "string.uuid|null",
+const TWeekDay = type("number.integer");
+
+const TYearly = type("Date");
+
+const TCalendarDateRange = type({
+  from: "Date",
+  to: "Date",
 });
 
-type ServiceRegistration = typeof TServiceRegistration.infer;
+const TCalendarOptions = type({
+  "ranges?": TCalendarDateRange.array(),
+  "weekly?": TWeekDay.array(),
+  "yearly?": TYearly.array(),
+});
+
+const TCalendarRegistration = type({
+  "available?": TCalendarOptions,
+  "unavailable?": TCalendarOptions,
+});
+
+type CalendarRegistration = typeof TCalendarRegistration.infer;
 
 export default {
   POST: {
@@ -45,15 +57,15 @@ export default {
         once: true,
       }),
       (req, ctx) => {
-        const serviceForm = TServiceRegistration(ctx.body);
-        if (serviceForm instanceof ArkErrors) {
+        const calendarForm = TCalendarRegistration(ctx.body);
+        if (calendarForm instanceof ArkErrors) {
           return status(Status._400_BadRequest, "Invalid body");
         }
-        ctx.serviceForm = serviceForm;
+        ctx.calendarForm = calendarForm;
       },
     ],
     HANDLER: [
-      async (req, { session, serviceForm }) => {
+      async (req, { session, calendarForm }) => {
         const organization =
           await OrganizationService.getOrganizationByAdminIdPure(
             session.userId,
@@ -61,14 +73,12 @@ export default {
         if (!organization) {
           return status(Status._404_NotFound, "Organization not found");
         }
-        const service = await OrganizationServicesService.createService({
-          name: serviceForm.name,
-          description: serviceForm.description,
-          isActive: serviceForm.isActive || true,
-          calendarId: serviceForm.calendarId,
+        const calendar = await OrganizationService.createCalendar({
           organizationId: organization.id,
+          available: calendarForm.available,
+          unavailable: calendarForm.unavailable,
         });
-        return json({ service }, { status: Status._201_Created });
+        return json({ calendar }, { status: Status._201_Created });
       },
     ],
   },
@@ -76,8 +86,8 @@ export default {
   CTXCookie & CTXAuth & CTXSession,
   {
     POST: CTXBody & {
-      body: ServiceRegistration;
-      serviceForm: ServiceRegistration;
+      body: CalendarRegistration;
+      calendarForm: CalendarRegistration;
     };
   }
 >;

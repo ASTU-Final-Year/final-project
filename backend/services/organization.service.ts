@@ -1,22 +1,34 @@
 // services/organization.service.ts
 
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import {
   Organization,
+  OrganizationCalendar,
+  OrganizationCalendarInit,
+  OrganizationCalendarPure,
+  OrganizationCalendarUpdate,
   OrganizationInit,
   OrganizationPure,
   OrganizationUpdate,
 } from "~/base";
 import { config, employeeHireJwt, securityConfig } from "~/config";
 import { db } from "~/db";
-import { employees, organizations, pricingPlans, users } from "~/db/schema";
+import {
+  employees,
+  organizationCalendars,
+  organizations,
+  pricingPlans,
+  users,
+} from "~/db/schema";
 import EmailService from "./email.service";
 import { JWT } from "@bepalo/jwt";
 import { Receipt } from "@upyo/core";
 import {
+  fullOrganizationCalendarSelect,
   fullOrganizationSelect,
   organizationWithAdminsSelect,
   organizationWithPricingPlanSelect,
+  pureOrganizationCalendarSelect,
   pureOrganizationSelect,
 } from "./selects";
 
@@ -168,6 +180,126 @@ export default class OrganizationService {
   }
 
   //
+  // Calendar
+  //
+  static async createCalendar(
+    calendarInit: OrganizationCalendarInit,
+  ): Promise<OrganizationCalendar> {
+    const [calendar] = (await db
+      .insert(organizationCalendars)
+      .values({
+        organizationId: calendarInit.organizationId,
+        available: calendarInit.available,
+        unavailable: calendarInit.unavailable,
+      })
+      .returning()) as OrganizationCalendar[];
+    return calendar;
+  }
+
+  static async getAllCalendarsByOrganizationId(
+    organizationId: string,
+    {
+      offset,
+      limit,
+    }: {
+      offset: number;
+      limit: number;
+    },
+  ): Promise<OrganizationCalendar[]> {
+    const calendarsResult = (await db
+      .select(fullOrganizationCalendarSelect)
+      .from(organizationCalendars)
+      .leftJoin(
+        organizations,
+        eq(organizationCalendars.organizationId, organizations.id),
+      )
+      .where(eq(organizationCalendars.organizationId, organizationId))
+      .limit(limit)
+      .offset(offset)) as OrganizationCalendar[];
+    return calendarsResult;
+  }
+
+  static async getAllCalendarsByOrganizationIdPure(
+    organizationId: string,
+    {
+      offset,
+      limit,
+    }: {
+      offset: number;
+      limit: number;
+    },
+  ): Promise<OrganizationCalendarPure[]> {
+    const calendarsResult = (await db
+      .select(pureOrganizationCalendarSelect)
+      .from(organizationCalendars)
+      .leftJoin(
+        organizations,
+        eq(organizationCalendars.organizationId, organizations.id),
+      )
+      .where(eq(organizationCalendars.organizationId, organizationId))
+      .limit(limit)
+      .offset(offset)) as OrganizationCalendarPure[];
+    return calendarsResult;
+  }
+
+  static async getCalendarById(
+    calendarId: string,
+  ): Promise<OrganizationCalendar> {
+    const [calendar] = (await db
+      .select()
+      .from(organizationCalendars)
+      .where(eq(organizationCalendars.id, calendarId))
+      .limit(1)) as OrganizationCalendar[];
+    return calendar;
+  }
+
+  static async getCalendarByIdByOrganizationId(
+    calendarId: string,
+    organizationId: string,
+  ): Promise<OrganizationCalendar> {
+    const [calendar] = (await db
+      .select()
+      .from(organizationCalendars)
+      .where(
+        and(
+          eq(organizationCalendars.id, calendarId),
+          eq(organizationCalendars.organizationId, organizationId),
+        ),
+      )
+      .limit(1)) as OrganizationCalendar[];
+    return calendar;
+  }
+
+  static async updateCalendar(
+    calendarUpdate: OrganizationCalendarUpdate,
+  ): Promise<OrganizationCalendar> {
+    const [calendar] = (await db
+      .update(organizationCalendars)
+      .set({
+        available: calendarUpdate.available,
+        unavailable: calendarUpdate.unavailable,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(organizationCalendars.id, calendarUpdate.id),
+          eq(
+            organizationCalendars.organizationId,
+            calendarUpdate.organizationId,
+          ),
+        ),
+      )
+      .returning()) as OrganizationCalendar[];
+    return calendar;
+  }
+
+  static async deleteCalendarById(calendarId: string): Promise<void> {
+    await db
+      .delete(organizationCalendars)
+      .where(eq(organizationCalendars.id, calendarId));
+  }
+
+  //
   // Employee
   //
   static async hasEmployeeByAdminId(
@@ -225,6 +357,9 @@ export default class OrganizationService {
               Use the following link to register as an employee at '${organization.name}'.
               <a href="${hireLink}">${hireLink}</a>
             </p>
+          </div>
+          <div>
+            &Copy; ${new Date().getFullYear()} ServeSync+ 
           </div>
         </div>`,
       },
