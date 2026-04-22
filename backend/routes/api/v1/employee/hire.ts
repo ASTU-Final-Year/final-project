@@ -27,7 +27,6 @@ export default {
       parseCookie(),
       authenticate({ parseAuth, checkOnly: true }),
       (req, { url, auth }) => {
-        console.log(toMainUrl(url));
         if (auth == null) {
           return redirect(
             "/login?r=" + encodeURIComponent(toMainUrl(url).toString()),
@@ -119,7 +118,6 @@ export default {
     ],
     HANDLER: [
       async (req, { invite, session }) => {
-        console.log("...");
         const { organizationId, jobTitle, jobDescription } = invite;
         const organization =
           await OrganizationService.getOrganizationById(organizationId);

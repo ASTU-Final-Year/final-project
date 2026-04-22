@@ -5,6 +5,7 @@ import {
   organizations,
   organizationServices,
   pricingPlans,
+  serviceFirstEmployees,
   users,
 } from "~/db/schema";
 
@@ -52,6 +53,21 @@ export const pureOrganizationSelect = {
   updatedAt: organizations.updatedAt,
 };
 
+export const purePublicOrganizationSelect = {
+  id: organizations.id,
+  name: organizations.name,
+  slug: organizations.slug,
+  description: organizations.description,
+  sector: organizations.sector,
+  isGovernment: organizations.isGovernment,
+  isActive: organizations.isActive,
+  address: organizations.address,
+  email: organizations.email,
+  phone: organizations.phone,
+  rating: organizations.rating,
+  createdAt: organizations.createdAt,
+};
+
 export const pureOrganizationCalendarSelect = {
   id: organizationCalendars.id,
   organizationId: organizationCalendars.organizationId,
@@ -96,6 +112,13 @@ export const pureEmployeeCalendarSelect = {
   updatedAt: employeeCalendars.updatedAt,
 };
 
+export const pureOrganizationServiceFirstEmployeeSelect = {
+  serviceId: serviceFirstEmployees.serviceId,
+  employeeId: serviceFirstEmployees.employeeId,
+  createdAt: serviceFirstEmployees.createdAt,
+  updatedAt: serviceFirstEmployees.updatedAt,
+};
+
 export const employeeWithUserSelect = {
   ...pureEmployeeSelect,
   user: pureUserSelect,
@@ -128,6 +151,12 @@ export const fullOrganizationSelect = {
   pricingPlan: purePricingPlanSelect,
 };
 
+export const fullPublicOrganizationSelect = {
+  ...purePublicOrganizationSelect,
+  admin: pureUserSelect,
+  pricingPlan: purePricingPlanSelect,
+};
+
 export const organizationWithAdminsSelect = {
   ...pureOrganizationSelect,
   admin: pureUserSelect,
@@ -149,12 +178,39 @@ export const fullOrganizationServiceSelect = {
   calendar: pureOrganizationCalendarSelect,
 };
 
+export const fullPublicOrganizationServiceSelect = {
+  ...pureOrganizationServiceSelect,
+  organization: purePublicOrganizationSelect,
+  calendar: pureOrganizationCalendarSelect,
+};
+
 export const organizationServiceWithOrganizationSelect = {
   ...pureOrganizationServiceSelect,
   organization: pureOrganizationSelect,
 };
 
+export const publicOrganizationServiceWithOrganizationSelect = {
+  ...pureOrganizationServiceSelect,
+  organization: purePublicOrganizationSelect,
+};
+
 export const organizationServiceWithCalendarSelect = {
   ...pureOrganizationServiceSelect,
   calendar: pureOrganizationCalendarSelect,
+};
+
+export const fullOrganizationServiceFirstEmployeeSelect = {
+  ...pureOrganizationServiceFirstEmployeeSelect,
+  service: pureOrganizationServiceSelect,
+  employee: pureEmployeeSelect,
+};
+
+export const organizationServiceFirstEmployeesWithServiceSelect = {
+  ...pureOrganizationServiceFirstEmployeeSelect,
+  service: pureOrganizationServiceSelect,
+};
+
+export const organizationServiceFirstEmployeesWithFirstEmployeeSelect = {
+  ...pureOrganizationServiceFirstEmployeeSelect,
+  employee: pureEmployeeSelect,
 };

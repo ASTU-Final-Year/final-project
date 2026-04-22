@@ -19,13 +19,13 @@ import { CTXSession } from "~/base";
 import { parseAuth, parseSession } from "~/middleware";
 import EmployeeService from "~/services/organization.employees.service";
 
-const TPagenater = type({
+const TQuery = type({
   "o?": "string",
   "l?": "string",
   "iemployee?": "unknown",
 });
 
-type Pagenater = typeof TPagenater.infer;
+type Query = typeof TQuery.infer;
 
 export default {
   GET: {
@@ -38,7 +38,7 @@ export default {
       parseSession(),
       parseQuery(),
       (req, ctx) => {
-        const q = TPagenater(ctx.query);
+        const q = TQuery(ctx.query);
         if (q instanceof ArkErrors) {
           return status(Status._400_BadRequest, "Invalid query");
         }
@@ -85,7 +85,7 @@ export default {
   CTXCookie & CTXAuth & CTXSession,
   {
     GET: CTXQuery & {
-      query: Pagenater;
+      query: Query;
       q: {
         offset: number;
         limit: number;

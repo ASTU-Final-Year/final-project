@@ -20,27 +20,23 @@ import { parseAuth, parseSession } from "~/middleware";
 import OrganizationService from "~/services/organization.service";
 import OrganizationServicesService from "~/services/organization.services.service";
 
-const TPagenater = type({
+const TQuery = type({
   "o?": "string",
   "l?": "string",
   "iorganization?": "unknown",
   "icalendar?": "unknown",
 });
 
-type Pagenater = typeof TPagenater.infer;
+type Query = typeof TQuery.infer;
 
 export default {
   GET: {
     FILTER: [
       parseCookie(),
-      authenticate({ parseAuth: parseAuth }),
-      authorize({
-        allowRole: (role) => role === "organization_admin",
-      }),
-      parseSession(),
+      authenticate({ parseAuth: parseAuth, checkOnly: true }),
       parseQuery(),
       (req, ctx) => {
-        const q = TPagenater(ctx.query);
+        const q = TQuery(ctx.query);
         if (q instanceof ArkErrors) {
           return status(Status._400_BadRequest, "Invalid query");
         }
@@ -53,34 +49,47 @@ export default {
       },
     ],
     HANDLER: [
-      async (req, { session, q }) => {
+      async (req, { auth, params, q }) => {
+        const isOrgAdmin = auth?.role === "organization_admin";
+        const { id } = params;
         const { offset, limit, iorganization, icalendar } = q;
-        const organization =
-          await OrganizationService.getOrganizationByAdminIdPure(
-            session.userId,
-          );
+        const organization = await OrganizationService.getOrganizationById(id);
         if (!organization) {
           return status(Status._404_NotFound, "Organization not found");
         }
         let services = [];
         if (iorganization && icalendar) {
-          services =
-            await OrganizationServicesService.getAllServicesByOrganizationid(
-              organization.id,
-              {
-                offset,
-                limit,
-              },
-            );
+          services = isOrgAdmin
+            ? await OrganizationServicesService.getAllServicesByOrganizationId(
+                organization.id,
+                {
+                  offset,
+                  limit,
+                },
+              )
+            : await OrganizationServicesService.getAllServicesByOrganizationIdPublic(
+                organization.id,
+                {
+                  offset,
+                  limit,
+                },
+              );
         } else if (iorganization) {
-          services =
-            await OrganizationServicesService.getAllServicesWithOrganizationByOrganizationid(
-              organization.id,
-              {
-                offset,
-                limit,
-              },
-            );
+          services = isOrgAdmin
+            ? await OrganizationServicesService.getAllServicesWithOrganizationByOrganizationid(
+                organization.id,
+                {
+                  offset,
+                  limit,
+                },
+              )
+            : await OrganizationServicesService.getAllServicesWithOrganizationByOrganizationidPublic(
+                organization.id,
+                {
+                  offset,
+                  limit,
+                },
+              );
         } else if (icalendar) {
           services =
             await OrganizationServicesService.getAllServicesWithCalendarByOrganizationid(
@@ -92,7 +101,7 @@ export default {
             );
         } else {
           services =
-            await OrganizationServicesService.getAllServicesByOrganizationidPure(
+            await OrganizationServicesService.getAllServicesByOrganizationIdPure(
               organization.id,
               {
                 offset,
@@ -111,7 +120,7 @@ export default {
   CTXCookie & CTXAuth & CTXSession,
   {
     GET: CTXQuery & {
-      query: Pagenater;
+      query: Query;
       q: {
         offset: number;
         limit: number;

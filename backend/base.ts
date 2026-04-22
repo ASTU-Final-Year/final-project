@@ -396,6 +396,10 @@ export type OrganizationPure = Partial<
   Omit<Organization, "admin" | "pricingPlan">
 >;
 
+export type OrganizationWithAdmin = Partial<Omit<Organization, "pricingPlan">>;
+
+export type OrganizationWithPricingPlan = Partial<Omit<Organization, "admin">>;
+
 export type CTXOrganization = {
   organization: Organization;
 };
@@ -530,6 +534,49 @@ export type OrganizationServicePure = Omit<
   OrganizationService,
   "organization" | "calendar"
 >;
+
+export interface OrganizationServiceFirstEmployee {
+  serviceId: string;
+  service: OrganizationService;
+  employeeId: string;
+  employee: Employee;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export type OrganizationServiceFirstEmployeeInit = Omit<
+  OrganizationServiceFirstEmployee,
+  "service" | "employee" | "createdAt" | "updatedAt"
+> &
+  Partial<
+    Pick<
+      OrganizationServiceFirstEmployee,
+      "service" | "employee" | "createdAt" | "updatedAt"
+    >
+  >;
+
+export type OrganizationServiceFirstEmployeePure = Omit<
+  OrganizationServiceFirstEmployee,
+  "service" | "employee"
+>;
+
+export type OrganizationServiceFirstEmployeeWithService = Omit<
+  OrganizationServiceFirstEmployee,
+  "employee"
+>;
+
+export type OrganizationServiceFirstEmployeeWithEmployee = Omit<
+  OrganizationServiceFirstEmployee,
+  "service"
+>;
+
+export type OrganizationServiceFirstEmployeeUpdate = Partial<
+  Omit<
+    OrganizationServiceFirstEmployeeInit,
+    "serviceId" | "createdAt" | "service" | "employee"
+  >
+> &
+  Pick<OrganizationServiceFirstEmployee, "serviceId">;
 
 export interface TaskProgress {
   index: number;

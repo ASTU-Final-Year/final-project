@@ -10,6 +10,8 @@ import {
   OrganizationInit,
   OrganizationPure,
   OrganizationUpdate,
+  OrganizationWithAdmin,
+  OrganizationWithPricingPlan,
 } from "~/base";
 import { config, employeeHireJwt, securityConfig } from "~/config";
 import { db } from "~/db";
@@ -26,10 +28,12 @@ import { Receipt } from "@upyo/core";
 import {
   fullOrganizationCalendarSelect,
   fullOrganizationSelect,
+  fullPublicOrganizationSelect,
   organizationWithAdminsSelect,
   organizationWithPricingPlanSelect,
   pureOrganizationCalendarSelect,
   pureOrganizationSelect,
+  purePublicOrganizationSelect,
 } from "./selects";
 
 export default class OrganizationService {
@@ -78,6 +82,21 @@ export default class OrganizationService {
     return organizationsResult;
   }
 
+  static async getAllOrganizationsPublicPure({
+    offset,
+    limit,
+  }: {
+    offset: number;
+    limit: number;
+  }): Promise<Omit<Organization, "pricingPlan" | "admin">[]> {
+    const organizationsResult = (await db
+      .select(purePublicOrganizationSelect)
+      .from(organizations)
+      .limit(limit)
+      .offset(offset)) as Omit<Organization, "pricingPlan" | "admin">[];
+    return organizationsResult;
+  }
+
   static async getAllOrganizationsWithAdmin({
     offset,
     limit,
@@ -110,6 +129,30 @@ export default class OrganizationService {
     return organizationsResult;
   }
 
+  static async getOrganizationByIdPure(
+    organizationId: string,
+  ): Promise<OrganizationPure | undefined> {
+    const [organization] = (await db
+      .select(pureOrganizationSelect)
+      .from(organizations)
+      .leftJoin(users, eq(organizations.adminId, users.id))
+      .rightJoin(pricingPlans, eq(organizations.pricingPlanId, pricingPlans.id))
+      .where(eq(organizations.id, organizationId))) as OrganizationPure[];
+    return organization;
+  }
+
+  static async getOrganizationByIdPurePublic(
+    organizationId: string,
+  ): Promise<OrganizationPure | undefined> {
+    const [organization] = (await db
+      .select(purePublicOrganizationSelect)
+      .from(organizations)
+      .leftJoin(users, eq(organizations.adminId, users.id))
+      .rightJoin(pricingPlans, eq(organizations.pricingPlanId, pricingPlans.id))
+      .where(eq(organizations.id, organizationId))) as OrganizationPure[];
+    return organization;
+  }
+
   static async getOrganizationById(
     organizationId: string,
   ): Promise<Organization | undefined> {
@@ -117,8 +160,34 @@ export default class OrganizationService {
       .select(fullOrganizationSelect)
       .from(organizations)
       .leftJoin(users, eq(organizations.adminId, users.id))
-      .leftJoin(pricingPlans, eq(organizations.pricingPlanId, pricingPlans.id))
+      .rightJoin(pricingPlans, eq(organizations.pricingPlanId, pricingPlans.id))
       .where(eq(organizations.id, organizationId))) as Organization[];
+    return organization;
+  }
+
+  static async getOrganizationByIdWithAdmin(
+    organizationId: string,
+  ): Promise<OrganizationWithAdmin | undefined> {
+    const [organization] = (await db
+      .select(organizationWithAdminsSelect)
+      .from(organizations)
+      .leftJoin(users, eq(organizations.adminId, users.id))
+      .rightJoin(pricingPlans, eq(organizations.pricingPlanId, pricingPlans.id))
+      .where(eq(organizations.id, organizationId))) as OrganizationWithAdmin[];
+    return organization;
+  }
+
+  static async getOrganizationByIdWithPricingPlan(
+    organizationId: string,
+  ): Promise<OrganizationWithPricingPlan | undefined> {
+    const [organization] = (await db
+      .select(organizationWithPricingPlanSelect)
+      .from(organizations)
+      .leftJoin(users, eq(organizations.adminId, users.id))
+      .rightJoin(pricingPlans, eq(organizations.pricingPlanId, pricingPlans.id))
+      .where(
+        eq(organizations.id, organizationId),
+      )) as OrganizationWithPricingPlan[];
     return organization;
   }
 

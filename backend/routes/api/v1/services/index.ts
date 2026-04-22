@@ -14,21 +14,21 @@ import { CTXSession } from "~/base";
 import OrganizationService from "~/services/organization.service";
 import OrganizationServicesService from "~/services/organization.services.service";
 
-const TPagenater = type({
+const TQuery = type({
   "o?": "string",
   "l?": "string",
   "iorganization?": "unknown",
   "icalendar?": "unknown",
 });
 
-type Pagenater = typeof TPagenater.infer;
+type Query = typeof TQuery.infer;
 
 export default {
   GET: {
     FILTER: [
       parseQuery(),
       (req, ctx) => {
-        const q = TPagenater(ctx.query);
+        const q = TQuery(ctx.query);
         if (q instanceof ArkErrors) {
           return status(Status._400_BadRequest, "Invalid query");
         }
@@ -78,7 +78,7 @@ export default {
   CTXCookie & CTXAuth & CTXSession,
   {
     GET: CTXQuery & {
-      query: Pagenater;
+      query: Query;
       q: {
         offset: number;
         limit: number;
