@@ -429,6 +429,7 @@ export type OrganizationCalendarUpdate = Partial<
   Pick<OrganizationCalendar, "id" | "organizationId">;
 
 export interface Employee {
+  id: string;
   jobTitle: string;
   jobDescription: string;
   isActive: boolean;
@@ -444,7 +445,7 @@ export interface Employee {
 
 export type EmployeeInit = Omit<
   Employee,
-  "createdAt" | "updatedAt" | "user" | "organization"
+  "id" | "createdAt" | "updatedAt" | "user" | "organization"
 > &
   Partial<
     Pick<
@@ -456,10 +457,10 @@ export type EmployeeInit = Omit<
 export type EmployeeUpdate = Partial<
   Omit<
     EmployeeInit,
-    "calendar" | "userId" | "user" | "organizationId" | "organization"
+    "id" | "calendar" | "userId" | "user" | "organizationId" | "organization"
   >
 > &
-  Pick<Employee, "userId">;
+  Pick<Employee, "id">;
 
 export type EmployeePure = Omit<Employee, "organization" | "user" | "calendar">;
 

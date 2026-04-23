@@ -29,8 +29,6 @@ import {
   pureEmployeeCalendarSelect,
   pureEmployeeSelect,
 } from "./selects";
-import calendar from "~/routes/api/v1/organization/[id]/calendar";
-import user from "~/routes/api/v1/user";
 
 export default class OrganizationEmployeesService {
   static async createEmployee(
@@ -168,19 +166,23 @@ export default class OrganizationEmployeesService {
   static async getEmployeeByIdByOrganizationId(
     organizationId: string,
     employeeId: string,
-  ): Promise<Omit<Employee, "user" | "organization">> {
+  ): Promise<Employee> {
     const [employee] = (await db
       .select(fullEmployeeSelect)
       .from(employees)
-      .leftJoin(users, eq(employees.userId, users.id))
+      .innerJoin(users, eq(employees.userId, users.id))
       .innerJoin(organizations, eq(employees.organizationId, organizations.id))
+      .leftJoin(
+        employeeCalendars,
+        eq(employees.calendarId, employeeCalendars.id),
+      )
       .where(
         and(
           eq(employees.organizationId, organizationId),
-          eq(employees.userId, employeeId),
+          eq(employees.id, employeeId),
         ),
       )
-      .limit(1)) as Omit<Employee, "user" | "organization">[];
+      .limit(1)) as Employee[];
     return employee;
   }
 
@@ -194,7 +196,7 @@ export default class OrganizationEmployeesService {
       .where(
         and(
           eq(employees.organizationId, organizationId),
-          eq(employees.userId, employeeId),
+          eq(employees.id, employeeId),
         ),
       )
       .limit(1)) as Omit<Employee, "user" | "organization">[];
@@ -239,7 +241,7 @@ export default class OrganizationEmployeesService {
       .from(employees)
       .innerJoin(users, eq(employees.userId, users.id))
       .leftJoin(organizations, eq(employees.organizationId, organizations.id))
-      .where(eq(employees.userId, employeeId))) as Employee[];
+      .where(eq(employees.id, employeeId))) as Employee[];
     return employee;
   }
 
@@ -255,22 +257,22 @@ export default class OrganizationEmployeesService {
 
   static async hasEmployeeById(employeeId: string): Promise<boolean> {
     const [employee] = await db
-      .select({ userId: employees.userId })
+      .select({ id: employees.id })
       .from(employees)
       .innerJoin(users, eq(employees.userId, users.id))
       .leftJoin(organizations, eq(employees.organizationId, organizations.id))
-      .where(eq(employees.userId, employeeId));
-    return employee?.userId === employeeId;
+      .where(eq(employees.id, employeeId));
+    return employee?.id === employeeId;
   }
 
   static async updateEmployeeById(
     employeeUpdate: EmployeeUpdate,
   ): Promise<EmployeePure> {
-    const { userId, ...employeeUpdateSafe } = employeeUpdate;
+    const { id, ...employeeUpdateSafe } = employeeUpdate;
     const [employee] = await db
       .update(employees)
       .set({ ...employeeUpdateSafe, updatedAt: new Date() })
-      .where(eq(employees.userId, employeeUpdate.userId))
+      .where(eq(employees.id, id))
       .returning();
     return employee;
   }

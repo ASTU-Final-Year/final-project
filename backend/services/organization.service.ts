@@ -376,10 +376,14 @@ export default class OrganizationService {
     return calendar;
   }
 
-  static async deleteCalendarById(calendarId: string): Promise<void> {
-    await db
+  static async deleteCalendarById(
+    calendarId: string,
+  ): Promise<OrganizationCalendarPure> {
+    const [calendar] = (await db
       .delete(organizationCalendars)
-      .where(eq(organizationCalendars.id, calendarId));
+      .where(eq(organizationCalendars.id, calendarId))
+      .returning()) as OrganizationCalendarPure[];
+    return calendar;
   }
 
   //

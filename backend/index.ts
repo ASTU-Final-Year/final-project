@@ -81,10 +81,12 @@ const server = Bun.serve({
     "/api/swagger-ui-bundle.js": swaggerUIBundle,
   },
   fetch: async (req, server) => {
+    const start = performance.now();
     const address = server.requestIP(req) as SocketAddress | null;
     if (!address) throw new Error("null client address");
     const resp = await router.respond(req, { address });
-    const urlLog = `${req.method} ${req.url.substring(0, 180)} ${resp.status} ${resp.statusText}`;
+    const elapsed = performance.now() - start;
+    const urlLog = `${req.method} ${elapsed.toFixed(2).padStart(6)}ms | ${resp.status} ${resp.statusText} | ${req.url.substring(0, 180)}`;
     // if (config.isProduction) {
     //   LOGI(urlLog);
     // } else {

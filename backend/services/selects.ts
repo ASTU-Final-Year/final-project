@@ -91,6 +91,7 @@ export const pureOrganizationServiceSelect = {
 };
 
 export const pureEmployeeSelect = {
+  id: employees.id,
   userId: employees.userId,
   organizationId: employees.organizationId,
   jobTitle: employees.jobTitle,
@@ -138,6 +139,7 @@ export const fullEmployeeSelect = {
   ...pureEmployeeSelect,
   user: pureUserSelect,
   organization: pureOrganizationSelect,
+  calendar: pureEmployeeCalendarSelect,
 };
 
 export const fullEmployeeCalendarSelect = {
