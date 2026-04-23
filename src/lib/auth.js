@@ -1,4 +1,4 @@
-import { useSessionStore } from "@/store";
+import { resetStores, useOrganizationStore, useSessionStore } from "@/store";
 import RequestHandler from "./request-handler";
 
 const Auth = {
@@ -21,17 +21,17 @@ const Auth = {
     return new Promise((resolve, reject) => {
       const body = { email, password };
       RequestHandler.Post("/api/v1/session", { body })
-        .then(async (response) => {
-          if (response.ok) {
-            const { session } = await response.json();
+        .then(async (res) => {
+          if (res.ok) {
+            const { session } = await res.json();
             useSessionStore.setState({ session });
             return resolve({ session });
           } else {
             const status = {
-              code: response.status,
-              text: response.statusText
+              code: res.status,
+              text: res.statusText
             }
-            switch (response.status) {
+            switch (res.status) {
               case 400:
               case 401:
               case 403: return reject({ message: "Invalid email or password", status });
@@ -48,12 +48,16 @@ const Auth = {
       RequestHandler.Delete("/api/v1/session")
         .then((res) => {
           if (res.ok) {
-            useSessionStore.setState({ session: null });
+            // useSessionStore.setState({ session: null });
+            resetStores();
             return resolve({ success: true });
           } else {
+            if (res.status === 401) {
+              resetStores();
+            }
             const status = {
-              code: response.status,
-              text: response.statusText
+              code: res.status,
+              text: res.statusText
             }
             return reject({ message: "Something went wrong", status });
           }
@@ -70,10 +74,10 @@ const Auth = {
             return resolve({ success: true });
           } else {
             const status = {
-              code: response.status,
-              text: response.statusText
+              code: res.status,
+              text: res.statusText
             }
-            switch (response.status) {
+            switch (res.status) {
               case 400:
               case 401:
               case 403: return reject({ message: "Invalid input", status });
@@ -94,10 +98,10 @@ const Auth = {
             return resolve({ success: true });
           } else {
             const status = {
-              code: response.status,
-              text: response.statusText
+              code: res.status,
+              text: res.statusText
             }
-            switch (response.status) {
+            switch (res.status) {
               case 400:
               case 401:
               case 403: return reject({ message: "Invalid input", status });
