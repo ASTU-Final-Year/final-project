@@ -1,5 +1,6 @@
 import { relations, sql } from "drizzle-orm";
 import {
+  customType,
   sqliteTable,
   text,
   integer,
@@ -7,7 +8,29 @@ import {
   uniqueIndex,
   real,
   primaryKey,
+  index,
+  foreignKey,
 } from "drizzle-orm/sqlite-core";
+
+export const cpuuid = customType<{ data: string; driverData: string }>({
+  dataType() {
+    return "text";
+  },
+  toDriver(v: string): string {
+    const hex = Buffer.from(v, "base64url").toString("hex");
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+  },
+  fromDriver(v: string): string {
+    const hex = `${v[0]}${v[1]}${v[2]}${v[3]}${v[4]}${v[5]}${v[6]}${v[7]}${v[9]}${v[10]}${v[11]}${v[12]}${v[14]}${v[15]}${v[16]}${v[17]}${v[19]}${v[20]}${v[21]}${v[22]}${v[24]}${v[25]}${v[26]}${v[27]}${v[28]}${v[29]}${v[30]}${v[31]}${v[32]}${v[33]}${v[34]}${v[35]}`;
+    return Buffer.from(hex, "hex").toString("base64url");
+  },
+});
+
+const randomCUUID = (): string => {
+  const v = crypto.randomUUID();
+  const hex = `${v[0]}${v[1]}${v[2]}${v[3]}${v[4]}${v[5]}${v[6]}${v[7]}${v[9]}${v[10]}${v[11]}${v[12]}${v[14]}${v[15]}${v[16]}${v[17]}${v[19]}${v[20]}${v[21]}${v[22]}${v[24]}${v[25]}${v[26]}${v[27]}${v[28]}${v[29]}${v[30]}${v[31]}${v[32]}${v[33]}${v[34]}${v[35]}`;
+  return Buffer.from(hex, "hex").toString("base64url");
+};
 
 export const genderEnum = ["M", "F", "U"] as const;
 
@@ -29,27 +52,27 @@ const basicTimestamps = () => ({
     .$defaultFn(() => new Date()),
 });
 
-export const sqUsers = sqliteTable("users", {
-  id: text("id")
-    .primaryKey()
-    .notNull()
-    .$defaultFn(() => crypto.randomUUID()),
-  firstname: text("firstname", { length: 40 }).notNull(),
-  lastname: text("lastname", { length: 40 }).notNull(),
-  gender: text("gender", { enum: genderEnum }).notNull().default("U"),
-  role: text("role", { enum: rolesEnum }).notNull().default("client"),
-  email: text("email", { length: 40 }).notNull().unique(),
-  phone: text("phone", { length: 16 }).notNull(),
-  password: text("password", { length: 128 }).notNull(),
-  ...basicTimestamps(),
-});
+export const sqUsers = sqliteTable(
+  "users",
+  {
+    id: cpuuid("id").primaryKey().notNull().$defaultFn(randomCUUID),
+    firstname: text("firstname", { length: 40 }).notNull(),
+    lastname: text("lastname", { length: 40 }).notNull(),
+    gender: text("gender", { enum: genderEnum }).notNull().default("U"),
+    role: text("role", { enum: rolesEnum }).notNull().default("client"),
+    email: text("email", { length: 40 }).notNull().unique(),
+    phone: text("phone", { length: 16 }).notNull(),
+    password: text("password", { length: 128 }).notNull(),
+    ...basicTimestamps(),
+  },
+  (table: any) => [
+    index("user_email_idx").on(table.email), // Manual index
+  ],
+);
 
 export const sqSessions = sqliteTable("sessions", {
-  id: text("id")
-    .primaryKey()
-    .notNull()
-    .$defaultFn(() => crypto.randomUUID()),
-  userId: text("user_id")
+  id: cpuuid("id").primaryKey().notNull().$defaultFn(randomCUUID),
+  userId: cpuuid("user_id")
     .notNull()
     .references(() => sqUsers.id, {
       onUpdate: "cascade",
@@ -61,8 +84,8 @@ export const sqSessions = sqliteTable("sessions", {
 });
 
 export const sqSessionsBlacklist = sqliteTable("sessions_blacklist", {
-  sessionId: text("session_id").primaryKey().notNull(),
-  userId: text("user_id")
+  sessionId: cpuuid("session_id").primaryKey().notNull(),
+  userId: cpuuid("user_id")
     .notNull()
     .references(() => sqUsers.id, {
       onUpdate: "cascade",
@@ -89,49 +112,49 @@ export const sqPricingPlans = sqliteTable("pricing_plans", {
   ...basicTimestamps(),
 });
 
-export const sqOrganizations = sqliteTable("organizations", {
-  id: text("id")
-    .primaryKey()
-    .notNull()
-    .$defaultFn(() => crypto.randomUUID()),
-  name: text("name", { length: 54 }).notNull(),
-  slug: text("slug", { length: 30 }).notNull(),
-  description: text("description", { length: 200 }).notNull().default(""),
-  sector: text("sector", { length: 30 }).notNull(),
-  isGovernment: integer("is_government", { mode: "boolean" })
-    .notNull()
-    .default(false),
-  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
-  address: text("address", { length: 50 }).notNull(),
-  email: text("email", { length: 30 }).unique().notNull(),
-  phone: text("phone", { length: 16 }),
-  rating: real("rating"),
-  adminId: text("admin_id")
-    .notNull()
-    .references(() => sqUsers.id, {
-      onUpdate: "cascade",
-      onDelete: "cascade",
-    }),
-  pricingPlanId: text("pricing_plan_id")
-    .notNull()
-    .references(() => sqPricingPlans.id, {
-      onUpdate: "cascade",
-      onDelete: "cascade",
-    }),
-  billingPeriod: text("billing_period", { enum: billingPeriodEnum }),
-  billingStart: integer("billing_start", { mode: "timestamp" }).$defaultFn(
-    () => new Date(),
-  ),
-  billingEnd: integer("billing_end", { mode: "timestamp" }),
-  ...basicTimestamps(),
-});
+export const sqOrganizations = sqliteTable(
+  "organizations",
+  {
+    id: cpuuid("id").primaryKey().notNull().$defaultFn(randomCUUID),
+    name: text("name", { length: 54 }).notNull(),
+    slug: text("slug", { length: 30 }).notNull(),
+    description: text("description", { length: 200 }).notNull().default(""),
+    sector: text("sector", { length: 30 }).notNull(),
+    isGovernment: integer("is_government", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+    address: text("address", { length: 50 }).notNull(),
+    email: text("email", { length: 30 }).unique().notNull(),
+    phone: text("phone", { length: 16 }),
+    rating: real("rating"),
+    adminId: cpuuid("admin_id")
+      .notNull()
+      .references(() => sqUsers.id, {
+        onUpdate: "cascade",
+        onDelete: "cascade",
+      }),
+    pricingPlanId: cpuuid("pricing_plan_id")
+      .notNull()
+      .references(() => sqPricingPlans.id, {
+        onUpdate: "cascade",
+        onDelete: "cascade",
+      }),
+    billingPeriod: text("billing_period", { enum: billingPeriodEnum }),
+    billingStart: integer("billing_start", { mode: "timestamp" }).$defaultFn(
+      () => new Date(),
+    ),
+    billingEnd: integer("billing_end", { mode: "timestamp" }),
+    ...basicTimestamps(),
+  },
+  (table: any) => [
+    index("organization_email_idx").on(table.email), // Manual index
+  ],
+);
 
 export const sqOrganizationCalendars = sqliteTable("organization_calendars", {
-  id: text("id")
-    .primaryKey()
-    .notNull()
-    .$defaultFn(() => crypto.randomUUID()),
-  organizationId: text("organization_id")
+  id: cpuuid("id").primaryKey().notNull().$defaultFn(randomCUUID),
+  organizationId: cpuuid("organization_id")
     .notNull()
     .references(() => sqOrganizations.id, {
       onUpdate: "cascade",
@@ -145,11 +168,8 @@ export const sqOrganizationCalendars = sqliteTable("organization_calendars", {
 });
 
 export const sqEmployeeCalendars = sqliteTable("employee_calendars", {
-  id: text("id")
-    .primaryKey()
-    .notNull()
-    .$defaultFn(() => crypto.randomUUID()),
-  employeeId: text("employee_id")
+  id: cpuuid("id").primaryKey().notNull().$defaultFn(randomCUUID),
+  employeeId: cpuuid("employee_id")
     .notNull()
     .references(() => sqUsers.id, {
       onUpdate: "cascade",
@@ -165,40 +185,46 @@ export const sqEmployeeCalendars = sqliteTable("employee_calendars", {
 export const sqEmployees = sqliteTable(
   "employees",
   {
-    organizationId: text("organization_id")
+    id: cpuuid("id").primaryKey().notNull().$defaultFn(randomCUUID),
+    organizationId: cpuuid("organization_id")
       .notNull()
       .references(() => sqOrganizations.id, {
         onUpdate: "cascade",
         onDelete: "cascade",
       }),
-    userId: text("user_id").notNull(),
+    userId: cpuuid("user_id").notNull(),
     jobTitle: text("job_title", { length: 50 }).notNull(),
     jobDescription: text("job_description", { length: 200 })
       .notNull()
       .default(""),
     isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
-    calendarId: text("calendar_id").references(() => sqEmployeeCalendars.id, {
+    calendarId: cpuuid("calendar_id").references(() => sqEmployeeCalendars.id, {
       onUpdate: "cascade",
       onDelete: "cascade",
     }),
     ...basicTimestamps(),
   },
-  (table) => [primaryKey({ columns: [table.organizationId, table.userId] })],
+  (table: any) => [
+    uniqueIndex("service_first_employees_uk").on(
+      table.organizationId,
+      table.userId,
+    ),
+  ],
 );
 
 export const sqOrganizationServices = sqliteTable("organization_services", {
-  id: text("id")
-    .primaryKey()
-    .notNull()
-    .$defaultFn(() => crypto.randomUUID()),
+  id: cpuuid("id").primaryKey().notNull().$defaultFn(randomCUUID),
   name: text("name", { length: 54 }).notNull(),
   description: text("description", { length: 200 }).notNull().default(""),
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
-  calendarId: text("calendar_id").references(() => sqOrganizationCalendars.id, {
-    onUpdate: "cascade",
-    onDelete: "cascade",
-  }),
-  organizationId: text("organization_id")
+  calendarId: cpuuid("calendar_id").references(
+    () => sqOrganizationCalendars.id,
+    {
+      onUpdate: "cascade",
+      onDelete: "cascade",
+    },
+  ),
+  organizationId: cpuuid("organization_id")
     .notNull()
     .references(() => sqOrganizations.id, {
       onUpdate: "cascade",
@@ -210,15 +236,15 @@ export const sqOrganizationServices = sqliteTable("organization_services", {
 export const sqServiceFirstEmployees = sqliteTable(
   "service_first_employees",
   {
-    serviceId: text("service_id")
+    serviceId: cpuuid("service_id")
       .notNull()
       .references(() => sqOrganizationServices.id, {
         onUpdate: "cascade",
         onDelete: "cascade",
       }),
-    employeeId: text("employee_id")
+    employeeId: cpuuid("employee_id")
       .notNull()
-      .references(() => sqEmployees.userId, {
+      .references(() => sqEmployees.id, {
         onUpdate: "cascade",
         onDelete: "cascade",
       }),
@@ -228,21 +254,18 @@ export const sqServiceFirstEmployees = sqliteTable(
 );
 
 export const sqTasks = sqliteTable("tasks", {
-  id: text("id")
-    .primaryKey()
-    .notNull()
-    .$defaultFn(() => crypto.randomUUID()),
+  id: cpuuid("id").primaryKey().notNull().$defaultFn(randomCUUID),
   isDone: integer("is_done", { mode: "boolean" }).default(false).notNull(),
   name: text("name", { length: 54 }).notNull(),
   status: text("status", { length: 20 }).notNull(),
   progress: text("progress", { mode: "json" }),
-  serviceId: text("service_id")
+  serviceId: cpuuid("service_id")
     .references(() => sqOrganizationServices.id, {
       onUpdate: "cascade",
       onDelete: "cascade",
     })
     .notNull(),
-  clientId: text("client_id")
+  clientId: cpuuid("client_id")
     .references(() => sqUsers.id, {
       onUpdate: "cascade",
       onDelete: "cascade",
@@ -294,7 +317,7 @@ export const sqEmployeeCalendarsRelations = relations(
     }),
     employee: one(sqEmployees, {
       fields: [sqEmployeeCalendars.employeeId],
-      references: [sqEmployees.userId],
+      references: [sqEmployees.id],
     }),
   }),
 );
@@ -334,7 +357,7 @@ export const sqServiceFirstEmployeesRelations = relations(
     }),
     employee: one(sqEmployees, {
       fields: [sqServiceFirstEmployees.employeeId],
-      references: [sqEmployees.userId],
+      references: [sqEmployees.id],
     }),
   }),
 );

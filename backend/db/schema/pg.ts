@@ -1,5 +1,6 @@
 import { relations } from "drizzle-orm";
 import {
+  customType,
   pgTable,
   varchar,
   uuid,
@@ -13,6 +14,32 @@ import {
   pgEnum,
   primaryKey,
 } from "drizzle-orm/pg-core";
+
+export const cpuuid = customType<{ data: string; driverData: string }>({
+  dataType() {
+    return "uuid";
+  },
+  toDriver(v: string): string {
+    const hex = Buffer.from(v, "base64url").toString("hex");
+    return [
+      hex.slice(0, 8),
+      hex.slice(8, 12),
+      hex.slice(12, 16),
+      hex.slice(16, 20),
+      hex.slice(20),
+    ].join("-");
+  },
+  fromDriver(v: string): string {
+    const hex = `${v[0]}${v[1]}${v[2]}${v[3]}${v[4]}${v[5]}${v[6]}${v[7]}${v[9]}${v[10]}${v[11]}${v[12]}${v[14]}${v[15]}${v[16]}${v[17]}${v[19]}${v[20]}${v[21]}${v[22]}${v[24]}${v[25]}${v[26]}${v[27]}${v[28]}${v[29]}${v[30]}${v[31]}${v[32]}${v[33]}${v[34]}${v[35]}`;
+    return Buffer.from(hex, "hex").toString("base64url");
+  },
+});
+
+const randomCUUID = (): string => {
+  const v = crypto.randomUUID();
+  const hex = `${v[0]}${v[1]}${v[2]}${v[3]}${v[4]}${v[5]}${v[6]}${v[7]}${v[9]}${v[10]}${v[11]}${v[12]}${v[14]}${v[15]}${v[16]}${v[17]}${v[19]}${v[20]}${v[21]}${v[22]}${v[24]}${v[25]}${v[26]}${v[27]}${v[28]}${v[29]}${v[30]}${v[31]}${v[32]}${v[33]}${v[34]}${v[35]}`;
+  return Buffer.from(hex, "hex").toString("base64url");
+};
 
 export const genderEnum = pgEnum("gender", ["M", "F", "U"]);
 
@@ -34,7 +61,7 @@ const basicTimestamps = () => ({
 });
 
 export const pgUsers = pgTable("users", {
-  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  id: cpuuid("id").primaryKey().notNull().$defaultFn(randomCUUID),
   firstname: varchar("firstname", { length: 40 }).notNull(),
   lastname: varchar("lastname", { length: 40 }).notNull(),
   gender: genderEnum("gender").notNull().default("U"),
@@ -46,8 +73,8 @@ export const pgUsers = pgTable("users", {
 });
 
 export const pgSessions = pgTable("sessions", {
-  id: uuid("id").primaryKey().notNull().defaultRandom(),
-  userId: uuid("user_id")
+  id: cpuuid("id").primaryKey().notNull().$defaultFn(randomCUUID),
+  userId: cpuuid("user_id")
     .notNull()
     .references(() => pgUsers.id, {
       onUpdate: "cascade",
@@ -59,8 +86,8 @@ export const pgSessions = pgTable("sessions", {
 });
 
 export const pgSessionsBlacklist = pgTable("sessions_blacklist", {
-  sessionId: uuid("session_id").primaryKey().notNull(),
-  userId: uuid("user_id")
+  sessionId: cpuuid("session_id").primaryKey().notNull(),
+  userId: cpuuid("user_id")
     .notNull()
     .references(() => pgUsers.id, {
       onUpdate: "cascade",
@@ -88,7 +115,7 @@ export const pgPricingPlans = pgTable("pricing_plans", {
 });
 
 export const pgOrganizations = pgTable("organizations", {
-  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  id: cpuuid("id").primaryKey().notNull().$defaultFn(randomCUUID),
   name: varchar("name", { length: 54 }).notNull(),
   slug: varchar("slug", { length: 30 }).notNull(),
   description: varchar("description", { length: 200 }).notNull().default(""),
@@ -99,13 +126,13 @@ export const pgOrganizations = pgTable("organizations", {
   email: varchar("email", { length: 30 }).unique().notNull(),
   phone: varchar("phone", { length: 16 }),
   rating: numeric("rating", { mode: "number", precision: 1 }),
-  adminId: uuid("admin_id")
+  adminId: cpuuid("admin_id")
     .notNull()
     .references(() => pgUsers.id, {
       onUpdate: "cascade",
       onDelete: "cascade",
     }),
-  pricingPlanId: uuid("pricing_plan_id")
+  pricingPlanId: cpuuid("pricing_plan_id")
     .notNull()
     .references(() => pgPricingPlans.id, {
       onUpdate: "cascade",
@@ -118,8 +145,8 @@ export const pgOrganizations = pgTable("organizations", {
 });
 
 export const pgOrganizationCalendars = pgTable("organization_calendars", {
-  id: uuid("id").primaryKey().notNull().defaultRandom(),
-  organizationId: uuid("organization_id")
+  id: cpuuid("id").primaryKey().notNull().$defaultFn(randomCUUID),
+  organizationId: cpuuid("organization_id")
     .notNull()
     .references(() => pgOrganizations.id, {
       onUpdate: "cascade",
@@ -133,8 +160,8 @@ export const pgOrganizationCalendars = pgTable("organization_calendars", {
 });
 
 export const pgEmployeeCalendars = pgTable("employee_calendars", {
-  id: uuid("id").primaryKey().notNull().defaultRandom(),
-  employeeId: uuid("employeeId")
+  id: cpuuid("id").primaryKey().notNull().$defaultFn(randomCUUID),
+  employeeId: cpuuid("employeeId")
     .notNull()
     .references(() => pgUsers.id, {
       onUpdate: "cascade",
@@ -150,35 +177,44 @@ export const pgEmployeeCalendars = pgTable("employee_calendars", {
 export const pgEmployees = pgTable(
   "employees",
   {
-    organizationId: uuid("organization_office_id")
+    id: cpuuid("id").primaryKey().notNull().$defaultFn(randomCUUID),
+    organizationId: cpuuid("organization_office_id")
       .notNull()
       .references(() => pgOrganizations.id, {
         onUpdate: "cascade",
         onDelete: "cascade",
       }),
-    userId: uuid("user_id").notNull(),
+    userId: cpuuid("user_id").notNull(),
     jobTitle: varchar("job_title", { length: 50 }).notNull(),
     jobDescription: varchar("job_description", { length: 200 }).notNull(),
     isActive: boolean("is_active").notNull().default(true),
-    calendarId: uuid("calendar_id").references(() => pgEmployeeCalendars.id, {
+    calendarId: cpuuid("calendar_id").references(() => pgEmployeeCalendars.id, {
       onUpdate: "cascade",
       onDelete: "cascade",
     }),
     ...basicTimestamps(),
   },
-  (table) => [primaryKey({ columns: [table.organizationId, table.userId] })],
+  (table: any) => [
+    uniqueIndex("service_first_employees_uk").on(
+      table.organizationId,
+      table.userId,
+    ),
+  ],
 );
 
 export const pgOrganizationServices = pgTable("organization_services", {
-  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  id: cpuuid("id").primaryKey().notNull().$defaultFn(randomCUUID),
   name: varchar("name", { length: 54 }).notNull(),
   description: varchar("description", { length: 200 }).notNull().default(""),
   isActive: boolean("is_active").notNull().default(true),
-  calendarId: uuid("calendar_id").references(() => pgOrganizationCalendars.id, {
-    onUpdate: "cascade",
-    onDelete: "cascade",
-  }),
-  organizationId: uuid("organization_id")
+  calendarId: cpuuid("calendar_id").references(
+    () => pgOrganizationCalendars.id,
+    {
+      onUpdate: "cascade",
+      onDelete: "cascade",
+    },
+  ),
+  organizationId: cpuuid("organization_id")
     .notNull()
     .references(() => pgOrganizations.id, {
       onUpdate: "cascade",
@@ -190,15 +226,15 @@ export const pgOrganizationServices = pgTable("organization_services", {
 export const pgServiceFirstEmployees = pgTable(
   "service_first_employees",
   {
-    serviceId: uuid("service_id")
+    serviceId: cpuuid("service_id")
       .notNull()
       .references(() => pgOrganizationServices.id, {
         onUpdate: "cascade",
         onDelete: "cascade",
       }),
-    employeeId: uuid("employee_id")
+    employeeId: cpuuid("employee_id")
       .notNull()
-      .references(() => pgEmployees.userId, {
+      .references(() => pgEmployees.id, {
         onUpdate: "cascade",
         onDelete: "cascade",
       }),
@@ -208,18 +244,18 @@ export const pgServiceFirstEmployees = pgTable(
 );
 
 export const pgTasks = pgTable("tasks", {
-  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  id: cpuuid("id").primaryKey().notNull().$defaultFn(randomCUUID),
   isDone: boolean("is_done").default(false).notNull(),
   name: varchar("name", { length: 54 }).notNull(),
   status: varchar("status", { length: 20 }).notNull(),
   progress: jsonb("progress"),
-  serviceId: uuid("service_id")
+  serviceId: cpuuid("service_id")
     .references(() => pgOrganizationServices.id, {
       onUpdate: "cascade",
       onDelete: "cascade",
     })
     .notNull(),
-  clientId: uuid("client_id")
+  clientId: cpuuid("client_id")
     .references(() => pgUsers.id, {
       onUpdate: "cascade",
       onDelete: "cascade",
@@ -270,7 +306,7 @@ export const pgEmployeeCalendarsRelations = relations(
     }),
     employee: one(pgEmployees, {
       fields: [pgEmployeeCalendars.employeeId],
-      references: [pgEmployees.userId],
+      references: [pgEmployees.id],
     }),
   }),
 );
@@ -310,7 +346,7 @@ export const pgServiceFirstEmployeesRelations = relations(
     }),
     employee: one(pgEmployees, {
       fields: [pgServiceFirstEmployees.employeeId],
-      references: [pgEmployees.userId],
+      references: [pgEmployees.id],
     }),
   }),
 );

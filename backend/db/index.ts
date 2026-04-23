@@ -13,6 +13,10 @@ const pool = new Pool({
 });
 
 const sqlite = new Database(dbConfig.sqliteDatabaseURL);
+// Use .exec() to run PRAGMA commands in Bun
+sqlite.run("PRAGMA journal_mode = WAL;");
+sqlite.run("PRAGMA synchronous = NORMAL;");
+sqlite.run("PRAGMA foreign_keys = ON;");
 export const dbPG = drizzlePG({ client: pool, schema: pgSchema });
 export const dbSQLite = drizzleSQLite(sqlite, { schema: sqliteSchema });
 // export const db = config.isProduction ? dbPG : dbSQLite;
