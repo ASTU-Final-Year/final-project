@@ -26,11 +26,11 @@ import {
   Loader2,
   User,
   CalendarIcon,
-  CalendarCogIcon,
 } from "lucide-react";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -65,26 +65,25 @@ import { Textarea } from "@/components/ui/textarea";
 import AcriveBadge from "@/components/ui/active-badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
-import { useOrganizationStore } from "@/store";
+import { useParams } from "next/navigation";
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
+import { Switch } from "@/components/ui/switch";
 
-export default function EmployeesPage() {
-  const organization = useOrganizationStore(({ organization }) => organization);
-  const setOrganization = useOrganizationStore(
-    ({ setOrganization }) => setOrganization,
-  );
-  const employees = useOrganizationStore(({ employees }) => employees);
-  const setEmployees = useOrganizationStore(({ setEmployees }) => setEmployees);
-  const employeeCount = useOrganizationStore(
-    ({ employeeCount }) => employeeCount,
-  );
-  const setEmployeeCount = useOrganizationStore(
-    ({ setEmployeeCount }) => setEmployeeCount,
-  );
-  // const [employees, setEmployees] = useState([]);
+export default function ServiceFirstEmployeesPage() {
+  const { service_id } = useParams();
+  const [employees, setEmployees] = useState([]);
+  const [totalEmployeesCount, setTotalEmployeesCount] = useState(0);
+  const [firstEmployees, setFirstEmployees] = useState([]);
   const [selectedEmployees, setSelectedEmployees] = useState({});
-  // const [employeeCount, setEmployeeCount] = useState(0);
-  // const [organizationId, setOrganizationId] = useState(null);
-  const [isLoading, setIsLoading] = useState(employees == null);
+  const [totalCount, setTotalCount] = useState(0);
+  const [organizationId, setOrganizationId] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // View & Filter States
@@ -96,31 +95,24 @@ export default function EmployeesPage() {
 
   // Dialog States
   const [isAddOpen, setIsAddOpen] = useState(false);
-  const [isEditOpen, setIsEditOpen] = useState(false);
+  // const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
 
   // Form States
   const [formData, setFormData] = useState({
-    email: "",
-    jobTitle: "",
-    jobDescription: "",
-    isActive: true,
-    calendarId: null,
+    employeeId: "",
   });
 
-  const organizationId = organization?.id;
   // --- Data Fetching ---
   useEffect(() => {
-    if (organization == null) {
-      RequestHandler.Get("/api/v1/organization").then(async (res) => {
-        if (res.ok) {
-          const { organization } = await res.json();
-          setOrganization(organization);
-        }
-      });
-    }
-  }, [organization, setOrganization]);
+    RequestHandler.Get("/api/v1/organization").then(async (res) => {
+      if (res.ok) {
+        const { organization } = await res.json();
+        setOrganizationId(organization.id);
+      }
+    });
+  }, []);
 
   const fetchEmployees = useCallback(async () => {
     if (!organizationId) return;
@@ -145,7 +137,7 @@ export default function EmployeesPage() {
 
     if (countRes.ok) {
       const { count } = await countRes.json();
-      (async () => setEmployeeCount(count))();
+      (async () => setTotalEmployeesCount(count))();
     }
 
     if (dataRes.ok) {
@@ -170,56 +162,107 @@ export default function EmployeesPage() {
               .includes(searchQuery.toLowerCase()),
         );
       }
-      setEmployees(results);
+      console.log(results);
+      (async () => setEmployees(results))();
     }
-    (async () => setIsLoading(false))();
-  }, [
-    setEmployees,
-    setEmployeeCount,
-    organizationId,
-    page,
-    limit,
-    statusFilter,
-    searchQuery,
-  ]);
+    // (async () => setIsLoading(false))();
+  }, [organizationId, page, limit, statusFilter, searchQuery]);
 
   useEffect(() => {
     fetchEmployees();
   }, [fetchEmployees]);
 
+  const fetchFirstEmployees = useCallback(async () => {
+    if (!organizationId) return;
+    (async () => setIsLoading(true))();
+
+    const offset = (page - 1) * limit;
+    const params = new URLSearchParams({
+      o: offset.toString(),
+      l: limit.toString(),
+      iuser: 1,
+      icalendar: 1,
+    });
+
+    const [countRes, dataRes] = await Promise.all([
+      RequestHandler.Get(
+        `/api/v1/organization/${organizationId}/service/${service_id}/first_employees/count`,
+      ),
+      RequestHandler.Get(
+        `/api/v1/organization/${organizationId}/service/${service_id}/first_employees?${params.toString()}`,
+      ),
+    ]);
+
+    if (countRes.ok) {
+      const { count } = await countRes.json();
+      (async () => setTotalCount(count))();
+    }
+
+    if (dataRes.ok) {
+      const data = await dataRes.json();
+      console.log(data);
+      let results = data.firstEmployees || [];
+
+      if (statusFilter !== "all") {
+        results = results.filter(
+          (s) => s.isActive === (statusFilter === "active"),
+        );
+      }
+      if (searchQuery) {
+        results = results.filter(
+          (e) =>
+            e.user.firstname
+              .toLowerCase()
+              .includes(searchQuery.toLowerCase()) ||
+            e.user.lastname.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            e.user.jobTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            e.user.jobDescription
+              .toLowerCase()
+              .includes(searchQuery.toLowerCase()),
+        );
+      }
+      (async () => setFirstEmployees(results))();
+    }
+    (async () => setIsLoading(false))();
+  }, [organizationId, service_id, page, limit, statusFilter, searchQuery]);
+
+  useEffect(() => {
+    fetchFirstEmployees();
+  }, [fetchFirstEmployees]);
+
   // --- CRUD Handlers ---
-  const handleAddEmployee = async () => {
+  const handleAddFirstEmployee = async () => {
     setIsSubmitting(true);
     const res = await RequestHandler.Post(
-      `/api/v1/organization/${organizationId}/employees`,
+      `/api/v1/organization/${organizationId}/service/${service_id}/first_employee/${selectedEmployee}`,
       { body: [formData] },
     );
     if (res.ok) {
       setIsAddOpen(false);
-      setFormData({ name: "", description: "", isActive: true });
+      setFormData({ employeeId: "" });
       fetchEmployees();
     }
     setIsSubmitting(false);
   };
 
-  const handleEditEmployee = async () => {
-    setIsSubmitting(true);
-    const res = await RequestHandler.Patch(
-      `/api/v1/organization/${organizationId}/employee/${selectedEmployee.userId}`,
-      { body: formData },
-    );
-    if (res.ok) {
-      setIsEditOpen(false);
-      setSelectedEmployee(null);
-      fetchEmployees();
-    }
-    setIsSubmitting(false);
-  };
+  // const handleEditFirstEmployee = async () => {
+  //   setIsSubmitting(true);
+  //   const res = await RequestHandler.Patch(
+  //     `/api/v1/organization/${organizationId}/service/${service_id}/first_employee/${selectedEmployee.userId}`,
+  //     { body: formData },
+  //   );
+  //   if (res.ok) {
+  //     setIsEditOpen(false);
+  //     setSelectedEmployee(null);
+  //     fetchEmployees();
+  //   }
+  //   setIsSubmitting(false);
+  // };
 
-  const handleDeleteEmployee = async () => {
+  const handleDeleteFristEmployee = async () => {
     setIsSubmitting(true);
     const res = await RequestHandler.Delete(
-      `/api/v1/organization/${organizationId}/employee/${selectedEmployee.userId}`,
+      `/api/v1/organization/${organizationId}/service/${service_id}/first_employee/${selectedEmployee.userId}`,
     );
     if (res.ok) {
       setIsDeleteOpen(false);
@@ -229,36 +272,36 @@ export default function EmployeesPage() {
     setIsSubmitting(false);
   };
 
-  const openEdit = (employee) => {
-    setSelectedEmployee(employee);
-    setFormData({
-      email: employee.email,
-      jobTitle: employee.jobTitle,
-      jobDescription: employee.jobDescription,
-      isActive: employee.isActive,
-      calendarId: null,
-    });
-    setIsEditOpen(true);
-  };
+  // const openEdit = (employee) => {
+  //   setSelectedEmployee(employee);
+  //   setFormData({
+  //     email: employee.email,
+  //     jobTitle: employee.jobTitle,
+  //     jobDescription: employee.jobDescription,
+  //     isActive: employee.isActive,
+  //     calendarId: null,
+  //   });
+  //   setIsEditOpen(true);
+  // };
 
   const openDelete = (employee) => {
     setSelectedEmployee(employee);
     setIsDeleteOpen(true);
   };
 
-  const totalPages = Math.ceil(employeeCount / limit);
+  const totalPages = Math.ceil(totalCount / limit);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Employees</h1>
+          <h1 className="text-3xl font-bold tracking-tight">First Employees</h1>
           <p className="text-sm text-muted-foreground">
-            Manage your employees.
+            Manage your first first employees assigned to a service.
           </p>
         </div>
         <Button onClick={() => setIsAddOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" /> Hire Employee
+          <Plus className="mr-2 h-4 w-4" /> Add First Employee
         </Button>
       </div>
 
@@ -269,7 +312,7 @@ export default function EmployeesPage() {
             <div className="relative w-full max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search employees..."
+                placeholder="Search first employees..."
                 className="pl-9 bg-background"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -311,10 +354,10 @@ export default function EmployeesPage() {
             <TableHeader className="bg-muted/30 uppercase">
               <TableRow>
                 <TableHead className="px-2"></TableHead>
-                {/* <TableHead className="font-bold">ID</TableHead> */}
+                <TableHead className="font-bold">ID</TableHead>
                 <TableHead className="font-bold">Fullname</TableHead>
-                <TableHead className="font-bold">Job</TableHead>
                 <TableHead className="font-bold">Gender</TableHead>
+                <TableHead className="font-bold">Job</TableHead>
                 {/* <TableHead className="font-bold text-center">
                   Calendar
                 </TableHead> */}
@@ -323,7 +366,7 @@ export default function EmployeesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {employees.map((employee) => (
+              {firstEmployees.map(({ employee }) => (
                 <TableRow key={employee.userId}>
                   <TableCell className="w-8">
                     <Checkbox
@@ -340,11 +383,11 @@ export default function EmployeesPage() {
                       }
                     />
                   </TableCell>
-                  {/* <TableCell>
+                  <TableCell>
                     <div className="text-xs font-mono">
                       {employee.userId.slice(0, 8)}
                     </div>
-                  </TableCell> */}
+                  </TableCell>
                   <TableCell>
                     <div className="font-semibold">
                       {`${employee.user?.firstname} ${employee.user?.lastname}`}
@@ -359,16 +402,16 @@ export default function EmployeesPage() {
                     </div>
                   </TableCell>
                   <TableCell>
+                    <div className="text-xs text-center text-muted-foreground truncate max-w-[400px]">
+                      {employee.user?.gender}
+                    </div>
+                  </TableCell>
+                  <TableCell>
                     <div className="text-xs text-muted-foreground truncate max-w-[400px]">
                       <div className="text-sm font-bold">
                         {employee.jobTitle}
                       </div>
                       <div>{employee.jobDescription}</div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-xs text-center text-muted-foreground truncate max-w-[400px]">
-                      {employee.user?.gender}
                     </div>
                   </TableCell>
                   {/* <TableCell>
@@ -380,9 +423,6 @@ export default function EmployeesPage() {
                     <AcriveBadge isActive={employee.isActive} />
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="icon">
-                      <CalendarCogIcon />
-                    </Button>
                     {employee.calendarId != null ? (
                       <Button variant="ghost" size="icon" asChild>
                         <Link
@@ -422,7 +462,7 @@ export default function EmployeesPage() {
       ) : (
         /* IMPROVED GRID VIEW */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {employees.map((employee) => (
+          {firstEmployees.map((employee) => (
             <Card
               key={employee.userId}
               className="bg-background  group flex flex-col relative overflow-hidden transition-all hover:ring-2 hover:ring-primary/20"
@@ -488,9 +528,9 @@ export default function EmployeesPage() {
             Showing{" "}
             <span className="font-medium">{(page - 1) * limit + 1}</span> to{" "}
             <span className="font-medium">
-              {Math.min(page * limit, employeeCount)}
+              {Math.min(page * limit, totalCount)}
             </span>{" "}
-            of <span className="font-medium">{employeeCount}</span>
+            of <span className="font-medium">{totalCount}</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Rows:</span>
@@ -541,52 +581,58 @@ export default function EmployeesPage() {
 
       {/* --- Modals (Keep Existing) --- */}
       <Dialog
-        open={isAddOpen || isEditOpen}
+        open={isAddOpen}
         onOpenChange={(val) => {
           if (!val) {
             setIsAddOpen(false);
-            setIsEditOpen(false);
+            // setIsEditOpen(false);
           }
         }}
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {isEditOpen ? "Edit Employee" : "Hire New Employee"}
-            </DialogTitle>
+            <DialogTitle>Add Frst Employee</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            {!isEditOpen && (
-              <div className="space-y-2">
-                <Label>Employee Email</Label>
-                <Input
-                  value={formData.email}
-                  onChange={(e) =>
-                    setFormData({ ...formData, email: e.target.value })
-                  }
-                />
-              </div>
-            )}
-
             <div className="space-y-2">
-              <Label>Job Title</Label>
+              {/* <Label>Employee ID</Label>
               <Input
-                value={formData.jobTitle}
+                value={formData.employeeId}
                 onChange={(e) =>
-                  setFormData({ ...formData, jobTitle: e.target.value })
+                  setFormData({ ...formData, employeeId: e.target.value })
                 }
-              />
+              /> */}
+              <FieldGroup className="w-full max-w-xs">
+                <Field orientation="horizontal">
+                  <FieldContent>
+                    <FieldLabel htmlFor="align-item">Align Item</FieldLabel>
+                    <FieldDescription>
+                      Toggle to align the item with the trigger.
+                    </FieldDescription>
+                  </FieldContent>
+                </Field>
+                <Field>
+                  <Select
+                    value={selectedEmployee}
+                    onValueChange={setSelectedEmployee}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent position="item-aligned">
+                      <SelectGroup>
+                        {employees?.map((employee, idx) => (
+                          <SelectItem key={idx} value={employee.userId}>
+                            {`${employee.user.firstname} ${employee.user.lastname}`}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </Field>
+              </FieldGroup>
             </div>
-            <div className="space-y-2">
-              <Label>Job Description</Label>
-              <Textarea
-                value={formData.jobDescription}
-                onChange={(e) =>
-                  setFormData({ ...formData, jobDescription: e.target.value })
-                }
-              />
-            </div>
-            <div className="flex items-center gap-2">
+            {/* <div className="flex items-center gap-2">
               <input
                 type="checkbox"
                 checked={formData.isActive}
@@ -597,26 +643,23 @@ export default function EmployeesPage() {
                 className="h-4 w-4 rounded border-gray-300 accent-primary"
               />
               <Label htmlFor="active-check">Set as Active</Label>
-            </div>
+            </div> */}
           </div>
           <DialogFooter>
             <Button
               variant="outline"
               onClick={() => {
                 setIsAddOpen(false);
-                setIsEditOpen(false);
+                // setIsEditOpen(false);
               }}
             >
               Cancel
             </Button>
-            <Button
-              onClick={isEditOpen ? handleEditEmployee : handleAddEmployee}
-              disabled={isSubmitting}
-            >
+            <Button onClick={handleAddFirstEmployee} disabled={isSubmitting}>
               {isSubmitting && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              {isEditOpen ? "Save Changes" : "Hire Employee"}
+              {"Add Employee"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -637,7 +680,7 @@ export default function EmployeesPage() {
             </Button>
             <Button
               variant="destructive"
-              onClick={handleDeleteEmployee}
+              onClick={handleDeleteFristEmployee}
               disabled={isSubmitting}
             >
               {isSubmitting ? (

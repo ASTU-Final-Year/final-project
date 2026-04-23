@@ -3,7 +3,14 @@
 import { useEffect, useState } from "react";
 import RequestHandler from "@/lib/request-handler";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Briefcase, Users, CalendarDays, Activity, User } from "lucide-react";
+import {
+  Briefcase,
+  Users,
+  CalendarDays,
+  Activity,
+  User,
+  Loader2,
+} from "lucide-react";
 import { useSessionStore } from "@/store";
 
 export default function DashboardOverview() {
@@ -46,7 +53,12 @@ export default function DashboardOverview() {
     fetchDashboardData();
   }, []);
 
-  if (isLoading) return <div>Loading overview...</div>;
+  if (isLoading)
+    return (
+      <div className="h-48 flex items-center justify-center border rounded bg-card">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
   if (!client) return <div>Client not found.</div>;
 
   return (
@@ -107,6 +119,7 @@ export default function DashboardOverview() {
         <StatCard
           title="Appointments"
           value={stats.appointments}
+          href={"/dashboard/client/appointments"}
           icon={CalendarDays}
         />
         <StatCard
@@ -120,12 +133,39 @@ export default function DashboardOverview() {
   );
 }
 
-function StatCard({ title, value, icon: Icon }) {
+const StatCardTitle = ({ href, className, children, ...props }) => {
+  return href ? (
+    <Link
+      href={href}
+      className={cn(
+        "flex flex-row items-center justify-between space-y-0 hover:underline w-full",
+        className,
+      )}
+      {...props}
+    >
+      {children}
+    </Link>
+  ) : (
+    <div
+      className={cn(
+        "flex flex-row items-center justify-between space-y-0 w-full",
+        className,
+      )}
+      {...props}
+    >
+      {children}
+    </div>
+  );
+};
+
+function StatCard({ title, value, icon: Icon, href }) {
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <Icon className="h-4 w-4 text-muted-foreground" />
+      <CardHeader className="pb-2">
+        <StatCardTitle href={href}>
+          <CardTitle className="text-sm font-medium">{title}</CardTitle>
+          <Icon className="h-4 w-4 text-muted-foreground" />
+        </StatCardTitle>
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">{value}</div>
