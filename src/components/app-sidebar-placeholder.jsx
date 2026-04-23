@@ -37,18 +37,19 @@ import {
 import { useSessionStore } from "@/store";
 import Auth from "@/lib/auth";
 import { useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
 
 const navData = [
-  {
-    title: "Overview",
-    url: "/dashboard/client",
-    icon: LayoutDashboard,
-  },
-  {
-    title: "Appointments",
-    url: "/dashboard/client/appointments",
-    icon: CalendarDays,
-  },
+  // {
+  //   title: "Overview",
+  //   url: "/dashboard/client",
+  //   icon: LayoutDashboard,
+  // },
+  // {
+  //   title: "Appointments",
+  //   url: "/dashboard/client/appointments",
+  //   icon: CalendarDays,
+  // },
   // {
   //   title: "Analytics",
   //   url: "/dashboard/employee/analytics",
@@ -56,7 +57,7 @@ const navData = [
   // },
 ];
 
-export function AppSidebarClient() {
+export function AppSidebarPlaceholder() {
   const router = useRouter();
   const pathname = usePathname();
 
@@ -74,7 +75,7 @@ export function AppSidebarClient() {
                   ServeSync+
                 </span>
                 <span className="truncate text-[10px] uppercase tracking-wider font-bold text-primary">
-                  Client
+                  Panel
                 </span>
               </div>
             </SidebarMenuButton>

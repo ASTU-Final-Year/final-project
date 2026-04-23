@@ -52,8 +52,8 @@ function NotFound() {
             </CardTitle>
 
             <CardDescription className="text-base mt-2 mx-auto max-w-[300px]">
-              We couldn't find the page you're looking for. It might have been
-              moved or deleted.
+              We couldn&apos;t find the page you&apos;re looking for. It might
+              have been moved or deleted.
             </CardDescription>
           </CardHeader>
 

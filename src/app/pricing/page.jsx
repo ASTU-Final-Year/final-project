@@ -136,10 +136,11 @@ export function PricingPlanView({ className, ...props }) {
   const setPricingPlans = usePricingPlanStore((state) => state.setPricingPlans);
   const selectedPlan = usePricingPlanStore((state) => state.selectedPlan);
   const setSelectedPlan = usePricingPlanStore((state) => state.setSelectedPlan);
-  const hasHydrated = usePricingPlanStore.persist?.hasHydrated();
+  const hasHydrated = usePricingPlanStore((state) => state.hasHydrated);
+  // const hasHydrated = usePricingPlanStore.persist?.hasHydrated();
 
   useEffect(() => {
-    if (hasHydrated && Object.entries(pricingPlans).length === 0) {
+    if (!pricingPlans || pricingPlans.length === 0) {
       RequestHandler.Get("/api/v1/pricing-plans").then(async (res) => {
         if (res.ok) {
           const data = await res.json();
@@ -157,13 +158,7 @@ export function PricingPlanView({ className, ...props }) {
         }
       });
     }
-  }, [
-    selectedPlan,
-    setPricingPlans,
-    setSelectedPlan,
-    hasHydrated,
-    pricingPlans,
-  ]);
+  }, [selectedPlan, setPricingPlans, setSelectedPlan, pricingPlans]);
 
   const plan = pricingPlans[selectedPlan];
   if (!hasHydrated || !plan) {
@@ -307,6 +302,7 @@ export function PricingPlanView({ className, ...props }) {
     </div>
   );
 }
+
 export function PricingComparisonTable() {
   const pricingPlans = usePricingPlanStore((state) => state.pricingPlans);
   const hasHydrated = usePricingPlanStore.persist?.hasHydrated();
@@ -345,7 +341,7 @@ export function PricingComparisonTable() {
           Compare all features
         </h2>
         <p className="text-slate-500 mt-2">
-          Find the perfect fit for your team's size and needs.
+          Find the perfect fit for your team&apos;s size and needs.
         </p>
       </div>
 
@@ -454,6 +450,7 @@ export function PricingComparisonTable() {
     </div>
   );
 }
+
 export default function PricingPlansPage() {
   return (
     <div className="min-h-screen py-16 px-4 md:px-8 flex flex-col items-center bg-background">

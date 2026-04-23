@@ -34,13 +34,13 @@ function WelcomeContent() {
         // Decode the Base64 string and parse the JSON payload
         const decodedString = atob(infoParam);
         const parsedData = JSON.parse(decodedString);
-        setWelcomeData(parsedData);
+        (() => setWelcomeData(parsedData))();
       } catch (err) {
         console.error("Failed to parse welcome info:", err);
-        setError(true);
+        (() => setError(true))();
       }
     } else {
-      setError(true);
+      (() => setError(true))();
     }
   }, [infoParam]);
 
@@ -68,8 +68,8 @@ function WelcomeContent() {
             Invalid Link
           </CardTitle>
           <CardDescription className="text-base mb-8">
-            We couldn't verify your invitation details. The link may be broken
-            or expired.
+            We couldn&apos;t verify your invitation details. The link may be
+            broken or expired.
           </CardDescription>
           <Button
             onClick={() => router.push("/")}

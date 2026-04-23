@@ -74,7 +74,7 @@ export function AppSidebarEmployee() {
                   ServeSync+
                 </span>
                 <span className="truncate text-[10px] uppercase tracking-wider font-bold text-primary">
-                  Employee Admin Panel
+                  Employee
                 </span>
               </div>
             </SidebarMenuButton>
@@ -136,9 +136,9 @@ function SidebarItem({ item, pathname }) {
                       asChild
                       isActive={pathname === sub.url}
                     >
-                      <a href={sub.url} className="font-medium">
+                      <Link href={sub.url} className="font-medium">
                         {sub.title}
-                      </a>
+                      </Link>
                     </SidebarMenuSubButton>
                   </SidebarMenuSubItem>
                 ))}
@@ -151,10 +151,10 @@ function SidebarItem({ item, pathname }) {
             tooltip={item.title}
             isActive={pathname === item.url}
           >
-            <a href={item.url}>
+            <Link href={item.url}>
               <item.icon className="size-4" />
               <span className="font-semibold">{item.title}</span>
-            </a>
+            </Link>
           </SidebarMenuButton>
         )}
       </SidebarMenuItem>
