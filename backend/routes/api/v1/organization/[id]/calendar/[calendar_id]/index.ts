@@ -127,6 +127,37 @@ export default {
       },
     ],
   },
+  DELETE: {
+    FILTER: [
+      parseCookie(),
+      authenticate({ parseAuth: parseAuth }),
+      authorize({
+        allowRole: (role) => role === "organization_admin",
+      }),
+      parseSession(),
+    ],
+    HANDLER: [
+      async (req, { session, params }) => {
+        const { id, calendar_id } = params;
+        const organization =
+          await OrganizationService.getOrganizationByAdminIdPure(
+            session.userId,
+          );
+        if (organization == null) {
+          return status(Status._404_NotFound, "Organization not found");
+        }
+        if (organization.id !== id) {
+          return status(Status._403_Forbidden);
+        }
+        const calendar =
+          await OrganizationService.deleteCalendarById(calendar_id);
+        if (calendar == null) {
+          return status(Status._404_NotFound, "Calendar not found");
+        }
+        return json({ success: true });
+      },
+    ],
+  },
 } satisfies RouterHandlers<
   CTXCookie & CTXAuth & CTXSession,
   {
