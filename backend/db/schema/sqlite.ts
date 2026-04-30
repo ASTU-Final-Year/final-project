@@ -136,7 +136,7 @@ export const sqOrganizations = sqliteTable(
         onUpdate: "cascade",
         onDelete: "cascade",
       }),
-    pricingPlanId: text("pricing_plan_id")
+    pricingPlanId: text("pricing_plan_id", { length: 16 })
       .notNull()
       .references(() => sqPricingPlans.id, {
         onUpdate: "cascade",

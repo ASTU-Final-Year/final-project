@@ -396,7 +396,6 @@ export default function RegisterOrganizationContent({ searchParams }) {
                         "pl-11 h-12",
                         errors.adminEmail && "border-red-500",
                       )}
-                      isSubmitting
                       type="email"
                       value={formData.adminEmail}
                       onChange={(e) =>
