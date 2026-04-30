@@ -1,3 +1,5 @@
+// backend/db/schema/sqlite.ts
+
 import { relations, sql } from "drizzle-orm";
 import {
   customType,
@@ -134,7 +136,7 @@ export const sqOrganizations = sqliteTable(
         onUpdate: "cascade",
         onDelete: "cascade",
       }),
-    pricingPlanId: cpuuid("pricing_plan_id")
+    pricingPlanId: text("pricing_plan_id")
       .notNull()
       .references(() => sqPricingPlans.id, {
         onUpdate: "cascade",

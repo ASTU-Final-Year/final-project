@@ -115,7 +115,8 @@ export default function RegisterOrganizationContent({ searchParams }) {
       selectedPlan ||
       (pricingPlans?.length > 0 ? pricingPlans[0] : "");
     if (initialPlanId) {
-      setFormData((prev) => ({ ...prev, pricingPlanId: initialPlanId }));
+      (() =>
+        setFormData((prev) => ({ ...prev, pricingPlanId: initialPlanId })))();
     }
   }, [planQuery, selectedPlan, pricingPlans]);
 
@@ -126,7 +127,7 @@ export default function RegisterOrganizationContent({ searchParams }) {
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/(^-|-$)+/g, "")
         .substring(0, 30);
-      setFormData((prev) => ({ ...prev, slug: generatedSlug }));
+      (() => setFormData((prev) => ({ ...prev, slug: generatedSlug })))();
     }
   }, [formData.name]);
 
@@ -234,6 +235,7 @@ export default function RegisterOrganizationContent({ searchParams }) {
     <div className="max-w-3xl mx-auto w-full">
       <div className="text-center mb-10">
         <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-primary/10 mb-4">
+          pricingPlans selectedPlan
           <Building2 className="h-8 w-8 text-primary" />
         </div>
         <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
