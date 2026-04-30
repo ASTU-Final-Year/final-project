@@ -13,7 +13,7 @@
     "db:push:sqlite": "drizzle-kit push --config=drizzle.config.sqlite.ts",
     "db:studio:sqlite": "drizzle-kit studio --config=drizzle.config.sqlite.ts",
     "db:drop:sqlite": "drizzle-kit drop --config=drizzle.config.sqlite.ts",
-    "postinstall": "drizzle-kit push",
+    "postinstall": "bun ./postinstall.js && bun db:push:sqlite",
     "dev": "bun db:push:sqlite && concurrently \"bun --bun run dev:frontend\" \"bun --bun run dev:backend\"",
     "dev:frontend": "next dev --turbopack",
     "dev:backend": "cd backend && bun --bun --env-file='../.env' --watch --hot run index.ts",
