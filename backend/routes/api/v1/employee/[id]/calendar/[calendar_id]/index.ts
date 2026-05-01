@@ -1,4 +1,4 @@
-// ROUTE /api/v1/employee/:id/calendar/:service_id
+// ROUTE /api/v1/employee/:id/calendar/:calendar_id
 import {
   authenticate,
   authorize,
@@ -72,7 +72,7 @@ export default {
             return status(Status._404_NotFound, "Employee not found");
           }
         } else {
-          employee = await EmployeeService.getEmployeeById(session.userId);
+          employee = await EmployeeService.getEmployeeById(id);
           if (employee == null) {
             return status(Status._404_NotFound, "Employee not found");
           }
@@ -82,7 +82,7 @@ export default {
         }
         const calendar = await EmployeeService.getCalendarByIdByEmployeeId(
           calendar_id,
-          employee.userId,
+          employee.id,
         );
         if (calendar == null) {
           return status(Status._404_NotFound, "Calendar not found");

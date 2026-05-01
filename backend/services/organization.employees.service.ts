@@ -241,7 +241,25 @@ export default class OrganizationEmployeesService {
       .from(employees)
       .innerJoin(users, eq(employees.userId, users.id))
       .leftJoin(organizations, eq(employees.organizationId, organizations.id))
+      .leftJoin(
+        employeeCalendars,
+        eq(employeeCalendars.employeeId, employees.id),
+      )
       .where(eq(employees.id, employeeId))) as Employee[];
+    return employee;
+  }
+
+  static async getEmployeeByUserId(userId: string): Promise<Employee[]> {
+    const employee = (await db
+      .select(fullEmployeeSelect)
+      .from(employees)
+      .innerJoin(users, eq(employees.userId, users.id))
+      .leftJoin(organizations, eq(employees.organizationId, organizations.id))
+      .leftJoin(
+        employeeCalendars,
+        eq(employeeCalendars.employeeId, employees.id),
+      )
+      .where(eq(employees.userId, userId))) as Employee[];
     return employee;
   }
 

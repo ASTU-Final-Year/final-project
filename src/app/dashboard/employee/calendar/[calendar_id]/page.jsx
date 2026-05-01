@@ -125,14 +125,14 @@ export default function SmartCalendarGrid() {
   const [isLoading, setIsLoading] = useState(true);
 
   // --- Data Fetching ---
-  useEffect(() => {
-    RequestHandler.Get("/api/v1/employee").then(async (res) => {
-      if (res.ok) {
-        const { employee } = await res.json();
-        setEmployeeId(employee.userId);
-      }
-    });
-  }, []);
+  // useEffect(() => {
+  //   RequestHandler.Get("/api/v1/employee").then(async (res) => {
+  //     if (res.ok) {
+  //       const { employee } = await res.json();
+  //       setEmployeeId(employee.userId);
+  //     }
+  //   });
+  // }, []);
 
   const fetchCalendars = useCallback(async () => {
     if (!employeeId) return;

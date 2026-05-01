@@ -11,20 +11,20 @@ It is an multi-sector dynamic schedule management and progress tracking system f
 git clone https://github.com/ASTU-Final-Year/final-project.git
 cd final-project
 
-# install dependencies
+# install dependencies then create local folders and initialize database
 bun i
 ```
 
 ---
 
 ```bash
-# run database migrations for development using sqlite
-pnpm db:push:sqlite
+# run drizzle studio to view and manage database for development using sqlite
+pnpm db:studio:sqlite
 ```
 
 ```bash
-# run database migrations for production using postgres
-pnpm db:push
+# run drizzle studio to view and manage database for production using sqlite
+pnpm db:studio
 ```
 
 ---
@@ -55,7 +55,7 @@ Finally open [http://localhost:3000](http://localhost:3000) with your browser.
 - Next.js 16 (React 19)
 - Tailwind CSS
 - Shadcn
-- Zod
+- Arktype
 - React Hook Forms
 - Recharts
 
@@ -81,8 +81,7 @@ Finally open [http://localhost:3000](http://localhost:3000) with your browser.
 
 ```env
 BUN_ENV=production
-NEXT_PUBLIC_API_URL=http://localhost:4000/api
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
+URL=http://localhost
 
 # Server
 
@@ -106,8 +105,5 @@ PORT=3000
 
 # DB
 PG_DATABASE_URL="postgresql://postgres:postgres@localhost:5432/servesyncplus"
-SQLITE_DATABASE_URL=".dev.db"
-SUPER_ADMIN_EMAIL="super.admin@servesyncplus.et"
-SUPER_ADMIN_FULLNAME="Super Admin"
-SUPER_ADMIN_PASSWORD="SuperAdmin@12345"
+SQLITE_DATABASE_URL=".local/dev.db"
 ```
