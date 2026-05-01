@@ -1,4 +1,4 @@
-// src/app/org-dashboard/services/page.jsx
+// src/app/templates/org-dashboard/services/page.jsx
 "use client";
 
 import React, { useState } from "react";
@@ -216,7 +216,7 @@ export default function ServicesPage() {
 
   const handleEditService = () => {
     const updatedServices = services.map((s) =>
-      s.id === selectedService.id ? { ...s, ...formData } : s
+      s.id === selectedService.id ? { ...s, ...formData } : s,
     );
     setServices(updatedServices);
     setIsEditDialogOpen(false);
@@ -264,16 +264,19 @@ export default function ServicesPage() {
 
   const toggleServiceStatus = (serviceId) => {
     const updatedServices = services.map((s) =>
-      s.id === serviceId ? { ...s, active: !s.active } : s
+      s.id === serviceId ? { ...s, active: !s.active } : s,
     );
     setServices(updatedServices);
   };
 
   // Calculate totals for stats cards
   const totalServices = services.length;
-  const activeServices = services.filter(s => s.active).length;
+  const activeServices = services.filter((s) => s.active).length;
   const totalBookings = services.reduce((acc, s) => acc + s.bookings, 0);
-  const totalRevenue = services.reduce((acc, s) => acc + s.price * s.bookings, 0);
+  const totalRevenue = services.reduce(
+    (acc, s) => acc + s.price * s.bookings,
+    0,
+  );
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -282,7 +285,7 @@ export default function ServicesPage() {
       <main className="flex-1 container mx-auto px-4 lg:px-8 py-8">
         {/* Back Navigation */}
         <div className="flex items-center gap-4 mb-6">
-          <Link href="/org-dashboard">
+          <Link href="/templates/org-dashboard">
             <Button variant="ghost" size="icon" className="h-8 w-8">
               <ArrowLeft className="h-4 w-4" />
             </Button>
@@ -335,12 +338,14 @@ export default function ServicesPage() {
             <DialogTrigger asChild>
               <Button className="bg-primary">
                 <Plus className="h-4 w-4 mr-2" />
-                   Add New Service 
+                Add New Service
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[600px]">
               <DialogHeader>
-                <DialogTitle className="text-2xl font-bold text-primary-600">Add New Service</DialogTitle>
+                <DialogTitle className="text-2xl font-bold text-primary-600">
+                  Add New Service
+                </DialogTitle>
                 <DialogDescription>
                   Create a new service offering for your organization.
                 </DialogDescription>
@@ -436,8 +441,8 @@ export default function ServicesPage() {
                         key={emp.id}
                         className={`flex items-center space-x-2 p-2 border rounded-lg cursor-pointer transition-all ${
                           formData.employees.includes(emp.name)
-                            ? 'border-primary-600 bg-primary-600/5'
-                            : 'border-primary-600/20 hover:border-primary-600/40'
+                            ? "border-primary-600 bg-primary-600/5"
+                            : "border-primary-600/20 hover:border-primary-600/40"
                         }`}
                         onClick={() => {
                           const updated = formData.employees.includes(emp.name)
@@ -453,7 +458,10 @@ export default function ServicesPage() {
                           onChange={() => {}}
                           className="rounded border-primary-600 text-primary-600 focus:ring-primary-600"
                         />
-                        <Label htmlFor={`emp-${emp.id}`} className="text-sm cursor-pointer flex-1">
+                        <Label
+                          htmlFor={`emp-${emp.id}`}
+                          className="text-sm cursor-pointer flex-1"
+                        >
                           {emp.name}
                         </Label>
                       </div>
@@ -461,7 +469,9 @@ export default function ServicesPage() {
                   </div>
                 </div>
                 <div className="flex items-center justify-between p-3 bg-primary-600/5 rounded-lg">
-                  <Label htmlFor="active" className="font-medium">Active Status</Label>
+                  <Label htmlFor="active" className="font-medium">
+                    Active Status
+                  </Label>
                   <Switch
                     id="active"
                     checked={formData.active}
@@ -473,10 +483,16 @@ export default function ServicesPage() {
                 </div>
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsAddDialogOpen(false)}
+                >
                   Cancel
                 </Button>
-                <Button onClick={handleAddService} className="bg-primary-600 hover:bg-primary-700">
+                <Button
+                  onClick={handleAddService}
+                  className="bg-primary-600 hover:bg-primary-700"
+                >
                   Create Service
                 </Button>
               </DialogFooter>
@@ -497,12 +513,17 @@ export default function ServicesPage() {
                   <TableHead className="font-semibold">Employees</TableHead>
                   <TableHead className="font-semibold">Bookings</TableHead>
                   <TableHead className="font-semibold">Status</TableHead>
-                  <TableHead className="text-right font-semibold">Actions</TableHead>
+                  <TableHead className="text-right font-semibold">
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredServices.map((service) => (
-                  <TableRow key={service.id} className="hover:bg-primary-600/5 transition-colors group">
+                  <TableRow
+                    key={service.id}
+                    className="hover:bg-primary-600/5 transition-colors group"
+                  >
                     <TableCell>
                       <div>
                         <p className="font-medium group-hover:text-primary-600 transition-colors">
@@ -514,7 +535,10 @@ export default function ServicesPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="bg-primary-600/10 text-primary-600 border-primary-600/20">
+                      <Badge
+                        variant="outline"
+                        className="bg-primary-600/10 text-primary-600 border-primary-600/20"
+                      >
                         {service.category}
                       </Badge>
                     </TableCell>
@@ -525,7 +549,9 @@ export default function ServicesPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <span className="font-semibold text-primary-600">${service.price}</span>
+                      <span className="font-semibold text-primary-600">
+                        ${service.price}
+                      </span>
                     </TableCell>
                     <TableCell>
                       <div className="flex -space-x-2">
@@ -535,7 +561,10 @@ export default function ServicesPage() {
                               <TooltipTrigger asChild>
                                 <Avatar className="h-6 w-6 border-2 border-background hover:z-10 transition-transform hover:scale-110">
                                   <AvatarFallback className="text-xs bg-primary-600/10 text-primary-600">
-                                    {emp.split(" ").map((n) => n[0]).join("")}
+                                    {emp
+                                      .split(" ")
+                                      .map((n) => n[0])
+                                      .join("")}
                                   </AvatarFallback>
                                 </Avatar>
                               </TooltipTrigger>
@@ -568,7 +597,9 @@ export default function ServicesPage() {
                       <div className="flex items-center gap-2">
                         <Switch
                           checked={service.active}
-                          onCheckedChange={() => toggleServiceStatus(service.id)}
+                          onCheckedChange={() =>
+                            toggleServiceStatus(service.id)
+                          }
                           className="data-[state=checked]:bg-primary-600"
                         />
                         <Badge
@@ -603,7 +634,11 @@ export default function ServicesPage() {
 
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-primary-600/10">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 hover:bg-primary-600/10"
+                            >
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
@@ -641,17 +676,50 @@ export default function ServicesPage() {
           <CardFooter className="border-t border-primary-600/20 px-6 py-4 bg-primary-600/5">
             <div className="flex items-center justify-between w-full text-sm">
               <div className="text-muted-foreground">
-                Showing <span className="font-medium text-primary-600">{filteredServices.length}</span> of{" "}
-                <span className="font-medium text-primary-600">{services.length}</span> services
+                Showing{" "}
+                <span className="font-medium text-primary-600">
+                  {filteredServices.length}
+                </span>{" "}
+                of{" "}
+                <span className="font-medium text-primary-600">
+                  {services.length}
+                </span>{" "}
+                services
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" disabled className="border-primary-600/20">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled
+                  className="border-primary-600/20"
+                >
                   Previous
                 </Button>
-                <Button size="sm" className="bg-primary-600 text-white hover:bg-primary-700">1</Button>
-                <Button variant="outline" size="sm" className="border-primary-600/20 hover:border-primary-600">2</Button>
-                <Button variant="outline" size="sm" className="border-primary-600/20 hover:border-primary-600">3</Button>
-                <Button variant="outline" size="sm" className="border-primary-600/20 hover:border-primary-600">
+                <Button
+                  size="sm"
+                  className="bg-primary-600 text-white hover:bg-primary-700"
+                >
+                  1
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-primary-600/20 hover:border-primary-600"
+                >
+                  2
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-primary-600/20 hover:border-primary-600"
+                >
+                  3
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-primary-600/20 hover:border-primary-600"
+                >
                   Next
                 </Button>
               </div>
@@ -666,7 +734,9 @@ export default function ServicesPage() {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-primary-600">Edit Service</DialogTitle>
+            <DialogTitle className="text-2xl font-bold text-primary-600">
+              Edit Service
+            </DialogTitle>
             <DialogDescription>
               Update the service details below.
             </DialogDescription>
@@ -739,14 +809,19 @@ export default function ServicesPage() {
                   type="number"
                   value={formData.price}
                   onChange={(e) =>
-                    setFormData({ ...formData, price: parseInt(e.target.value) })
+                    setFormData({
+                      ...formData,
+                      price: parseInt(e.target.value),
+                    })
                   }
                   className="border-primary-600/20 focus-visible:ring-primary-600/30"
                 />
               </div>
             </div>
             <div className="flex items-center justify-between p-3 bg-primary-600/5 rounded-lg">
-              <Label htmlFor="edit-active" className="font-medium">Active Status</Label>
+              <Label htmlFor="edit-active" className="font-medium">
+                Active Status
+              </Label>
               <Switch
                 id="edit-active"
                 checked={formData.active}
@@ -758,10 +833,16 @@ export default function ServicesPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditDialogOpen(false)}
+            >
               Cancel
             </Button>
-            <Button onClick={handleEditService} className="bg-primary-600 hover:bg-primary-700">
+            <Button
+              onClick={handleEditService}
+              className="bg-primary-600 hover:bg-primary-700"
+            >
               Save Changes
             </Button>
           </DialogFooter>
@@ -769,19 +850,27 @@ export default function ServicesPage() {
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-2xl font-bold text-red-600">Delete Service</AlertDialogTitle>
+            <AlertDialogTitle className="text-2xl font-bold text-red-600">
+              Delete Service
+            </AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
               <p>This action cannot be undone. This will permanently delete:</p>
               <div className="p-3 bg-red-600/5 rounded-lg border border-red-600/20">
                 <p className="font-semibold">{selectedService?.name}</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Category: {selectedService?.category} • Bookings: {selectedService?.bookings}
+                  Category: {selectedService?.category} • Bookings:{" "}
+                  {selectedService?.bookings}
                 </p>
               </div>
-              <p className="text-sm">All associated data will be removed from our servers.</p>
+              <p className="text-sm">
+                All associated data will be removed from our servers.
+              </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -1,4 +1,4 @@
-// app/org-dashboard/page.tsx
+// app/templates/templates/org-dashboard/page.tsx
 "use client";
 
 import React, { useState } from "react";
@@ -269,7 +269,8 @@ export default function OrgDashboardPage() {
   const [selectedService, setSelectedService] = useState(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const [isDeleteEmployeeDialogOpen, setIsDeleteEmployeeDialogOpen] = useState(false);
+  const [isDeleteEmployeeDialogOpen, setIsDeleteEmployeeDialogOpen] =
+    useState(false);
 
   // Service Management Handlers
   const handleAddService = (service) => {
@@ -344,14 +345,14 @@ export default function OrgDashboardPage() {
   const filteredServices = services.filter(
     (s) =>
       (s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.category.toLowerCase().includes(searchQuery.toLowerCase())) &&
-      (statusFilter === "all" || s.status === statusFilter)
+        s.category.toLowerCase().includes(searchQuery.toLowerCase())) &&
+      (statusFilter === "all" || s.status === statusFilter),
   );
 
   const filteredEmployees = employees.filter(
     (e) =>
       e.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      e.role.toLowerCase().includes(searchQuery.toLowerCase())
+      e.role.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   // Status badge color mapping
@@ -392,7 +393,7 @@ export default function OrgDashboardPage() {
           <div className="flex items-center gap-3">
             <Button
               variant="outline"
-              onClick={() => router.push("/org-dashboard/settings")}
+              onClick={() => router.push("/templates/org-dashboard/settings")}
             >
               <Settings className="mr-2 h-4 w-4" />
               Settings
@@ -445,7 +446,7 @@ export default function OrgDashboardPage() {
 
         {/* Quick Actions Cards - Services, Employees, Calendar */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Link href="/org-dashboard/services" className="block">
+          <Link href="/templates/org-dashboard/services" className="block">
             <Card className="hover:border-primary/50 transition-all hover:shadow-md group cursor-pointer">
               <CardContent className="p-4 flex items-center gap-4">
                 <div className="p-3 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
@@ -462,7 +463,7 @@ export default function OrgDashboardPage() {
             </Card>
           </Link>
 
-          <Link href="/org-dashboard/employees" className="block">
+          <Link href="/templates/org-dashboard/employees" className="block">
             <Card className="hover:border-primary/50 transition-all hover:shadow-md group cursor-pointer">
               <CardContent className="p-4 flex items-center gap-4">
                 <div className="p-3 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
@@ -479,7 +480,7 @@ export default function OrgDashboardPage() {
             </Card>
           </Link>
 
-          <Link href="/org-dashboard/calendar" className="block">
+          <Link href="/templates/org-dashboard/calendar" className="block">
             <Card className="hover:border-primary/50 transition-all hover:shadow-md group cursor-pointer">
               <CardContent className="p-4 flex items-center gap-4">
                 <div className="p-3 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
@@ -538,7 +539,10 @@ export default function OrgDashboardPage() {
                     <SelectItem value="inactive">Inactive</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button onClick={() => setIsAddServiceOpen(true)} className="bg-primary hover:bg-primary">
+                <Button
+                  onClick={() => setIsAddServiceOpen(true)}
+                  className="bg-primary hover:bg-primary"
+                >
                   <Plus className="mr-2 h-4 w-4" />
                   Add Service
                 </Button>
@@ -562,7 +566,10 @@ export default function OrgDashboardPage() {
                   </TableHeader>
                   <TableBody>
                     {filteredServices.map((service) => (
-                      <TableRow key={service.id} className="hover:bg-primary/5 transition-colors">
+                      <TableRow
+                        key={service.id}
+                        className="hover:bg-primary/5 transition-colors"
+                      >
                         <TableCell className="font-medium">
                           <div>
                             <p className="font-medium group-hover:text-primary transition-colors">
@@ -574,7 +581,10 @@ export default function OrgDashboardPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+                          <Badge
+                            variant="outline"
+                            className="bg-primary/10 text-primary border-primary/20"
+                          >
                             {service.category}
                           </Badge>
                         </TableCell>
@@ -583,19 +593,25 @@ export default function OrgDashboardPage() {
                           {service.price.toLocaleString()}
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className={
-                            service.availableSlots > 10 
-                              ? "bg-primary/10 text-primary" 
-                              : service.availableSlots > 5 
-                              ? "bg-yellow-500/10 text-yellow-600"
-                              : "bg-red-500/10 text-red-600"
-                          }>
+                          <Badge
+                            variant="outline"
+                            className={
+                              service.availableSlots > 10
+                                ? "bg-primary/10 text-primary"
+                                : service.availableSlots > 5
+                                  ? "bg-yellow-500/10 text-yellow-600"
+                                  : "bg-red-500/10 text-red-600"
+                            }
+                          >
                             {service.availableSlots} slots
                           </Badge>
                         </TableCell>
                         <TableCell>{service.bookingsThisMonth}</TableCell>
                         <TableCell>
-                          <Badge variant="outline" className={getStatusColor(service.status)}>
+                          <Badge
+                            variant="outline"
+                            className={getStatusColor(service.status)}
+                          >
                             {service.status === "active" ? (
                               <CheckCircle2 className="h-3 w-3 mr-1" />
                             ) : (
@@ -609,8 +625,14 @@ export default function OrgDashboardPage() {
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <Link href={`/org-dashboard/calendar?service=${service.id}`}>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-primary/10 hover:text-primary">
+                                  <Link
+                                    href={`/templates/org-dashboard/calendar?service=${service.id}`}
+                                  >
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 hover:bg-primary/10 hover:text-primary"
+                                    >
                                       <Calendar className="h-4 w-4" />
                                     </Button>
                                   </Link>
@@ -621,7 +643,11 @@ export default function OrgDashboardPage() {
 
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-primary/10">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 hover:bg-primary/10"
+                                >
                                   <MoreVertical className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
@@ -636,7 +662,9 @@ export default function OrgDashboardPage() {
                                   Edit
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
-                                  onClick={() => handleToggleServiceStatus(service.id)}
+                                  onClick={() =>
+                                    handleToggleServiceStatus(service.id)
+                                  }
                                 >
                                   {service.status === "active" ? (
                                     <>Deactivate</>
@@ -667,17 +695,50 @@ export default function OrgDashboardPage() {
               <CardFooter className="border-t border-primary/20 px-6 py-4 bg-primary/5">
                 <div className="flex items-center justify-between w-full text-sm">
                   <div className="text-muted-foreground">
-                    Showing <span className="font-medium text-primary">{filteredServices.length}</span> of{" "}
-                    <span className="font-medium text-primary">{services.length}</span> services
+                    Showing{" "}
+                    <span className="font-medium text-primary">
+                      {filteredServices.length}
+                    </span>{" "}
+                    of{" "}
+                    <span className="font-medium text-primary">
+                      {services.length}
+                    </span>{" "}
+                    services
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" disabled className="border-primary/20">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled
+                      className="border-primary/20"
+                    >
                       Previous
                     </Button>
-                    <Button size="sm" className="bg-primary text-white hover:bg-primary">1</Button>
-                    <Button variant="outline" size="sm" className="border-primary/20 hover:border-primary">2</Button>
-                    <Button variant="outline" size="sm" className="border-primary/20 hover:border-primary">3</Button>
-                    <Button variant="outline" size="sm" className="border-primary/20 hover:border-primary">
+                    <Button
+                      size="sm"
+                      className="bg-primary text-white hover:bg-primary"
+                    >
+                      1
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-primary/20 hover:border-primary"
+                    >
+                      2
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-primary/20 hover:border-primary"
+                    >
+                      3
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-primary/20 hover:border-primary"
+                    >
                       Next
                     </Button>
                   </div>
@@ -698,7 +759,10 @@ export default function OrgDashboardPage() {
                   className="pl-9 border-primary/20 focus-visible:ring-primary/30"
                 />
               </div>
-              <Button onClick={() => setIsAddEmployeeOpen(true)} className="bg-primary hover:bg-primary">
+              <Button
+                onClick={() => setIsAddEmployeeOpen(true)}
+                className="bg-primary hover:bg-primary"
+              >
                 <UserPlus className="mr-2 h-4 w-4" />
                 Hire Employee
               </Button>
@@ -706,7 +770,10 @@ export default function OrgDashboardPage() {
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {filteredEmployees.map((employee) => (
-                <Card key={employee.id} className="border-primary/20 hover:shadow-lg transition-all">
+                <Card
+                  key={employee.id}
+                  className="border-primary/20 hover:shadow-lg transition-all"
+                >
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
@@ -723,7 +790,10 @@ export default function OrgDashboardPage() {
                           <CardDescription>{employee.role}</CardDescription>
                         </div>
                       </div>
-                      <Badge variant="outline" className={getStatusColor(employee.status)}>
+                      <Badge
+                        variant="outline"
+                        className={getStatusColor(employee.status)}
+                      >
                         {employee.status === "active" ? (
                           <CheckCircle2 className="h-3 w-3 mr-1" />
                         ) : employee.status === "busy" ? (
@@ -739,11 +809,15 @@ export default function OrgDashboardPage() {
                     <div className="space-y-2 text-sm">
                       <div className="flex items-center gap-2">
                         <Mail className="h-4 w-4 text-primary" />
-                        <span className="text-muted-foreground">{employee.email}</span>
+                        <span className="text-muted-foreground">
+                          {employee.email}
+                        </span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Phone className="h-4 w-4 text-primary" />
-                        <span className="text-muted-foreground">{employee.phone}</span>
+                        <span className="text-muted-foreground">
+                          {employee.phone}
+                        </span>
                       </div>
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="h-4 w-4 text-primary" />
@@ -803,11 +877,16 @@ export default function OrgDashboardPage() {
                       <TableRow key={event.id}>
                         <TableCell>{event.date}</TableCell>
                         <TableCell>{event.time}</TableCell>
-                        <TableCell className="font-medium">{event.service}</TableCell>
+                        <TableCell className="font-medium">
+                          {event.service}
+                        </TableCell>
                         <TableCell>{event.client}</TableCell>
                         <TableCell>{event.employee}</TableCell>
                         <TableCell>
-                          <Badge variant="outline" className={getStatusColor(event.status)}>
+                          <Badge
+                            variant="outline"
+                            className={getStatusColor(event.status)}
+                          >
                             {event.status === "confirmed" ? (
                               <CheckCircle2 className="h-3 w-3 mr-1" />
                             ) : (
@@ -836,7 +915,9 @@ export default function OrgDashboardPage() {
       <Dialog open={isAddServiceOpen} onOpenChange={setIsAddServiceOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-primary">Add New Service</DialogTitle>
+            <DialogTitle className="text-2xl font-bold text-primary">
+              Add New Service
+            </DialogTitle>
             <DialogDescription>
               Fill in the details to add a new service offering.
             </DialogDescription>
@@ -844,20 +925,34 @@ export default function OrgDashboardPage() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>Service Name</Label>
-              <Input placeholder="e.g., Full Car Service" className="border-primary/20 focus-visible:ring-primary/30" />
+              <Input
+                placeholder="e.g., Full Car Service"
+                className="border-primary/20 focus-visible:ring-primary/30"
+              />
             </div>
             <div className="space-y-2">
               <Label>Description</Label>
-              <Textarea placeholder="Describe the service..." className="border-primary/20 focus-visible:ring-primary/30" />
+              <Textarea
+                placeholder="Describe the service..."
+                className="border-primary/20 focus-visible:ring-primary/30"
+              />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Duration (minutes)</Label>
-                <Input type="number" placeholder="60" className="border-primary/20 focus-visible:ring-primary/30" />
+                <Input
+                  type="number"
+                  placeholder="60"
+                  className="border-primary/20 focus-visible:ring-primary/30"
+                />
               </div>
               <div className="space-y-2">
                 <Label>Price (ETB)</Label>
-                <Input type="number" placeholder="500" className="border-primary/20 focus-visible:ring-primary/30" />
+                <Input
+                  type="number"
+                  placeholder="500"
+                  className="border-primary/20 focus-visible:ring-primary/30"
+                />
               </div>
             </div>
             <div className="space-y-2">
@@ -876,16 +971,26 @@ export default function OrgDashboardPage() {
             </div>
             <div className="space-y-2">
               <Label>Available Slots</Label>
-              <Input type="number" placeholder="10" className="border-primary/20 focus-visible:ring-primary/30" />
+              <Input
+                type="number"
+                placeholder="10"
+                className="border-primary/20 focus-visible:ring-primary/30"
+              />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddServiceOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsAddServiceOpen(false)}
+            >
               Cancel
             </Button>
             <Button
               onClick={() => {
-                toast({ title: "Demo", description: "Service would be added in production" });
+                toast({
+                  title: "Demo",
+                  description: "Service would be added in production",
+                });
                 setIsAddServiceOpen(false);
               }}
               className="bg-primary hover:bg-primary"
@@ -900,7 +1005,9 @@ export default function OrgDashboardPage() {
       <Dialog open={isAddEmployeeOpen} onOpenChange={setIsAddEmployeeOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-primary">Hire New Employee</DialogTitle>
+            <DialogTitle className="text-2xl font-bold text-primary">
+              Hire New Employee
+            </DialogTitle>
             <DialogDescription>
               Send an invitation to join your organization.
             </DialogDescription>
@@ -908,28 +1015,47 @@ export default function OrgDashboardPage() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>Full Name</Label>
-              <Input placeholder="Enter full name" className="border-primary/20 focus-visible:ring-primary/30" />
+              <Input
+                placeholder="Enter full name"
+                className="border-primary/20 focus-visible:ring-primary/30"
+              />
             </div>
             <div className="space-y-2">
               <Label>Email Address</Label>
-              <Input type="email" placeholder="employee@example.com" className="border-primary/20 focus-visible:ring-primary/30" />
+              <Input
+                type="email"
+                placeholder="employee@example.com"
+                className="border-primary/20 focus-visible:ring-primary/30"
+              />
             </div>
             <div className="space-y-2">
               <Label>Phone Number</Label>
-              <Input placeholder="+251 911 123456" className="border-primary/20 focus-visible:ring-primary/30" />
+              <Input
+                placeholder="+251 911 123456"
+                className="border-primary/20 focus-visible:ring-primary/30"
+              />
             </div>
             <div className="space-y-2">
               <Label>Role</Label>
-              <Input placeholder="e.g., Mechanic, Advisor" className="border-primary/20 focus-visible:ring-primary/30" />
+              <Input
+                placeholder="e.g., Mechanic, Advisor"
+                className="border-primary/20 focus-visible:ring-primary/30"
+              />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddEmployeeOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsAddEmployeeOpen(false)}
+            >
               Cancel
             </Button>
             <Button
               onClick={() => {
-                toast({ title: "Invitation Sent", description: "Employee will receive an email invitation" });
+                toast({
+                  title: "Invitation Sent",
+                  description: "Employee will receive an email invitation",
+                });
                 setIsAddEmployeeOpen(false);
               }}
               className="bg-primary hover:bg-primary"
@@ -941,23 +1067,32 @@ export default function OrgDashboardPage() {
       </Dialog>
 
       {/* Delete Service Confirmation Dialog */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-2xl font-bold text-red-600">Delete Service</AlertDialogTitle>
+            <AlertDialogTitle className="text-2xl font-bold text-red-600">
+              Delete Service
+            </AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
               <p>This action cannot be undone. This will permanently delete:</p>
               <div className="p-3 bg-red-600/5 rounded-lg border border-red-600/20">
                 <p className="font-semibold">{selectedService?.name}</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Category: {selectedService?.category} • Bookings: {selectedService?.bookingsThisMonth}
+                  Category: {selectedService?.category} • Bookings:{" "}
+                  {selectedService?.bookingsThisMonth}
                 </p>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteService} className="bg-red-600 hover:bg-red-700">
+            <AlertDialogAction
+              onClick={handleDeleteService}
+              className="bg-red-600 hover:bg-red-700"
+            >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -965,23 +1100,32 @@ export default function OrgDashboardPage() {
       </AlertDialog>
 
       {/* Delete Employee Confirmation Dialog */}
-      <AlertDialog open={isDeleteEmployeeDialogOpen} onOpenChange={setIsDeleteEmployeeDialogOpen}>
+      <AlertDialog
+        open={isDeleteEmployeeDialogOpen}
+        onOpenChange={setIsDeleteEmployeeDialogOpen}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-2xl font-bold text-red-600">Remove Employee</AlertDialogTitle>
+            <AlertDialogTitle className="text-2xl font-bold text-red-600">
+              Remove Employee
+            </AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
               <p>This action cannot be undone. This will permanently remove:</p>
               <div className="p-3 bg-red-600/5 rounded-lg border border-red-600/20">
                 <p className="font-semibold">{selectedEmployee?.name}</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Role: {selectedEmployee?.role} • Tasks: {selectedEmployee?.tasksCompleted}
+                  Role: {selectedEmployee?.role} • Tasks:{" "}
+                  {selectedEmployee?.tasksCompleted}
                 </p>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteEmployee} className="bg-red-600 hover:bg-red-700">
+            <AlertDialogAction
+              onClick={handleDeleteEmployee}
+              className="bg-red-600 hover:bg-red-700"
+            >
               Remove Employee
             </AlertDialogAction>
           </AlertDialogFooter>

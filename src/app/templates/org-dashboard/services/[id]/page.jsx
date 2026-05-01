@@ -1,4 +1,4 @@
-// src/app/org-dashboard/services/[id]/page.jsx
+// src/app/templates/org-dashboard/services/[id]/page.jsx
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -94,12 +94,17 @@ export default function ServiceDetailPage() {
   // Mock time slots
   const getTimeSlots = (date) => {
     const baseSlots = [
-      "09:00 AM", "10:00 AM", "11:00 AM", 
-      "01:00 PM", "02:00 PM", "03:00 PM", "04:00 PM"
+      "09:00 AM",
+      "10:00 AM",
+      "11:00 AM",
+      "01:00 PM",
+      "02:00 PM",
+      "03:00 PM",
+      "04:00 PM",
     ];
-    return baseSlots.map(time => ({
+    return baseSlots.map((time) => ({
       time,
-      available: Math.random() > 0.3
+      available: Math.random() > 0.3,
     }));
   };
 
@@ -115,7 +120,8 @@ export default function ServiceDetailPage() {
         orgLogo: "https://i.pravatar.cc/150?u=techcorp",
         category: "Consulting",
         description: "Expert business advice for startups and enterprises.",
-        longDescription: "Our comprehensive business consultation service is designed to help startups and established businesses navigate challenges and seize opportunities. Whether you're looking to launch a new product, enter a new market, or optimize your operations, our team of experienced consultants provides tailored advice and actionable strategies.\n\nWith over 15 years of industry experience, we've helped hundreds of businesses achieve their goals through strategic planning, market analysis, and growth optimization. Our approach combines data-driven insights with practical implementation strategies to ensure measurable results.\n\nWe specialize in working with businesses of all sizes - from early-stage startups to established enterprises. Each consultation is tailored to your specific needs, ensuring you get the most value from our expertise. Our consultants take the time to understand your unique challenges and opportunities before developing a customized roadmap for success.\n\nWhat sets us apart is our commitment to actionable advice. You won't just walk away with ideas - you'll have a clear, step-by-step plan that you can implement immediately. We provide ongoing support to ensure you're on track and achieving your goals.",
+        longDescription:
+          "Our comprehensive business consultation service is designed to help startups and established businesses navigate challenges and seize opportunities. Whether you're looking to launch a new product, enter a new market, or optimize your operations, our team of experienced consultants provides tailored advice and actionable strategies.\n\nWith over 15 years of industry experience, we've helped hundreds of businesses achieve their goals through strategic planning, market analysis, and growth optimization. Our approach combines data-driven insights with practical implementation strategies to ensure measurable results.\n\nWe specialize in working with businesses of all sizes - from early-stage startups to established enterprises. Each consultation is tailored to your specific needs, ensuring you get the most value from our expertise. Our consultants take the time to understand your unique challenges and opportunities before developing a customized roadmap for success.\n\nWhat sets us apart is our commitment to actionable advice. You won't just walk away with ideas - you'll have a clear, step-by-step plan that you can implement immediately. We provide ongoing support to ensure you're on track and achieving your goals.",
         duration: 60,
         price: 150,
         rating: 4.8,
@@ -132,14 +138,15 @@ export default function ServiceDetailPage() {
           linkedin: "#",
           instagram: "#",
         },
-        image: "https://images.unsplash.com/photo-1552664730-d307ca884978?ixlib=rb-4.0.3",
+        image:
+          "https://images.unsplash.com/photo-1552664730-d307ca884978?ixlib=rb-4.0.3",
         features: [
           "Strategic Planning & Business Roadmapping",
           "Market Analysis & Competitive Research",
           "Growth Strategy Development",
           "Operational Efficiency Optimization",
           "Financial Modeling & Forecasting",
-          "Risk Assessment & Mitigation"
+          "Risk Assessment & Mitigation",
         ],
         benefits: [
           "One-on-one consultation with industry experts",
@@ -147,7 +154,7 @@ export default function ServiceDetailPage() {
           "Actionable insights and implementation guidance",
           "Post-consultation support and resources",
           "Flexible scheduling options",
-          "Confidentiality guaranteed"
+          "Confidentiality guaranteed",
         ],
         requirements: [
           "Business plan or company overview",
@@ -173,7 +180,7 @@ export default function ServiceDetailPage() {
       date: selectedDate,
       time: selectedTime,
       employee: selectedEmployee,
-      ...bookingDetails
+      ...bookingDetails,
     });
     setIsBookingDialogOpen(false);
     alert("✅ Booking confirmed! Check your email for details.");
@@ -195,7 +202,9 @@ export default function ServiceDetailPage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary-600 border-t-transparent mx-auto mb-4"></div>
-          <p className="text-lg text-muted-foreground">Loading service details...</p>
+          <p className="text-lg text-muted-foreground">
+            Loading service details...
+          </p>
         </div>
       </div>
     );
@@ -216,7 +225,10 @@ export default function ServiceDetailPage() {
               <ArrowLeft className="h-4 w-4" />
               Back to Services
             </Button>
-            <Badge variant="outline" className="bg-primary-600/10 text-primary-600 border-primary-600/20">
+            <Badge
+              variant="outline"
+              className="bg-primary-600/10 text-primary-600 border-primary-600/20"
+            >
               <CalendarDays className="h-3.5 w-3.5 mr-1" />
               {service.availableSlots} slots available
             </Badge>
@@ -244,7 +256,9 @@ export default function ServiceDetailPage() {
                         {service.category}
                       </Badge>
                     </div>
-                    <p className="text-muted-foreground">{service.organization}</p>
+                    <p className="text-muted-foreground">
+                      {service.organization}
+                    </p>
                     <div className="flex items-center gap-4 mt-2">
                       <div className="flex items-center gap-1">
                         <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
@@ -259,7 +273,9 @@ export default function ServiceDetailPage() {
                       </div>
                       <div className="flex items-center gap-1">
                         <Clock className="h-4 w-4 text-primary-600" />
-                        <span className="text-sm">{service.duration} minutes</span>
+                        <span className="text-sm">
+                          {service.duration} minutes
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -270,7 +286,9 @@ export default function ServiceDetailPage() {
                 {/* Expanded Description */}
                 <div className="space-y-6">
                   <div>
-                    <h2 className="text-xl font-semibold mb-3">About this service</h2>
+                    <h2 className="text-xl font-semibold mb-3">
+                      About this service
+                    </h2>
                     <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
                       {service.longDescription}
                     </p>
@@ -291,7 +309,9 @@ export default function ServiceDetailPage() {
 
                   {/* Benefits */}
                   <div>
-                    <h3 className="font-semibold text-lg mb-3">What You'll Get</h3>
+                    <h3 className="font-semibold text-lg mb-3">
+                      What You'll Get
+                    </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {service.benefits.map((benefit, index) => (
                         <div key={index} className="flex items-start gap-2">
@@ -341,7 +361,9 @@ export default function ServiceDetailPage() {
                     </div>
                     <div className="text-right">
                       <p className="text-sm text-muted-foreground">Duration</p>
-                      <p className="font-semibold text-lg">{service.duration} min</p>
+                      <p className="font-semibold text-lg">
+                        {service.duration} min
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -358,7 +380,8 @@ export default function ServiceDetailPage() {
                     disabled={(date) => !isDateAvailable(date)}
                     className="rounded-lg border w-full"
                     classNames={{
-                      day_selected: "bg-primary-600 text-white hover:bg-primary-700",
+                      day_selected:
+                        "bg-primary-600 text-white hover:bg-primary-700",
                       day_today: "bg-primary-600/10 text-primary-600 font-bold",
                     }}
                     fromDate={new Date()}
@@ -373,7 +396,7 @@ export default function ServiceDetailPage() {
                         Available Times
                       </Label>
                       <span className="text-xs text-muted-foreground">
-                        {format(selectedDate, 'EEEE, MMMM d, yyyy')}
+                        {format(selectedDate, "EEEE, MMMM d, yyyy")}
                       </span>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
@@ -383,15 +406,21 @@ export default function ServiceDetailPage() {
                             <TooltipTrigger asChild>
                               <div>
                                 <Button
-                                  variant={selectedTime === time ? "default" : "outline"}
+                                  variant={
+                                    selectedTime === time
+                                      ? "default"
+                                      : "outline"
+                                  }
                                   className={`w-full ${
                                     selectedTime === time
                                       ? "bg-primary-600 hover:bg-primary-700"
                                       : !available
-                                      ? "opacity-50 cursor-not-allowed"
-                                      : "hover:border-primary-600"
+                                        ? "opacity-50 cursor-not-allowed"
+                                        : "hover:border-primary-600"
                                   }`}
-                                  onClick={() => available && setSelectedTime(time)}
+                                  onClick={() =>
+                                    available && setSelectedTime(time)
+                                  }
                                   disabled={!available}
                                 >
                                   <Clock className="h-3.5 w-3.5 mr-1.5" />
@@ -412,7 +441,10 @@ export default function ServiceDetailPage() {
                 )}
 
                 {/* Book Button */}
-                <Dialog open={isBookingDialogOpen} onOpenChange={setIsBookingDialogOpen}>
+                <Dialog
+                  open={isBookingDialogOpen}
+                  onOpenChange={setIsBookingDialogOpen}
+                >
                   <DialogTrigger asChild>
                     <Button
                       className="w-full bg-primary-600 hover:bg-primary-700 h-12 text-base"
@@ -424,7 +456,9 @@ export default function ServiceDetailPage() {
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-[500px]">
                     <DialogHeader>
-                      <DialogTitle className="text-xl font-bold">Complete Your Booking</DialogTitle>
+                      <DialogTitle className="text-xl font-bold">
+                        Complete Your Booking
+                      </DialogTitle>
                       <DialogDescription>
                         Please provide your details to confirm the appointment
                       </DialogDescription>
@@ -449,7 +483,9 @@ export default function ServiceDetailPage() {
                       <Separator className="my-2" />
                       <div className="flex justify-between font-semibold">
                         <span>Total:</span>
-                        <span className="text-primary-600">${service.price}</span>
+                        <span className="text-primary-600">
+                          ${service.price}
+                        </span>
                       </div>
                     </div>
 
@@ -463,7 +499,10 @@ export default function ServiceDetailPage() {
                             placeholder="John Doe"
                             value={bookingDetails.name}
                             onChange={(e) =>
-                              setBookingDetails({ ...bookingDetails, name: e.target.value })
+                              setBookingDetails({
+                                ...bookingDetails,
+                                name: e.target.value,
+                              })
                             }
                           />
                         </div>
@@ -475,7 +514,10 @@ export default function ServiceDetailPage() {
                             placeholder="john@example.com"
                             value={bookingDetails.email}
                             onChange={(e) =>
-                              setBookingDetails({ ...bookingDetails, email: e.target.value })
+                              setBookingDetails({
+                                ...bookingDetails,
+                                email: e.target.value,
+                              })
                             }
                           />
                         </div>
@@ -487,18 +529,26 @@ export default function ServiceDetailPage() {
                           placeholder="+1 (555) 000-0000"
                           value={bookingDetails.phone}
                           onChange={(e) =>
-                            setBookingDetails({ ...bookingDetails, phone: e.target.value })
+                            setBookingDetails({
+                              ...bookingDetails,
+                              phone: e.target.value,
+                            })
                           }
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="notes">Additional Notes (Optional)</Label>
+                        <Label htmlFor="notes">
+                          Additional Notes (Optional)
+                        </Label>
                         <Textarea
                           id="notes"
                           placeholder="Any special requirements or questions..."
                           value={bookingDetails.notes}
                           onChange={(e) =>
-                            setBookingDetails({ ...bookingDetails, notes: e.target.value })
+                            setBookingDetails({
+                              ...bookingDetails,
+                              notes: e.target.value,
+                            })
                           }
                           className="resize-none"
                           rows={3}
@@ -511,20 +561,29 @@ export default function ServiceDetailPage() {
                         <RadioGroup
                           value={bookingDetails.paymentMethod}
                           onValueChange={(value) =>
-                            setBookingDetails({ ...bookingDetails, paymentMethod: value })
+                            setBookingDetails({
+                              ...bookingDetails,
+                              paymentMethod: value,
+                            })
                           }
                           className="grid grid-cols-2 gap-2"
                         >
                           <div className="flex items-center space-x-2 border rounded-lg p-3 cursor-pointer hover:border-primary-600">
                             <RadioGroupItem value="card" id="card" />
-                            <Label htmlFor="card" className="cursor-pointer flex items-center gap-2">
+                            <Label
+                              htmlFor="card"
+                              className="cursor-pointer flex items-center gap-2"
+                            >
                               <CreditCard className="h-4 w-4" />
                               Card
                             </Label>
                           </div>
                           <div className="flex items-center space-x-2 border rounded-lg p-3 cursor-pointer hover:border-primary-600">
                             <RadioGroupItem value="paypal" id="paypal" />
-                            <Label htmlFor="paypal" className="cursor-pointer flex items-center gap-2">
+                            <Label
+                              htmlFor="paypal"
+                              className="cursor-pointer flex items-center gap-2"
+                            >
                               <Smartphone className="h-4 w-4" />
                               PayPal
                             </Label>
@@ -538,17 +597,24 @@ export default function ServiceDetailPage() {
                           id="terms"
                           checked={bookingDetails.agreeTerms}
                           onCheckedChange={(checked) =>
-                            setBookingDetails({ ...bookingDetails, agreeTerms: checked === true })
+                            setBookingDetails({
+                              ...bookingDetails,
+                              agreeTerms: checked === true,
+                            })
                           }
                         />
                         <Label htmlFor="terms" className="text-sm">
-                          I agree to the terms and conditions and cancellation policy
+                          I agree to the terms and conditions and cancellation
+                          policy
                         </Label>
                       </div>
                     </div>
 
                     <DialogFooter>
-                      <Button variant="outline" onClick={() => setIsBookingDialogOpen(false)}>
+                      <Button
+                        variant="outline"
+                        onClick={() => setIsBookingDialogOpen(false)}
+                      >
                         Cancel
                       </Button>
                       <Button
@@ -590,7 +656,9 @@ export default function ServiceDetailPage() {
             {/* Organization Info */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Organization Details</CardTitle>
+                <CardTitle className="text-base">
+                  Organization Details
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-center gap-2 text-sm">
@@ -599,23 +667,36 @@ export default function ServiceDetailPage() {
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <MapPin className="h-4 w-4 text-primary-600 flex-shrink-0" />
-                  <span className="text-muted-foreground">{service.address}</span>
+                  <span className="text-muted-foreground">
+                    {service.address}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <Mail className="h-4 w-4 text-primary-600 flex-shrink-0" />
-                  <a href={`mailto:${service.contactEmail}`} className="hover:text-primary-600">
+                  <a
+                    href={`mailto:${service.contactEmail}`}
+                    className="hover:text-primary-600"
+                  >
                     {service.contactEmail}
                   </a>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <Phone className="h-4 w-4 text-primary-600 flex-shrink-0" />
-                  <a href={`tel:${service.contactPhone}`} className="hover:text-primary-600">
+                  <a
+                    href={`tel:${service.contactPhone}`}
+                    className="hover:text-primary-600"
+                  >
                     {service.contactPhone}
                   </a>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <Globe className="h-4 w-4 text-primary-600 flex-shrink-0" />
-                  <a href={`https://${service.website}`} target="_blank" rel="noopener noreferrer" className="hover:text-primary-600">
+                  <a
+                    href={`https://${service.website}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-primary-600"
+                  >
                     {service.website}
                   </a>
                 </div>
@@ -624,16 +705,32 @@ export default function ServiceDetailPage() {
 
                 {/* Social Media */}
                 <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-primary-600/10 hover:text-primary-600">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 hover:bg-primary-600/10 hover:text-primary-600"
+                  >
                     <Facebook className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-primary-600/10 hover:text-primary-600">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 hover:bg-primary-600/10 hover:text-primary-600"
+                  >
                     <Twitter className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-primary-600/10 hover:text-primary-600">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 hover:bg-primary-600/10 hover:text-primary-600"
+                  >
                     <Linkedin className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-primary-600/10 hover:text-primary-600">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 hover:bg-primary-600/10 hover:text-primary-600"
+                  >
                     <Instagram className="h-4 w-4" />
                   </Button>
                 </div>
@@ -642,11 +739,17 @@ export default function ServiceDetailPage() {
 
             {/* Share & Save */}
             <div className="flex gap-2">
-              <Button variant="outline" className="flex-1 hover:border-primary-600 hover:text-primary-600">
+              <Button
+                variant="outline"
+                className="flex-1 hover:border-primary-600 hover:text-primary-600"
+              >
                 <Bookmark className="h-4 w-4 mr-2" />
                 Save
               </Button>
-              <Button variant="outline" className="flex-1 hover:border-primary-600 hover:text-primary-600">
+              <Button
+                variant="outline"
+                className="flex-1 hover:border-primary-600 hover:text-primary-600"
+              >
                 <Share2 className="h-4 w-4 mr-2" />
                 Share
               </Button>

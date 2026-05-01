@@ -1,4 +1,4 @@
-// src/app/org-dashboard/employees/page.jsx
+// src/app/templates/org-dashboard/employees/page.jsx
 "use client";
 
 import React, { useState } from "react";
@@ -206,10 +206,12 @@ export default function EmployeesPage() {
   ];
 
   const filteredEmployees = employees.filter((emp) => {
-    const matchesSearch = emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         emp.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         emp.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesDepartment = departmentFilter === "all" || emp.department === departmentFilter;
+    const matchesSearch =
+      emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      emp.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      emp.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesDepartment =
+      departmentFilter === "all" || emp.department === departmentFilter;
     const matchesStatus = statusFilter === "all" || emp.status === statusFilter;
     return matchesSearch && matchesDepartment && matchesStatus;
   });
@@ -229,7 +231,7 @@ export default function EmployeesPage() {
 
   const handleEditEmployee = () => {
     const updatedEmployees = employees.map((e) =>
-      e.id === selectedEmployee.id ? { ...e, ...formData } : e
+      e.id === selectedEmployee.id ? { ...e, ...formData } : e,
     );
     setEmployees(updatedEmployees);
     setIsEditDialogOpen(false);
@@ -237,7 +239,9 @@ export default function EmployeesPage() {
   };
 
   const handleDeleteEmployee = () => {
-    const updatedEmployees = employees.filter((e) => e.id !== selectedEmployee.id);
+    const updatedEmployees = employees.filter(
+      (e) => e.id !== selectedEmployee.id,
+    );
     setEmployees(updatedEmployees);
     setIsDeleteDialogOpen(false);
     setSelectedEmployee(null);
@@ -279,7 +283,7 @@ export default function EmployeesPage() {
 
   const toggleEmployeeStatus = (employeeId) => {
     const updatedEmployees = employees.map((e) =>
-      e.id === employeeId ? { ...e, active: !e.active } : e
+      e.id === employeeId ? { ...e, active: !e.active } : e,
     );
     setEmployees(updatedEmployees);
   };
@@ -316,7 +320,7 @@ export default function EmployeesPage() {
       <div className="border-b border-border bg-card/50">
         <div className="container mx-auto px-4 lg:px-8 py-6">
           <div className="flex items-center gap-4 mb-4">
-            <Link href="/org-dashboard">
+            <Link href="/templates/org-dashboard">
               <Button variant="ghost" size="icon" className="h-8 w-8">
                 <ArrowLeft className="h-4 w-4" />
               </Button>
@@ -345,7 +349,10 @@ export default function EmployeesPage() {
                 className="pl-9 border-green-600/20 focus-visible:ring-green-600/30"
               />
             </div>
-            <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+            <Select
+              value={departmentFilter}
+              onValueChange={setDepartmentFilter}
+            >
               <SelectTrigger className="w-[150px] border-green-600/20">
                 <Filter className="h-4 w-4 mr-2 text-green-600" />
                 <SelectValue placeholder="Department" />
@@ -380,7 +387,9 @@ export default function EmployeesPage() {
             </DialogTrigger>
             <DialogContent className="sm:max-w-[600px]">
               <DialogHeader>
-                <DialogTitle className="text-2xl font-bold text-green-600">Add New Employee</DialogTitle>
+                <DialogTitle className="text-2xl font-bold text-green-600">
+                  Add New Employee
+                </DialogTitle>
                 <DialogDescription>
                   Add a new team member to your organization.
                 </DialogDescription>
@@ -392,7 +401,9 @@ export default function EmployeesPage() {
                     <Input
                       id="name"
                       value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, name: e.target.value })
+                      }
                       placeholder="John Doe"
                       className="border-green-600/20 focus-visible:ring-green-600/30"
                     />
@@ -402,7 +413,9 @@ export default function EmployeesPage() {
                     <Input
                       id="role"
                       value={formData.role}
-                      onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, role: e.target.value })
+                      }
                       placeholder="e.g., Senior Consultant"
                       className="border-green-600/20 focus-visible:ring-green-600/30"
                     />
@@ -415,7 +428,9 @@ export default function EmployeesPage() {
                       id="email"
                       type="email"
                       value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, email: e.target.value })
+                      }
                       placeholder="john@company.com"
                       className="border-green-600/20 focus-visible:ring-green-600/30"
                     />
@@ -425,7 +440,9 @@ export default function EmployeesPage() {
                     <Input
                       id="phone"
                       value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, phone: e.target.value })
+                      }
                       placeholder="+1 (555) 000-0000"
                       className="border-green-600/20 focus-visible:ring-green-600/30"
                     />
@@ -436,7 +453,9 @@ export default function EmployeesPage() {
                     <Label htmlFor="department">Department</Label>
                     <Select
                       value={formData.department}
-                      onValueChange={(value) => setFormData({ ...formData, department: value })}
+                      onValueChange={(value) =>
+                        setFormData({ ...formData, department: value })
+                      }
                     >
                       <SelectTrigger className="border-green-600/20">
                         <SelectValue placeholder="Select department" />
@@ -454,7 +473,9 @@ export default function EmployeesPage() {
                     <Label htmlFor="status">Status</Label>
                     <Select
                       value={formData.status}
-                      onValueChange={(value) => setFormData({ ...formData, status: value })}
+                      onValueChange={(value) =>
+                        setFormData({ ...formData, status: value })
+                      }
                     >
                       <SelectTrigger className="border-green-600/20">
                         <SelectValue placeholder="Select status" />
@@ -475,8 +496,8 @@ export default function EmployeesPage() {
                         key={service}
                         className={`flex items-center space-x-2 p-2 rounded-lg cursor-pointer transition-all ${
                           formData.services.includes(service)
-                            ? 'bg-green-600/5 border border-green-600/20'
-                            : 'hover:bg-green-600/5'
+                            ? "bg-green-600/5 border border-green-600/20"
+                            : "hover:bg-green-600/5"
                         }`}
                         onClick={() => {
                           const updated = formData.services.includes(service)
@@ -492,7 +513,10 @@ export default function EmployeesPage() {
                           onChange={() => {}}
                           className="rounded border-green-600 text-green-600 focus:ring-green-600"
                         />
-                        <Label htmlFor={`service-${service}`} className="text-sm cursor-pointer flex-1">
+                        <Label
+                          htmlFor={`service-${service}`}
+                          className="text-sm cursor-pointer flex-1"
+                        >
                           {service}
                         </Label>
                       </div>
@@ -500,20 +524,30 @@ export default function EmployeesPage() {
                   </div>
                 </div>
                 <div className="flex items-center justify-between p-3 bg-green-600/5 rounded-lg">
-                  <Label htmlFor="active" className="font-medium">Active Status</Label>
+                  <Label htmlFor="active" className="font-medium">
+                    Active Status
+                  </Label>
                   <Switch
                     id="active"
                     checked={formData.active}
-                    onCheckedChange={(checked) => setFormData({ ...formData, active: checked })}
+                    onCheckedChange={(checked) =>
+                      setFormData({ ...formData, active: checked })
+                    }
                     className="data-[state=checked]:bg-green-600"
                   />
                 </div>
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsAddDialogOpen(false)}
+                >
                   Cancel
                 </Button>
-                <Button onClick={handleAddEmployee} className="bg-green-600 hover:bg-green-700">
+                <Button
+                  onClick={handleAddEmployee}
+                  className="bg-green-600 hover:bg-green-700"
+                >
                   Add Employee
                 </Button>
               </DialogFooter>
@@ -534,30 +568,43 @@ export default function EmployeesPage() {
                   <TableHead className="font-semibold">Rating</TableHead>
                   <TableHead className="font-semibold">Status</TableHead>
                   <TableHead className="font-semibold">Active</TableHead>
-                  <TableHead className="text-right font-semibold">Actions</TableHead>
+                  <TableHead className="text-right font-semibold">
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredEmployees.map((employee) => (
-                  <TableRow key={employee.id} className="hover:bg-green-600/5 transition-colors group">
+                  <TableRow
+                    key={employee.id}
+                    className="hover:bg-green-600/5 transition-colors group"
+                  >
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar className="h-10 w-10 border-2 border-green-600/20 group-hover:border-green-600/40 transition-all">
                           <AvatarImage src={employee.avatar} />
                           <AvatarFallback className="bg-green-600/10 text-green-600">
-                            {employee.name.split(" ").map((n) => n[0]).join("")}
+                            {employee.name
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")}
                           </AvatarFallback>
                         </Avatar>
                         <div>
                           <p className="font-medium group-hover:text-green-600 transition-colors">
                             {employee.name}
                           </p>
-                          <p className="text-xs text-muted-foreground">{employee.role}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {employee.role}
+                          </p>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="bg-green-600/10 text-green-600 border-green-600/20">
+                      <Badge
+                        variant="outline"
+                        className="bg-green-600/10 text-green-600 border-green-600/20"
+                      >
                         {employee.department}
                       </Badge>
                     </TableCell>
@@ -571,22 +618,33 @@ export default function EmployeesPage() {
                         </div>
                         <div className="flex items-center gap-1 text-xs">
                           <Phone className="h-3 w-3 text-green-600" />
-                          <span className="text-muted-foreground">{employee.phone}</span>
+                          <span className="text-muted-foreground">
+                            {employee.phone}
+                          </span>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1 max-w-[200px]">
                         {employee.services.slice(0, 2).map((service) => (
-                          <Badge key={service} variant="secondary" className="text-xs bg-green-600/5 text-green-600">
-                            {service.length > 15 ? service.substring(0, 12) + '...' : service}
+                          <Badge
+                            key={service}
+                            variant="secondary"
+                            className="text-xs bg-green-600/5 text-green-600"
+                          >
+                            {service.length > 15
+                              ? service.substring(0, 12) + "..."
+                              : service}
                           </Badge>
                         ))}
                         {employee.services.length > 2 && (
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <Badge variant="secondary" className="text-xs bg-green-600/5 text-green-600 cursor-help">
+                                <Badge
+                                  variant="secondary"
+                                  className="text-xs bg-green-600/5 text-green-600 cursor-help"
+                                >
                                   +{employee.services.length - 2}
                                 </Badge>
                               </TooltipTrigger>
@@ -605,7 +663,10 @@ export default function EmployeesPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={getStatusColor(employee.status)}>
+                      <Badge
+                        variant="outline"
+                        className={getStatusColor(employee.status)}
+                      >
                         {getStatusIcon(employee.status)}
                         {employee.status}
                       </Badge>
@@ -613,7 +674,9 @@ export default function EmployeesPage() {
                     <TableCell>
                       <Switch
                         checked={employee.active}
-                        onCheckedChange={() => toggleEmployeeStatus(employee.id)}
+                        onCheckedChange={() =>
+                          toggleEmployeeStatus(employee.id)
+                        }
                         className="data-[state=checked]:bg-green-600"
                       />
                     </TableCell>
@@ -637,7 +700,11 @@ export default function EmployeesPage() {
 
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-green-600/10">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 hover:bg-green-600/10"
+                            >
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
@@ -679,17 +746,50 @@ export default function EmployeesPage() {
           <CardFooter className="border-t border-green-600/20 px-6 py-4 bg-green-600/5">
             <div className="flex items-center justify-between w-full text-sm">
               <div className="text-muted-foreground">
-                Showing <span className="font-medium text-green-600">{filteredEmployees.length}</span> of{" "}
-                <span className="font-medium text-green-600">{employees.length}</span> employees
+                Showing{" "}
+                <span className="font-medium text-green-600">
+                  {filteredEmployees.length}
+                </span>{" "}
+                of{" "}
+                <span className="font-medium text-green-600">
+                  {employees.length}
+                </span>{" "}
+                employees
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" disabled className="border-green-600/20">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled
+                  className="border-green-600/20"
+                >
                   Previous
                 </Button>
-                <Button size="sm" className="bg-green-600 text-white hover:bg-green-700">1</Button>
-                <Button variant="outline" size="sm" className="border-green-600/20 hover:border-green-600">2</Button>
-                <Button variant="outline" size="sm" className="border-green-600/20 hover:border-green-600">3</Button>
-                <Button variant="outline" size="sm" className="border-green-600/20 hover:border-green-600">
+                <Button
+                  size="sm"
+                  className="bg-green-600 text-white hover:bg-green-700"
+                >
+                  1
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-green-600/20 hover:border-green-600"
+                >
+                  2
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-green-600/20 hover:border-green-600"
+                >
+                  3
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-green-600/20 hover:border-green-600"
+                >
                   Next
                 </Button>
               </div>
@@ -702,7 +802,9 @@ export default function EmployeesPage() {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-green-600">Edit Employee</DialogTitle>
+            <DialogTitle className="text-2xl font-bold text-green-600">
+              Edit Employee
+            </DialogTitle>
             <DialogDescription>
               Update the employee information below.
             </DialogDescription>
@@ -714,7 +816,9 @@ export default function EmployeesPage() {
                 <Input
                   id="edit-name"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   className="border-green-600/20 focus-visible:ring-green-600/30"
                 />
               </div>
@@ -723,7 +827,9 @@ export default function EmployeesPage() {
                 <Input
                   id="edit-role"
                   value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, role: e.target.value })
+                  }
                   className="border-green-600/20 focus-visible:ring-green-600/30"
                 />
               </div>
@@ -735,7 +841,9 @@ export default function EmployeesPage() {
                   id="edit-email"
                   type="email"
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
                   className="border-green-600/20 focus-visible:ring-green-600/30"
                 />
               </div>
@@ -744,7 +852,9 @@ export default function EmployeesPage() {
                 <Input
                   id="edit-phone"
                   value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, phone: e.target.value })
+                  }
                   className="border-green-600/20 focus-visible:ring-green-600/30"
                 />
               </div>
@@ -754,7 +864,9 @@ export default function EmployeesPage() {
                 <Label htmlFor="edit-department">Department</Label>
                 <Select
                   value={formData.department}
-                  onValueChange={(value) => setFormData({ ...formData, department: value })}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, department: value })
+                  }
                 >
                   <SelectTrigger className="border-green-600/20">
                     <SelectValue />
@@ -772,7 +884,9 @@ export default function EmployeesPage() {
                 <Label htmlFor="edit-status">Status</Label>
                 <Select
                   value={formData.status}
-                  onValueChange={(value) => setFormData({ ...formData, status: value })}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, status: value })
+                  }
                 >
                   <SelectTrigger className="border-green-600/20">
                     <SelectValue />
@@ -786,20 +900,30 @@ export default function EmployeesPage() {
               </div>
             </div>
             <div className="flex items-center justify-between p-3 bg-green-600/5 rounded-lg">
-              <Label htmlFor="edit-active" className="font-medium">Active Status</Label>
+              <Label htmlFor="edit-active" className="font-medium">
+                Active Status
+              </Label>
               <Switch
                 id="edit-active"
                 checked={formData.active}
-                onCheckedChange={(checked) => setFormData({ ...formData, active: checked })}
+                onCheckedChange={(checked) =>
+                  setFormData({ ...formData, active: checked })
+                }
                 className="data-[state=checked]:bg-green-600"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditDialogOpen(false)}
+            >
               Cancel
             </Button>
-            <Button onClick={handleEditEmployee} className="bg-green-600 hover:bg-green-700">
+            <Button
+              onClick={handleEditEmployee}
+              className="bg-green-600 hover:bg-green-700"
+            >
               Save Changes
             </Button>
           </DialogFooter>
@@ -807,19 +931,27 @@ export default function EmployeesPage() {
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-2xl font-bold text-red-600">Delete Employee</AlertDialogTitle>
+            <AlertDialogTitle className="text-2xl font-bold text-red-600">
+              Delete Employee
+            </AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
               <p>This action cannot be undone. This will permanently delete:</p>
               <div className="p-3 bg-red-600/5 rounded-lg border border-red-600/20">
                 <p className="font-semibold">{selectedEmployee?.name}</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Role: {selectedEmployee?.role} • Department: {selectedEmployee?.department}
+                  Role: {selectedEmployee?.role} • Department:{" "}
+                  {selectedEmployee?.department}
                 </p>
               </div>
-              <p className="text-sm">All associated data will be removed from our servers.</p>
+              <p className="text-sm">
+                All associated data will be removed from our servers.
+              </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

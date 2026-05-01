@@ -1,4 +1,4 @@
-// src/app/org-dashboard/calendar/page.jsx
+// src/app/templates/org-dashboard/calendar/page.jsx
 "use client";
 
 import React, { useState } from "react";
@@ -172,7 +172,7 @@ export default function CalendarPage() {
   };
 
   const todayAppointments = appointments.filter(
-    (apt) => apt.date === currentDate.toISOString().split("T")[0]
+    (apt) => apt.date === currentDate.toISOString().split("T")[0],
   );
 
   return (
@@ -181,7 +181,7 @@ export default function CalendarPage() {
       <div className="border-b border-border bg-card/50">
         <div className="container mx-auto px-4 lg:px-8 py-6">
           <div className="flex items-center gap-4 mb-4">
-            <Link href="/org-dashboard">
+            <Link href="/templates/org-dashboard">
               <Button variant="ghost" size="icon" className="h-8 w-8">
                 <ArrowLeft className="h-4 w-4" />
               </Button>
@@ -202,9 +202,7 @@ export default function CalendarPage() {
                   <CalendarDays className="h-5 w-5 text-orange-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">
-                    {appointments.length}
-                  </p>
+                  <p className="text-2xl font-bold">{appointments.length}</p>
                   <p className="text-xs text-muted-foreground">
                     Total Appointments
                   </p>
@@ -218,7 +216,10 @@ export default function CalendarPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">
-                    {appointments.filter((a) => a.status === "confirmed").length}
+                    {
+                      appointments.filter((a) => a.status === "confirmed")
+                        .length
+                    }
                   </p>
                   <p className="text-xs text-muted-foreground">Confirmed</p>
                 </div>
@@ -318,8 +319,14 @@ export default function CalendarPage() {
                   <div className="grid grid-cols-7 border-b">
                     {weekDays.map((day, index) => {
                       const date = new Date(currentDate);
-                      date.setDate(currentDate.getDate() - currentDate.getDay() + index + 1);
-                      const isToday = date.toDateString() === new Date().toDateString();
+                      date.setDate(
+                        currentDate.getDate() -
+                          currentDate.getDay() +
+                          index +
+                          1,
+                      );
+                      const isToday =
+                        date.toDateString() === new Date().toDateString();
                       return (
                         <div
                           key={day}
@@ -344,10 +351,15 @@ export default function CalendarPage() {
                       <div key={time} className="grid grid-cols-7 min-h-[80px]">
                         {weekDays.map((_, index) => {
                           const date = new Date(currentDate);
-                          date.setDate(currentDate.getDate() - currentDate.getDay() + index + 1);
+                          date.setDate(
+                            currentDate.getDate() -
+                              currentDate.getDay() +
+                              index +
+                              1,
+                          );
                           const dateStr = date.toISOString().split("T")[0];
                           const appointment = appointments.find(
-                            (a) => a.date === dateStr && a.time === time
+                            (a) => a.date === dateStr && a.time === time,
                           );
                           return (
                             <div
@@ -360,8 +372,8 @@ export default function CalendarPage() {
                                     appointment.status === "confirmed"
                                       ? "bg-green-600/10 border border-green-600/20"
                                       : appointment.status === "pending"
-                                      ? "bg-orange-600/10 border border-orange-600/20"
-                                      : "bg-red-600/10 border border-red-600/20"
+                                        ? "bg-orange-600/10 border border-orange-600/20"
+                                        : "bg-red-600/10 border border-red-600/20"
                                   }`}
                                 >
                                   <p className="text-xs font-medium truncate">
@@ -430,7 +442,9 @@ export default function CalendarPage() {
                               </AvatarFallback>
                             </Avatar>
                             <div>
-                              <p className="font-medium text-sm">{apt.client}</p>
+                              <p className="font-medium text-sm">
+                                {apt.client}
+                              </p>
                               <p className="text-xs text-muted-foreground">
                                 {apt.service}
                               </p>
