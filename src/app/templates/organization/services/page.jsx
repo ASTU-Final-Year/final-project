@@ -1,604 +1,534 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import RequestHandler from "@/lib/request-handler";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Plus,
-  Pencil,
-  Trash2,
-  Search,
-  ChevronLeft,
-  ChevronRight,
-  Filter,
-  LayoutGrid,
-  List,
-  MoreVertical,
-  Loader2,
-  CalendarIcon,
-  UserIcon,
+import { useState, useEffect } from "react";
+import { 
+  Search, RefreshCw, Plus, Calendar, LogOut, Edit, Eye,
+  Activity, Inbox, Clock, Tag, X, ChevronDown, Filter,
+  ArrowUpDown, CheckCircle, Circle, Trash2, Save
 } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import AcriveBadge from "@/components/ui/active-badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import Link from "next/link";
-import { useOrganizationStore } from "@/store";
 
-export default function ServicesPage() {
-  const organization = useOrganizationStore(({ organization }) => organization);
-  const setOrganization = useOrganizationStore(
-    ({ setOrganization }) => setOrganization,
-  );
-  const services = useOrganizationStore(({ services }) => services);
-  const setServices = useOrganizationStore(({ setServices }) => setServices);
-  const serviceCount = useOrganizationStore(({ serviceCount }) => serviceCount);
-  const setServiceCount = useOrganizationStore(
-    ({ setServiceCount }) => setServiceCount,
-  );
-  // const [services, setServices] = useState([]);
-  const [selectedServices, setSelectedServices] = useState({});
-  // const [serviceCount, setServiceCount] = useState(0);
-  // const [organizationId, setOrganizationId] = useState(null);
-  const [isLoading, setIsLoading] = useState(services == null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+// Mock data matching both uploaded images
+const MOCK_SERVICES = [
+  { id: "1", name: "General Checkup", description: "Comprehensive physical examination including vital signs monitoring and assessment of overall health...", isActive: true, duration: 30, price: 500, category: "HEALTHCARE", bookingCapacity: 85, createdAt: "2026-03-12" },
+  { id: "2", name: "Urgent Care", description: "Premium synthetic oil replacement with filter change and multi-point inspection for vehicle maintenance...", isActive: true, duration: 45, price: 1200, category: "MAINTENANCE", bookingCapacity: 42, createdAt: "2026-03-10" },
+  { id: "3", name: "Lab Test", description: "Full blood panel analysis and diagnostic laboratory services with comprehensive reporting...", isActive: true, duration: 15, price: 850, category: "HEALTHCARE", bookingCapacity: 68, createdAt: "2026-03-08" },
+  { id: "4", name: "Dental Checkup", description: "Professional teeth cleaning, X-rays, and comprehensive oral health examination by certified dentist...", isActive: false, duration: 60, price: 1500, category: "HEALTHCARE", bookingCapacity: 0, createdAt: "2026-03-05" },
+  { id: "5", name: "X-Ray", description: "Digital radiographic imaging for skeletal assessment and internal organ evaluation...", isActive: false, duration: 20, price: 2000, category: "HEALTHCARE", bookingCapacity: 30, createdAt: "2026-03-01" },
+  { id: "6", name: "Physical Therapy", description: "One-on-one session focused on rehabilitation, mobility improvement and pain management...", isActive: false, duration: 45, price: 1100, category: "HEALTHCARE", bookingCapacity: 95, createdAt: "2026-02-28" },
+  { id: "7", name: "Vaccination", description: "Administration of routine immunizations and travel vaccines with proper documentation...", isActive: true, duration: 10, price: 300, category: "HEALTHCARE", bookingCapacity: 25, createdAt: "2026-03-15" },
+  { id: "8", name: "Eye Exam", description: "Comprehensive vision testing and eye health screening by professional optometrist...", isActive: true, duration: 30, price: 750, category: "HEALTHCARE", bookingCapacity: 55, createdAt: "2026-03-14" },
+];
 
-  // View & Filter States
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(5);
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [view, setView] = useState("table");
-
-  // Dialog States
-  const [isAddOpen, setIsAddOpen] = useState(false);
-  const [isEditOpen, setIsEditOpen] = useState(false);
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+export default function OrganizationServicesPage() {
+  const [services, setServices] = useState(MOCK_SERVICES);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("ALL");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [sortBy, setSortBy] = useState("name");
+  const [sortOrder, setSortOrder] = useState("asc");
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [selectedService, setSelectedService] = useState(null);
-
-  // Form States
+  const [dateRange, setDateRange] = useState({ from: "", to: "" });
+  const [loading, setLoading] = useState(false);
+  
+  // Form state for add/edit
   const [formData, setFormData] = useState({
     name: "",
     description: "",
+    duration: 30,
+    price: 0,
+    category: "HEALTHCARE",
     isActive: true,
-    calendarId: null,
+    bookingCapacity: 0,
   });
 
-  const organizationId = organization?.id;
+  // Filter and sort services
+  const filteredServices = services.filter(service => {
+    // Search filter
+    const matchesSearch = service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         service.description.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Category filter
+    const matchesCategory = selectedCategory === "ALL" || service.category === selectedCategory;
+    
+    // Status filter
+    const matchesStatus = statusFilter === "ALL" || 
+                         (statusFilter === "ACTIVE" && service.isActive) ||
+                         (statusFilter === "INACTIVE" && !service.isActive);
+    
+    // Date range filter
+    const matchesDate = (!dateRange.from || service.createdAt >= dateRange.from) &&
+                       (!dateRange.to || service.createdAt <= dateRange.to);
+    
+    return matchesSearch && matchesCategory && matchesStatus && matchesDate;
+  });
 
-  // --- Data Fetching ---
-  useEffect(() => {
-    if (organization == null) {
-      RequestHandler.Get("/api/v1/organization").then(async (res) => {
-        if (res.ok) {
-          const { organization } = await res.json();
-          setOrganization(organization);
-        }
-      });
-    }
-  }, [organization, setOrganization]);
+  // Sort services
+  const sortedServices = [...filteredServices].sort((a, b) => {
+    let comparison = 0;
+    if (sortBy === "name") comparison = a.name.localeCompare(b.name);
+    if (sortBy === "price") comparison = a.price - b.price;
+    if (sortBy === "duration") comparison = a.duration - b.duration;
+    if (sortBy === "capacity") comparison = a.bookingCapacity - b.bookingCapacity;
+    if (sortBy === "date") comparison = new Date(a.createdAt) - new Date(b.createdAt);
+    return sortOrder === "asc" ? comparison : -comparison;
+  });
 
-  const fetchServices = useCallback(async () => {
-    if (!organizationId) return;
-    // (async () => setIsLoading(true))();
+  const activeServices = sortedServices.filter(s => s.isActive);
+  const inactiveServices = sortedServices.filter(s => !s.isActive);
 
-    const offset = (page - 1) * limit;
-    const params = new URLSearchParams({
-      o: offset.toString(),
-      l: limit.toString(),
-      iorganization: 1,
-      icalendar: 1,
-    });
-
-    const [countRes, dataRes] = await Promise.all([
-      RequestHandler.Get(
-        `/api/v1/organization/${organizationId}/services/count`,
-      ),
-      RequestHandler.Get(
-        `/api/v1/organization/${organizationId}/services?${params.toString()}`,
-      ),
-    ]);
-
-    if (countRes.ok) {
-      const { count } = await countRes.json();
-      (async () => setServiceCount(count))();
-    }
-
-    if (dataRes.ok) {
-      const data = await dataRes.json();
-      let results = data.services || [];
-
-      if (statusFilter !== "all") {
-        results = results.filter(
-          (s) => s.isActive === (statusFilter === "active"),
-        );
-      }
-      if (searchQuery) {
-        results = results.filter(
-          (s) =>
-            s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            s.description.toLowerCase().includes(searchQuery.toLowerCase()),
-        );
-      }
-      setServices(results);
-      // (async () => setServices(results))();
-    }
-    (async () => setIsLoading(false))();
-  }, [
-    setServiceCount,
-    setServices,
-    organizationId,
-    page,
-    limit,
-    statusFilter,
-    searchQuery,
-  ]);
-
-  useEffect(() => {
-    fetchServices();
-  }, [fetchServices]);
-
-  // --- CRUD Handlers ---
-  const handleAddService = async () => {
-    setIsSubmitting(true);
-    const res = await RequestHandler.Post(
-      `/api/v1/organization/${organizationId}/service`,
-      { body: formData },
-    );
-    if (res.ok) {
-      setIsAddOpen(false);
-      setFormData({
-        name: "",
-        description: "",
-        isActive: true,
-        calendarId: null,
-      });
-      fetchServices();
-    }
-    setIsSubmitting(false);
+  const handleRefresh = () => {
+    setLoading(true);
+    setTimeout(() => {
+      setServices([...MOCK_SERVICES]);
+      setLoading(false);
+    }, 500);
   };
 
-  const handleEditService = async () => {
-    setIsSubmitting(true);
-    const res = await RequestHandler.Patch(
-      `/api/v1/organization/${organizationId}/service/${selectedService.id}`,
-      { body: formData },
-    );
-    if (res.ok) {
-      setIsEditOpen(false);
-      setSelectedService(null);
-      fetchServices();
-    }
-    setIsSubmitting(false);
+  const handleAddService = (e) => {
+    e.preventDefault();
+    const newService = {
+      id: Date.now().toString(),
+      ...formData,
+      createdAt: new Date().toISOString().split('T')[0],
+    };
+    setServices([newService, ...services]);
+    setShowAddModal(false);
+    resetForm();
   };
 
-  const handleDeleteService = async () => {
-    setIsSubmitting(true);
-    const res = await RequestHandler.Delete(
-      `/api/v1/organization/${organizationId}/service/${selectedService.id}`,
-    );
-    if (res.ok) {
-      setIsDeleteOpen(false);
-      setSelectedService(null);
-      fetchServices();
-    }
-    setIsSubmitting(false);
+  const handleEditService = (e) => {
+    e.preventDefault();
+    setServices(services.map(s => 
+      s.id === selectedService.id ? { ...selectedService, ...formData } : s
+    ));
+    setShowEditModal(false);
+    resetForm();
   };
 
-  const openEdit = (service) => {
-    setSelectedService(service);
+  const handleDeleteService = (id) => {
+    if (confirm("Are you sure you want to delete this service?")) {
+      setServices(services.filter(s => s.id !== id));
+    }
+  };
+
+  const resetForm = () => {
     setFormData({
-      name: service.name,
-      description: service.description,
-      isActive: service.isActive,
-      calendarId: service.calendarId,
+      name: "",
+      description: "",
+      duration: 30,
+      price: 0,
+      category: "HEALTHCARE",
+      isActive: true,
+      bookingCapacity: 0,
     });
-    setIsEditOpen(true);
+    setSelectedService(null);
   };
 
-  const openDelete = (service) => {
+  const openEditModal = (service) => {
     setSelectedService(service);
-    setIsDeleteOpen(true);
+    setFormData(service);
+    setShowEditModal(true);
   };
 
-  const totalPages = Math.ceil(serviceCount / limit);
+  const ServiceCard = ({ service }) => (
+    <div className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-lg transition-all duration-200">
+      <div className="flex justify-between items-start mb-3">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="text-lg font-bold text-gray-900">{service.name}</h3>
+            <span className={`px-2 py-0.5 text-xs font-semibold rounded ${
+              service.category === "HEALTHCARE" 
+                ? "bg-green-100 text-green-700" 
+                : "bg-orange-100 text-orange-700"
+            }`}>
+              {service.category}
+            </span>
+          </div>
+          <p className="text-sm text-gray-600 line-clamp-2">{service.description}</p>
+        </div>
+        <button 
+          onClick={() => handleDeleteService(service.id)}
+          className="text-gray-400 hover:text-red-500 transition-colors"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
+      
+      <div className="flex items-center gap-4 mb-3 text-sm">
+        <div className="flex items-center gap-1 text-gray-500">
+          <Clock className="w-4 h-4" />
+          <span>{service.duration} min</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="text-gray-500">•</span>
+          <span className="font-bold text-gray-900">{service.price.toLocaleString()} ETB</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="text-gray-500">•</span>
+          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+            service.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+          }`}>
+            {service.isActive ? "ACTIVE" : "INACTIVE"}
+          </span>
+        </div>
+      </div>
+      
+      <div className="mb-4">
+        <div className="flex justify-between text-xs text-gray-600 mb-1">
+          <span>Booking Capacity</span>
+          <span className="font-medium">{service.bookingCapacity}% Full</span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+          <div 
+            className={`h-full rounded-full transition-all duration-300 ${
+              service.bookingCapacity > 70 ? "bg-red-500" : 
+              service.bookingCapacity > 40 ? "bg-yellow-500" : "bg-green-500"
+            }`}
+            style={{ width: `${service.bookingCapacity}%` }}
+          />
+        </div>
+      </div>
+      
+      <div className="flex gap-2 pt-3 border-t border-gray-100">
+        <button 
+          onClick={() => openEditModal(service)}
+          className="flex-1 px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors flex items-center justify-center gap-1"
+        >
+          <Edit className="w-4 h-4" />
+          Edit
+        </button>
+        <button className="flex-1 px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors flex items-center justify-center gap-1">
+          <Eye className="w-4 h-4" />
+          View Details
+        </button>
+      </div>
+    </div>
+  );
+
+  // Add/Edit Service Modal
+  const ServiceModal = ({ isOpen, onClose, onSubmit, title, isEdit }) => {
+    if (!isOpen) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+          <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex justify-between items-center">
+            <h2 className="text-xl font-bold">{title}</h2>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          
+          <form onSubmit={onSubmit} className="p-5 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Service Name *</label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <textarea
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                rows="3"
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Duration (min)</label>
+                <input
+                  type="number"
+                  value={formData.duration}
+                  onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  min="5"
+                  step="5"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Price (ETB)</label>
+                <input
+                  type="number"
+                  value={formData.price}
+                  onChange={(e) => setFormData({ ...formData, price: parseInt(e.target.value) })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  min="0"
+                  step="100"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+              <select
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              >
+                <option value="HEALTHCARE">Healthcare</option>
+                <option value="MAINTENANCE">Maintenance</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Booking Capacity (%)</label>
+              <input
+                type="range"
+                value={formData.bookingCapacity}
+                onChange={(e) => setFormData({ ...formData, bookingCapacity: parseInt(e.target.value) })}
+                className="w-full"
+                min="0"
+                max="100"
+                step="5"
+              />
+              <div className="text-center text-sm text-gray-600 mt-1">{formData.bookingCapacity}%</div>
+            </div>
+            
+            <div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.isActive}
+                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                  className="rounded border-gray-300"
+                />
+                <span className="text-sm text-gray-700">Active Service</span>
+              </label>
+            </div>
+            
+            <div className="flex gap-3 pt-4">
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2"
+              >
+                <Save className="w-4 h-4" />
+                {isEdit ? "Update Service" : "Add Service"}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Services</h1>
-          <p className="text-sm text-muted-foreground">
-            Manage your organization&apos;s service offerings.
-          </p>
-        </div>
-        <Button onClick={() => setIsAddOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" /> Add Service
-        </Button>
-      </div>
-
-      {/* Toolbar */}
-      <Card className="p-3 bg-muted/20 border-none shadow-none bg-background">
-        <div className="flex flex-col md:flex-row gap-4 justify-between">
-          <div className="flex flex-1 items-center gap-3">
-            <div className="relative w-full max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search services..."
-                className="pl-9 bg-background"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+    <div className="min-h-screen bg-gray-50">
+      {/* Top Navigation Bar */}
+      <nav className="bg-white border-b border-gray-200 sticky top-0 z-20">
+        <div className="px-6 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-sm">SS</span>
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[150px] bg-background">
-                <Filter className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-              </SelectContent>
-            </Select>
+            <h1 className="text-xl font-bold text-gray-900">ServeSync+</h1>
+            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">ADMIN CONSOLE</span>
           </div>
-          <Tabs value={view} onValueChange={setView}>
-            <TabsList className="bg-background border">
-              <TabsTrigger value="table">
-                <List className="h-4 w-4" />
-              </TabsTrigger>
-              <TabsTrigger value="grid">
-                <LayoutGrid className="h-4 w-4" />
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+          
+          <div className="flex items-center gap-4">
+            <button className="text-gray-600 hover:text-gray-900 px-3 py-1 text-sm">Services</button>
+            <button className="text-gray-600 hover:text-gray-900 px-3 py-1 text-sm">Manage</button>
+            <button className="text-gray-600 hover:text-gray-900 px-3 py-1 text-sm">Appointments</button>
+            <button className="text-gray-600 hover:text-gray-900 px-3 py-1 text-sm">Notifications</button>
+            <button className="text-gray-600 hover:text-gray-900 px-3 py-1 text-sm">Hosting</button>
+            <button className="text-gray-600 hover:text-gray-900 px-3 py-1 text-sm">Fees</button>
+            <button 
+              onClick={() => { window.location.href = "/login"; }}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+              Logout
+            </button>
+          </div>
         </div>
-      </Card>
+      </nav>
 
       {/* Main Content */}
-      {isLoading ? (
-        <div className="h-64 flex items-center justify-center border rounded-xl bg-card">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <main className="p-6">
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">All Services</h1>
+          <p className="text-gray-500 text-sm">Manage the services your organization offers to clients</p>
         </div>
-      ) : view === "table" ? (
-        <div className="rounded border bg-card overflow-hidden">
-          <Table className=" font-mono">
-            <TableHeader className="bg-muted/30 uppercase">
-              <TableRow>
-                <TableHead className="px-2"></TableHead>
-                <TableHead className="font-bold">Service</TableHead>
-                <TableHead className="font-bold text-center">Status</TableHead>
-                <TableHead className="text-right font-bold">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {services.map((service) => (
-                <TableRow key={service.id}>
-                  <TableCell className="w-8">
-                    <Checkbox
-                      checked={selectedServices[service.id]}
-                      onCheckedChange={(checked) =>
-                        setSelectedServices((prev) =>
-                          Object.fromEntries(
-                            Object.entries({
-                              ...prev,
-                              [service.id]: checked,
-                            }).filter((c) => c),
-                          ),
-                        )
-                      }
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <div className="font-semibold text-primary">
-                      {service.name}
-                    </div>
-                    <div className="text-xs text-muted-foreground truncate max-w-[400px]">
-                      {service.description}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <AcriveBadge isActive={service.isActive} />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" asChild>
-                      <Link
-                        href={`/dashboard/organization/service/${service.id}/first_employees`}
-                      >
-                        <UserIcon />
-                      </Link>
-                    </Button>
-                    {service.calendarId != null ? (
-                      <Button variant="ghost" size="icon" asChild>
-                        <Link
-                          href={`/dashboard/organization/service/${service.id}/calendar/${
-                            service.calendarId
-                          }`}
-                        >
-                          <CalendarIcon />
-                        </Link>
-                      </Button>
-                    ) : (
-                      <Button variant="ghost" disabled size="icon">
-                        <CalendarIcon />
-                      </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => openEdit(service)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-destructive"
-                      onClick={() => openDelete(service)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      ) : (
-        /* IMPROVED GRID VIEW */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {services.map((service) => (
-            <Card
-              key={service.id}
-              className="bg-background  group flex flex-col relative overflow-hidden transition-all hover:ring-2 hover:ring-primary/20"
-            >
-              <CardHeader className="pb-3 border-b bg-muted/5 flex flex-row items-center justify-between space-y-0">
-                <CardTitle className="font-bold text-primary truncate pr-4">
-                  {service.name}
-                </CardTitle>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => openEdit(service)}>
-                      <Pencil className="mr-2 h-4 w-4" /> Edit Details
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => openDelete(service)}
-                      className="text-destructive"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" /> Delete Service
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </CardHeader>
-              <CardContent className="flex-grow">
-                <p className="text-muted-foreground line-clamp-3 min-h-[60px]">
-                  {service.description ||
-                    "No description provided for this service."}
-                </p>
-              </CardContent>
-              <CardFooter className="pt-4 border-t flex justify-between items-center bg-muted/5">
-                <AcriveBadge isActive={service.isActive} />
-                <span className="text-[10px] font-mono text-muted-foreground">
-                  ID: {service.id.slice(0, 8)}
-                </span>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
-      )}
 
-      {/* RESTORED PAGINATION WITH LIMIT SELECTOR */}
-      <div className="flex items-center justify-between px-4 py-4 border rounded bg-card">
-        <div className="flex items-center gap-6">
-          <div className="text-sm text-muted-foreground">
-            Showing{" "}
-            <span className="font-medium">{(page - 1) * limit + 1}</span> to{" "}
-            <span className="font-medium">
-              {Math.min(page * limit, serviceCount)}
-            </span>{" "}
-            of <span className="font-medium">{serviceCount}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Rows:</span>
-            <Select
-              value={limit.toString()}
-              onValueChange={(v) => {
-                setLimit(Number(v));
-                setPage(2); // Reset to page 1 on limit change
-              }}
-            >
-              <SelectTrigger className="h-8 w-[70px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {[2, 5, 10, 20, 50].map((size) => (
-                  <SelectItem key={size} value={size.toString()}>
-                    {size}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => setPage((p) => p - 1)}
-            disabled={page === 1}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <div className="text-sm font-medium">
-            Page {page} of {totalPages || 1}
-          </div>
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => setPage((p) => p + 1)}
-            disabled={page >= totalPages}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-
-      {/* --- Modals (Keep Existing) --- */}
-      <Dialog
-        open={isAddOpen || isEditOpen}
-        onOpenChange={(val) => {
-          if (!val) {
-            setIsAddOpen(false);
-            setIsEditOpen(false);
-          }
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {isEditOpen ? "Edit Service" : "Add New Service"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Service Name</Label>
-              <Input
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Description</Label>
-              <Textarea
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-              />
-            </div>
-            {/* <div className="space-y-2">
-              <Label>Calendar</Label>
+        {/* Control Bar */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6">
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Search */}
+            <div className="flex-1 min-w-[200px] relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
-                value={formData.calendarId}
-                onChange={(e) =>
-                  setFormData({ ...formData, calendarId: e.target.value })
-                }
+                type="text"
+                placeholder="Search by service name or code..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
               />
-            </div> */}
+            </div>
+            
+            {/* Category Filter */}
+            <div className="relative">
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="ALL">All Categories</option>
+                <option value="HEALTHCARE">Healthcare</option>
+                <option value="MAINTENANCE">Maintenance</option>
+              </select>
+            </div>
+            
+            {/* Status Filter */}
+            <div className="relative">
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="ALL">All Status</option>
+                <option value="ACTIVE">Active</option>
+                <option value="INACTIVE">Inactive</option>
+              </select>
+            </div>
+            
+            {/* Sort By */}
+            <div className="relative flex items-center gap-2">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white"
+              >
+                <option value="name">Sort by Name</option>
+                <option value="price">Sort by Price</option>
+                <option value="duration">Sort by Duration</option>
+                <option value="capacity">Sort by Capacity</option>
+                <option value="date">Sort by Date</option>
+              </select>
+              <button
+                onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+                className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50"
+              >
+                <ArrowUpDown className={`w-4 h-4 ${sortOrder === "desc" ? "text-blue-600" : "text-gray-500"}`} />
+              </button>
+            </div>
+            
+            {/* Date Range */}
             <div className="flex items-center gap-2">
               <input
-                type="checkbox"
-                checked={formData.isActive}
-                onChange={(e) =>
-                  setFormData({ ...formData, isActive: e.target.checked })
-                }
-                id="active-check"
-                className="h-4 w-4 rounded border-gray-300 accent-primary"
+                type="date"
+                value={dateRange.from}
+                onChange={(e) => setDateRange({ ...dateRange, from: e.target.value })}
+                className="px-3 py-2 text-sm border border-gray-200 rounded-lg"
+                placeholder="From"
               />
-              <Label htmlFor="active-check">Set as Active</Label>
+              <span className="text-gray-400">—</span>
+              <input
+                type="date"
+                value={dateRange.to}
+                onChange={(e) => setDateRange({ ...dateRange, to: e.target.value })}
+                className="px-3 py-2 text-sm border border-gray-200 rounded-lg"
+                placeholder="To"
+              />
+            </div>
+            
+            {/* Action Buttons */}
+            <button 
+              onClick={handleRefresh}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 flex items-center gap-2"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+              Refresh
+            </button>
+            
+            <button 
+              onClick={() => setShowAddModal(true)}
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Add New Service
+            </button>
+          </div>
+        </div>
+
+        {/* Active Services Section */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-2 h-2 rounded-full bg-green-500"></div>
+            <h2 className="text-lg font-semibold text-gray-900">ACTIVE</h2>
+            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+              {activeServices.length} services
+            </span>
+          </div>
+          
+          {activeServices.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
+              <Inbox className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+              <p className="text-gray-500">No active services found</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5">
+              {activeServices.map(service => (
+                <ServiceCard key={service.id} service={service} />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Inactive Services Section */}
+        {inactiveServices.length > 0 && (
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-2 h-2 rounded-full bg-gray-400"></div>
+              <h2 className="text-lg font-semibold text-gray-900">INACTIVE</h2>
+              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                {inactiveServices.length} services
+              </span>
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5">
+              {inactiveServices.map(service => (
+                <ServiceCard key={service.id} service={service} />
+              ))}
             </div>
           </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setIsAddOpen(false);
-                setIsEditOpen(false);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={isEditOpen ? handleEditService : handleAddService}
-              disabled={isSubmitting}
-            >
-              {isSubmitting && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
-              {isEditOpen ? "Save Changes" : "Create Service"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        )}
+      </main>
 
-      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Are you sure?</DialogTitle>
-            <DialogDescription>
-              This will permanently delete "{selectedService?.name}". This
-              action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDeleteService}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                "Delete Service"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Add Service Modal */}
+      <ServiceModal
+        isOpen={showAddModal}
+        onClose={() => { setShowAddModal(false); resetForm(); }}
+        onSubmit={handleAddService}
+        title="Add New Service"
+        isEdit={false}
+      />
+
+      {/* Edit Service Modal */}
+      <ServiceModal
+        isOpen={showEditModal}
+        onClose={() => { setShowEditModal(false); resetForm(); }}
+        onSubmit={handleEditService}
+        title="Edit Service"
+        isEdit={true}
+      />
     </div>
   );
 }

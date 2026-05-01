@@ -1,660 +1,728 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import RequestHandler from "@/lib/request-handler";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Plus,
-  Pencil,
-  Trash2,
-  Search,
-  ChevronLeft,
-  ChevronRight,
-  Filter,
-  LayoutGrid,
-  List,
-  MoreVertical,
-  Loader2,
-  User,
-  CalendarIcon,
-  CalendarCogIcon,
+import { useState, useEffect } from "react";
+import { 
+  LayoutDashboard, Users, Calendar as CalendarIcon, 
+  ClipboardList, FileText, Settings, Bell, 
+  Search, Edit, Calendar, ChevronLeft, ChevronRight, 
+  Mail, Phone, Star, Filter, X, CheckCircle, UserPlus,
+  UserCheck, UserX, UserPlus as UserPlusIcon, Activity, Clock
 } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import AcriveBadge from "@/components/ui/active-badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import Link from "next/link";
-import { useOrganizationStore } from "@/store";
 
-export default function EmployeesPage() {
-  const organization = useOrganizationStore(({ organization }) => organization);
-  const setOrganization = useOrganizationStore(
-    ({ setOrganization }) => setOrganization,
-  );
-  const employees = useOrganizationStore(({ employees }) => employees);
-  const setEmployees = useOrganizationStore(({ setEmployees }) => setEmployees);
-  const employeeCount = useOrganizationStore(
-    ({ employeeCount }) => employeeCount,
-  );
-  const setEmployeeCount = useOrganizationStore(
-    ({ setEmployeeCount }) => setEmployeeCount,
-  );
-  // const [employees, setEmployees] = useState([]);
-  const [selectedEmployees, setSelectedEmployees] = useState({});
-  // const [employeeCount, setEmployeeCount] = useState(0);
-  // const [organizationId, setOrganizationId] = useState(null);
-  const [isLoading, setIsLoading] = useState(employees == null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // View & Filter States
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(5);
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [view, setView] = useState("table");
-
-  // Dialog States
-  const [isAddOpen, setIsAddOpen] = useState(false);
-  const [isEditOpen, setIsEditOpen] = useState(false);
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+export default function EmployeeManagementPage() {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [toastMessage, setToastMessage] = useState(null);
+  const [selectedRole, setSelectedRole] = useState("All Roles");
+  const [selectedStatus, setSelectedStatus] = useState("All Status");
+  const [selectedDepartment, setSelectedDepartment] = useState("All Departments");
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [scheduleData, setScheduleData] = useState({ date: "", time: "", type: "" });
+  const [editData, setEditData] = useState({ name: "", role: "", email: "", department: "" });
+  const [newEmployee, setNewEmployee] = useState({ name: "", role: "", email: "", department: "" });
+  const itemsPerPage = 6;
 
-  // Form States
-  const [formData, setFormData] = useState({
-    email: "",
-    jobTitle: "",
-    jobDescription: "",
-    isActive: true,
-    calendarId: null,
-  });
-
-  const organizationId = organization?.id;
-  // --- Data Fetching ---
-  useEffect(() => {
-    if (organization == null) {
-      RequestHandler.Get("/api/v1/organization").then(async (res) => {
-        if (res.ok) {
-          const { organization } = await res.json();
-          setOrganization(organization);
-        }
-      });
-    }
-  }, [organization, setOrganization]);
-
-  const fetchEmployees = useCallback(async () => {
-    if (!organizationId) return;
-    // (async () => setIsLoading(true))();
-
-    const offset = (page - 1) * limit;
-    const params = new URLSearchParams({
-      o: offset.toString(),
-      l: limit.toString(),
-      iuser: 1,
-      icalendar: 1,
-    });
-
-    const [countRes, dataRes] = await Promise.all([
-      RequestHandler.Get(
-        `/api/v1/organization/${organizationId}/employees/count`,
-      ),
-      RequestHandler.Get(
-        `/api/v1/organization/${organizationId}/employees?${params.toString()}`,
-      ),
-    ]);
-
-    if (countRes.ok) {
-      const { count } = await countRes.json();
-      (async () => setEmployeeCount(count))();
-    }
-
-    if (dataRes.ok) {
-      const data = await dataRes.json();
-      let results = data.employees || [];
-
-      if (statusFilter !== "all") {
-        results = results.filter(
-          (s) => s.isActive === (statusFilter === "active"),
-        );
-      }
-      if (searchQuery) {
-        results = results.filter(
-          (e) =>
-            e.user.firstname
-              .toLowerCase()
-              .includes(searchQuery.toLowerCase()) ||
-            e.user.lastname.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            e.user.jobTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            e.user.jobDescription
-              .toLowerCase()
-              .includes(searchQuery.toLowerCase()),
-        );
-      }
-      setEmployees(results);
-    }
-    (async () => setIsLoading(false))();
-  }, [
-    setEmployees,
-    setEmployeeCount,
-    organizationId,
-    page,
-    limit,
-    statusFilter,
-    searchQuery,
+  // Employee data - exactly matching both images
+  const [employees, setEmployees] = useState([
+    {
+      id: 1,
+      name: "Dr. Abebe Bekele",
+      role: "Senior Doctor",
+      department: "Cardiology",
+      email: "abebe.b@servesync.com",
+      hiredDate: "Oct 2021",
+      workload: 95,
+      status: "active"
+    },
+    {
+      id: 2,
+      name: "Dr. Genet Mekonnen",
+      role: "Lab Specialist",
+      department: "Lab Tests",
+      email: "genet.m@servesync.com",
+      hiredDate: "Jan 2022",
+      workload: 92,
+      status: "active"
+    },
+    {
+      id: 3,
+      name: "Dr. Tekle Wolde",
+      role: "Radiologist",
+      department: "X-Ray",
+      email: "tekle.w@servesync.com",
+      hiredDate: "Mar 2020",
+      workload: 88,
+      status: "active"
+    },
+    {
+      id: 4,
+      name: "Nurse Sarah Hailu",
+      role: "Senior Nurse",
+      department: "Patient Care",
+      email: "sarah.h@servesync.com",
+      hiredDate: "May 2019",
+      workload: 100,
+      status: "active"
+    },
+    {
+      id: 5,
+      name: "Dr. Selam Tesfaye",
+      role: "Dentist",
+      department: "Dental Surgery",
+      email: "selam.t@servesync.com",
+      hiredDate: "Mar 2021",
+      workload: 90,
+      status: "leave",
+      targetRecovery: 90
+    },
+    {
+      id: 6,
+      name: "Mr. Kebede Alemu",
+      role: "Admin Staff",
+      department: "Reception",
+      email: "kebede.a@servesync.com",
+      phone: "+251 911 223 344",
+      efficiency: "High",
+      status: "active"
+    },
+    {
+      id: 7,
+      name: "Dr. Marta Tadesse",
+      role: "Pediatrician",
+      department: "Pediatrics",
+      email: "marta.t@servesync.com",
+      hiredDate: "Aug 2020",
+      workload: 87,
+      status: "active"
+    },
+    {
+      id: 8,
+      name: "Nurse Birtukan Alemu",
+      role: "ICU Nurse",
+      department: "Intensive Care",
+      email: "birtukan.a@servesync.com",
+      hiredDate: "Nov 2021",
+      workload: 94,
+      status: "active"
+    },
+    {
+      id: 9,
+      name: "Dr. Yared Mekonnen",
+      role: "Orthopedic",
+      department: "Orthopedics",
+      email: "yared.m@servesync.com",
+      hiredDate: "Feb 2019",
+      workload: 91,
+      status: "leave"
+    },
+    {
+      id: 10,
+      name: "Pharmacist Selamawit",
+      role: "Pharmacist",
+      department: "Pharmacy",
+      email: "selamawit.t@servesync.com",
+      hiredDate: "Apr 2022",
+      workload: 96,
+      status: "active"
+    },
+    {
+      id: 11,
+      name: "Dr. Henok Assefa",
+      role: "Neurologist",
+      department: "Neurology",
+      email: "henok.a@servesync.com",
+      hiredDate: "Jul 2020",
+      workload: 89,
+      status: "active"
+    },
+    {
+      id: 12,
+      name: "Nurse Tsehay Demeke",
+      role: "Head Nurse",
+      department: "Nursing",
+      email: "tsehay.d@servesync.com",
+      hiredDate: "Jan 2018",
+      workload: 98,
+      status: "active"
+    },
   ]);
 
-  useEffect(() => {
-    fetchEmployees();
-  }, [fetchEmployees]);
-
-  // --- CRUD Handlers ---
-  const handleAddEmployee = async () => {
-    setIsSubmitting(true);
-    const res = await RequestHandler.Post(
-      `/api/v1/organization/${organizationId}/employees`,
-      { body: [formData] },
-    );
-    if (res.ok) {
-      setIsAddOpen(false);
-      setFormData({ email: "", name: "", description: "", isActive: true });
-      fetchEmployees();
-    }
-    setIsSubmitting(false);
+  // Stats data
+  const stats = {
+    totalEmployees: 12,
+    activeToday: 10,
+    onLeave: 2,
+    newHires: 3
   };
 
-  const handleEditEmployee = async () => {
-    setIsSubmitting(true);
-    const res = await RequestHandler.Patch(
-      `/api/v1/organization/${organizationId}/employee/${selectedEmployee.userId}`,
-      { body: formData },
-    );
-    if (res.ok) {
-      setIsEditOpen(false);
-      setSelectedEmployee(null);
-      fetchEmployees();
-    }
-    setIsSubmitting(false);
+  const roles = ["All Roles", "Doctor", "Nurse", "Specialist", "Staff", "Pharmacist"];
+  const statuses = ["All Status", "Active", "On Leave"];
+  const departments = ["All Departments", "Cardiology", "Lab Tests", "X-Ray", "Patient Care", "Dental Surgery", "Reception", "Pediatrics", "Intensive Care", "Orthopedics", "Pharmacy", "Neurology", "Nursing"];
+
+  const showToast = (message, type = "success") => {
+    setToastMessage({ message, type });
+    setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const handleDeleteEmployee = async () => {
-    setIsSubmitting(true);
-    const res = await RequestHandler.Delete(
-      `/api/v1/organization/${organizationId}/employee/${selectedEmployee.userId}`,
-    );
-    if (res.ok) {
-      setIsDeleteOpen(false);
-      setSelectedEmployee(null);
-      fetchEmployees();
-    }
-    setIsSubmitting(false);
-  };
+  // Filter employees
+  const filteredEmployees = employees.filter(emp => {
+    const matchesSearch = searchTerm === "" || 
+      emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      emp.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      emp.role.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesRole = selectedRole === "All Roles" || emp.role === selectedRole || 
+      (selectedRole === "Doctor" && emp.role.includes("Dr.")) ||
+      (selectedRole === "Nurse" && emp.role.includes("Nurse"));
+    
+    const matchesStatus = selectedStatus === "All Status" || 
+      (selectedStatus === "Active" && emp.status === "active") ||
+      (selectedStatus === "On Leave" && emp.status === "leave");
+    
+    const matchesDepartment = selectedDepartment === "All Departments" || emp.department === selectedDepartment;
+    
+    return matchesSearch && matchesRole && matchesStatus && matchesDepartment;
+  });
 
-  const openEdit = (employee) => {
+  // Pagination
+  const totalPages = Math.ceil(filteredEmployees.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedEmployees = filteredEmployees.slice(startIndex, startIndex + itemsPerPage);
+
+  // FUNCTIONAL Edit button - Opens Edit Modal
+  const handleEdit = (employee) => {
     setSelectedEmployee(employee);
-    setFormData({
+    setEditData({
+      name: employee.name,
+      role: employee.role,
       email: employee.email,
-      jobTitle: employee.jobTitle,
-      jobDescription: employee.jobDescription,
-      isActive: employee.isActive,
-      calendarId: null,
+      department: employee.department
     });
-    setIsEditOpen(true);
+    setShowEditModal(true);
   };
 
-  const openDelete = (employee) => {
+  // Save Edit Changes
+  const handleSaveEdit = (e) => {
+    e.preventDefault();
+    const updatedEmployees = employees.map(emp => 
+      emp.id === selectedEmployee.id 
+        ? { ...emp, name: editData.name, role: editData.role, email: editData.email, department: editData.department }
+        : emp
+    );
+    setEmployees(updatedEmployees);
+    setShowEditModal(false);
+    showToast(`${editData.name} has been updated successfully!`, "success");
+  };
+
+  // FUNCTIONAL Schedule button - Opens Schedule Modal
+  const handleSchedule = (employee) => {
     setSelectedEmployee(employee);
-    setIsDeleteOpen(true);
+    setScheduleData({ date: "", time: "", type: "" });
+    setShowScheduleModal(true);
   };
 
-  const totalPages = Math.ceil(employeeCount / limit);
+  // Save Schedule
+  const handleSaveSchedule = (e) => {
+    e.preventDefault();
+    setShowScheduleModal(false);
+    showToast(`Appointment scheduled for ${selectedEmployee.name} on ${scheduleData.date} at ${scheduleData.time}`, "success");
+  };
+
+  const handleResetFilters = () => {
+    setSelectedRole("All Roles");
+    setSelectedStatus("All Status");
+    setSelectedDepartment("All Departments");
+    setSearchTerm("");
+    setCurrentPage(1);
+    showToast("All filters reset", "info");
+  };
+
+  // Add Member functionality
+  const handleAddMember = (e) => {
+    e.preventDefault();
+    const newEmp = {
+      id: employees.length + 1,
+      name: newEmployee.name,
+      role: newEmployee.role,
+      department: newEmployee.department,
+      email: newEmployee.email,
+      hiredDate: new Date().toLocaleString('default', { month: 'short', year: 'numeric' }),
+      workload: 0,
+      status: "active"
+    };
+    setEmployees([...employees, newEmp]);
+    setShowAddModal(false);
+    setNewEmployee({ name: "", role: "", email: "", department: "" });
+    showToast(`New employee ${newEmployee.name} added successfully!`, "success");
+  };
+
+  // Stat Card Component with Icons
+  const StatCard = ({ label, value, icon: Icon, color }) => (
+    <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
+      <div className="flex items-center justify-center mb-2">
+        <div className={`p-2 rounded-full ${color} bg-opacity-10`}>
+          <Icon className={`w-5 h-5 ${color}`} />
+        </div>
+      </div>
+      <p className="text-2xl font-bold text-gray-900">{value}</p>
+      <p className="text-xs text-gray-500 uppercase tracking-wider mt-1">{label}</p>
+    </div>
+  );
+
+  // Add Member Modal
+  const AddMemberModal = () => (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl w-full max-w-md">
+        <div className="flex justify-between items-center p-4 border-b border-gray-200">
+          <h2 className="text-xl font-bold">Add New Member</h2>
+          <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-gray-600">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <form onSubmit={handleAddMember} className="p-5 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+            <input type="text" required value={newEmployee.name} onChange={(e) => setNewEmployee({...newEmployee, name: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="e.g., Dr. John Doe" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+            <input type="text" required value={newEmployee.role} onChange={(e) => setNewEmployee({...newEmployee, role: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="e.g., Cardiologist" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
+            <input type="text" required value={newEmployee.department} onChange={(e) => setNewEmployee({...newEmployee, department: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="e.g., Cardiology" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <input type="email" required value={newEmployee.email} onChange={(e) => setNewEmployee({...newEmployee, email: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="email@example.com" />
+          </div>
+          <button type="submit" className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+            <UserPlus className="w-4 h-4" />
+            Add Member
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+
+  // Edit Employee Modal
+  const EditModal = () => (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl w-full max-w-md">
+        <div className="flex justify-between items-center p-4 border-b border-gray-200">
+          <h2 className="text-xl font-bold">Edit Employee</h2>
+          <button onClick={() => setShowEditModal(false)} className="text-gray-400 hover:text-gray-600">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <form onSubmit={handleSaveEdit} className="p-5 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+            <input type="text" required value={editData.name} onChange={(e) => setEditData({...editData, name: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+            <input type="text" required value={editData.role} onChange={(e) => setEditData({...editData, role: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
+            <input type="text" required value={editData.department} onChange={(e) => setEditData({...editData, department: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <input type="email" required value={editData.email} onChange={(e) => setEditData({...editData, email: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+          </div>
+          <button type="submit" className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+            <CheckCircle className="w-4 h-4" />
+            Save Changes
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+
+  // Schedule Modal
+  const ScheduleModal = () => (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl w-full max-w-md">
+        <div className="flex justify-between items-center p-4 border-b border-gray-200">
+          <h2 className="text-xl font-bold">Schedule Appointment</h2>
+          <button onClick={() => setShowScheduleModal(false)} className="text-gray-400 hover:text-gray-600">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <form onSubmit={handleSaveSchedule} className="p-5 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Employee</label>
+            <input type="text" value={selectedEmployee?.name || ""} disabled className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-600" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+            <input type="date" required value={scheduleData.date} onChange={(e) => setScheduleData({...scheduleData, date: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
+            <input type="time" required value={scheduleData.time} onChange={(e) => setScheduleData({...scheduleData, time: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Appointment Type</label>
+            <select value={scheduleData.type} onChange={(e) => setScheduleData({...scheduleData, type: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg" required>
+              <option value="">Select Type</option>
+              <option value="Consultation">Consultation</option>
+              <option value="Follow-up">Follow-up</option>
+              <option value="Emergency">Emergency</option>
+              <option value="Routine Check">Routine Check</option>
+            </select>
+          </div>
+          <button type="submit" className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+            <Calendar className="w-4 h-4" />
+            Schedule Appointment
+          </button>
+        </form>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Employees</h1>
-          <p className="text-sm text-muted-foreground">
-            Manage your employees.
-          </p>
-        </div>
-        <Button onClick={() => setIsAddOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" /> Hire Employee
-        </Button>
-      </div>
-
-      {/* Toolbar */}
-      <Card className="p-3 bg-muted/20 border-none shadow-none bg-background">
-        <div className="flex flex-col md:flex-row gap-4 justify-between">
-          <div className="flex flex-1 items-center gap-3">
-            <div className="relative w-full max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search employees..."
-                className="pl-9 bg-background"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[150px] bg-background">
-                <Filter className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-              </SelectContent>
-            </Select>
+    <div className="min-h-screen bg-gray-50">
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-right">
+          <div className={`px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 ${
+            toastMessage.type === "success" ? "bg-green-500 text-white" : "bg-blue-500 text-white"
+          }`}>
+            <CheckCircle className="w-4 h-4" />
+            {toastMessage.message}
           </div>
-          <Tabs value={view} onValueChange={setView}>
-            <TabsList className="bg-background border">
-              <TabsTrigger value="table">
-                <List className="h-4 w-4" />
-              </TabsTrigger>
-              <TabsTrigger value="grid">
-                <LayoutGrid className="h-4 w-4" />
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
-      </Card>
-
-      {/* Main Content */}
-      {isLoading ? (
-        <div className="h-64 flex items-center justify-center border rounded bg-card">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      ) : view === "table" ? (
-        <div className="rounded border bg-card  overflow-hidden">
-          <Table className=" font-mono">
-            <TableHeader className="bg-muted/30 uppercase">
-              <TableRow>
-                <TableHead className="px-2"></TableHead>
-                {/* <TableHead className="font-bold">ID</TableHead> */}
-                <TableHead className="font-bold">Fullname</TableHead>
-                <TableHead className="font-bold">Job</TableHead>
-                <TableHead className="font-bold">Gender</TableHead>
-                {/* <TableHead className="font-bold text-center">
-                  Calendar
-                </TableHead> */}
-                <TableHead className="font-bold text-center">Status</TableHead>
-                <TableHead className="text-right font-bold">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {employees.map((employee) => (
-                <TableRow key={employee.userId}>
-                  <TableCell className="w-8">
-                    <Checkbox
-                      checked={selectedEmployees[employee.userId]}
-                      onCheckedChange={(checked) =>
-                        setSelectedEmployees((prev) =>
-                          Object.fromEntries(
-                            Object.entries({
-                              ...prev,
-                              [employee.id]: checked,
-                            }).filter((c) => c),
-                          ),
-                        )
-                      }
-                    />
-                  </TableCell>
-                  {/* <TableCell>
-                    <div className="text-xs font-mono">
-                      {employee.userId.slice(0, 8)}
-                    </div>
-                  </TableCell> */}
-                  <TableCell>
-                    <div className="font-semibold">
-                      {`${employee.user?.firstname} ${employee.user?.lastname}`}
-                    </div>
-                    <div className="text-xs text-foreground/80">
-                      <Link
-                        href={`mailto:${employee.user?.email}`}
-                        className="text-blue-800/90 hover:underline"
-                      >
-                        {employee.user?.email}
-                      </Link>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-xs text-muted-foreground truncate max-w-[400px]">
-                      <div className="text-sm font-bold">
-                        {employee.jobTitle}
-                      </div>
-                      <div>{employee.jobDescription}</div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-xs text-center text-muted-foreground truncate max-w-[400px]">
-                      {employee.user?.gender}
-                    </div>
-                  </TableCell>
-                  {/* <TableCell>
-                    <div className="text-xs text-muted-foreground truncate max-w-[400px] overflow-auto">
-                      {employee.calendar?.name}
-                    </div>
-                  </TableCell> */}
-                  <TableCell className="text-center">
-                    <AcriveBadge isActive={employee.isActive} />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon">
-                      <CalendarCogIcon />
-                    </Button>
-                    {employee.calendarId != null ? (
-                      <Button variant="ghost" size="icon" asChild>
-                        <Link
-                          href={`/dashboard/organization/employee/${employee.userId}/calendar/${
-                            employee.calendarId
-                          }`}
-                        >
-                          <CalendarIcon />
-                        </Link>
-                      </Button>
-                    ) : (
-                      <Button variant="ghost" disabled size="icon">
-                        <CalendarIcon />
-                      </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => openEdit(employee)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-destructive"
-                      onClick={() => openDelete(employee)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      ) : (
-        /* IMPROVED GRID VIEW */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {employees.map((employee) => (
-            <Card
-              key={employee.userId}
-              className="bg-background  group flex flex-col relative overflow-hidden transition-all hover:ring-2 hover:ring-primary/20"
-            >
-              <CardHeader className="pb-3 border-b bg-muted/5 flex flex-row items-center justify-between space-y-0">
-                <CardTitle className="font-bold text-primary truncate pr-4">
-                  <div className="flex gap-3">
-                    <div className="size-10 bg-primary/5 rounded-full flex justify-center items-center border border-border">
-                      <User />
-                    </div>
-                    <div>
-                      <div>
-                        {`${employee.user?.firstname} ${employee.user?.lastname}`}
-                      </div>
-                      <p className="muted-foreground text-muted-foreground font-normal text-xs">
-                        {employee.jobTitle}
-                      </p>
-                    </div>
-                  </div>
-                </CardTitle>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => openEdit(employee)}>
-                      <Pencil className="mr-2 h-4 w-4" /> Edit Details
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => openDelete(employee)}
-                      className="text-destructive"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" /> Delete Employee
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </CardHeader>
-              <CardContent className="flex-grow">
-                <p className="text-muted-foreground line-clamp-3 min-h-[60px]">
-                  {employee.jobDescription ||
-                    "No job description provided for this employee."}
-                </p>
-              </CardContent>
-              <CardFooter className="pt-4 border-t flex justify-between items-center bg-muted/5">
-                <AcriveBadge isActive={employee.isActive} />
-                <span className="text-[10px] font-mono text-muted-foreground">
-                  ID: {employee.userId.slice(0, 8)}
-                </span>
-              </CardFooter>
-            </Card>
-          ))}
         </div>
       )}
 
-      {/* RESTORED PAGINATION WITH LIMIT SELECTOR */}
-      <div className="flex items-center justify-between px-4 py-4 border rounded bg-card ">
-        <div className="flex items-center gap-6">
-          <div className="text-sm text-muted-foreground">
-            Showing{" "}
-            <span className="font-medium">{(page - 1) * limit + 1}</span> to{" "}
-            <span className="font-medium">
-              {Math.min(page * limit, employeeCount)}
-            </span>{" "}
-            of <span className="font-medium">{employeeCount}</span>
+      {/* Top Navigation Bar */}
+      <nav className="bg-white border-b border-gray-200 sticky top-0 z-20">
+        <div className="px-6 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-sm">SS</span>
+            </div>
+            <h1 className="text-xl font-bold text-gray-900">ServeSync+</h1>
+            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">ADMIN CONSOLE</span>
           </div>
+          
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Rows:</span>
-            <Select
-              value={limit.toString()}
-              onValueChange={(v) => {
-                setLimit(Number(v));
-                setPage(2); // Reset to page 1 on limit change
-              }}
-            >
-              <SelectTrigger className="h-8 w-[70px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {[2, 5, 10, 20, 50].map((size) => (
-                  <SelectItem key={size} value={size.toString()}>
-                    {size}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <button className="relative p-2 text-gray-400 hover:text-gray-600">
+              <Bell className="w-5 h-5" />
+              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+            </button>
+            <div className="flex items-center gap-2 ml-4 pl-4 border-l border-gray-200">
+              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                <span className="text-blue-600 font-semibold text-sm">AM</span>
+              </div>
+              <span className="text-sm font-medium text-gray-700">Mr. Abebe</span>
+            </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => setPage((p) => p - 1)}
-            disabled={page === 1}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <div className="text-sm font-medium">
-            Page {page} of {totalPages || 1}
-          </div>
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => setPage((p) => p + 1)}
-            disabled={page >= totalPages}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+      </nav>
 
-      {/* --- Modals (Keep Existing) --- */}
-      <Dialog
-        open={isAddOpen || isEditOpen}
-        onOpenChange={(val) => {
-          if (!val) {
-            setIsAddOpen(false);
-            setIsEditOpen(false);
-          }
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {isEditOpen ? "Edit Employee" : "Hire New Employee"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            {!isEditOpen && (
-              <div className="space-y-2">
-                <Label>Employee Email</Label>
-                <Input
-                  value={formData.email}
-                  onChange={(e) =>
-                    setFormData((p) => ({ ...p, email: e.target.value }))
-                  }
+      {/* Sidebar + Main Content */}
+      <div className="flex">
+        {/* Sidebar Navigation - PRESERVED */}
+        <aside className="w-64 bg-white border-r border-gray-200 min-h-[calc(100vh-57px)] sticky top-[57px]">
+          <div className="p-4">
+            <div className="mb-6">
+              <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Dashboard</h2>
+              <nav className="space-y-1">
+                <button className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
+                  <LayoutDashboard className="w-4 h-4" />
+                  Dashboard
+                </button>
+                <button className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
+                  <ClipboardList className="w-4 h-4" />
+                  Services
+                </button>
+                <button className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg bg-blue-50 text-blue-600 font-medium">
+                  <Users className="w-4 h-4" />
+                  Employees
+                </button>
+                <button className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
+                  <CalendarIcon className="w-4 h-4" />
+                  Appointments
+                </button>
+                <button className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
+                  <CalendarIcon className="w-4 h-4" />
+                  Calendar
+                </button>
+                <button className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
+                  <FileText className="w-4 h-4" />
+                  Reports
+                </button>
+                <button className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
+                  <Settings className="w-4 h-4" />
+                  Settings
+                </button>
+              </nav>
+            </div>
+          </div>
+        </aside>
+
+        {/* Main Content */}
+        <main className="flex-1 p-6 overflow-auto">
+          {/* Header */}
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-gray-900">Employee Management</h1>
+            <p className="text-gray-500 text-sm">Manage and monitor your healthcare professionals across all departments.</p>
+          </div>
+
+          {/* Stats Cards Row - 4 cards WITH ICONS */}
+          <div className="grid grid-cols-4 gap-4 mb-6">
+            <StatCard label="TOTAL EMPLOYEES" value={stats.totalEmployees} icon={Users} color="text-blue-600" />
+            <StatCard label="ACTIVE TODAY" value={stats.activeToday} icon={UserCheck} color="text-green-600" />
+            <StatCard label="ON LEAVE" value={stats.onLeave} icon={UserX} color="text-yellow-600" />
+            <StatCard label="NEW HIRES" value={stats.newHires} icon={UserPlusIcon} color="text-purple-600" />
+          </div>
+
+          {/* Search and Filter Bar with Roles, Status, Departments */}
+          <div className="mb-6">
+            {/* Search Input with Add Members Button */}
+            <div className="flex gap-3 mb-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search by name, email, or ID..."
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
-            )}
-
-            <div className="space-y-2">
-              <Label>Job Title</Label>
-              <Input
-                value={formData.jobTitle}
-                onChange={(e) =>
-                  setFormData((p) => ({ ...p, jobTitle: e.target.value }))
-                }
-              />
+              
+              {/* ADD MEMBERS BUTTON - BLUE BACKGROUND */}
+              <button 
+                onClick={() => setShowAddModal(true)}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <UserPlus className="w-4 h-4" />
+                Add Members
+              </button>
             </div>
-            <div className="space-y-2">
-              <Label>Job Description</Label>
-              <Textarea
-                value={formData.jobDescription}
-                onChange={(e) =>
-                  setFormData((p) => ({
-                    ...p,
-                    jobDescription: e.target.value,
-                  }))
-                }
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={formData.isActive}
-                onChange={(e) =>
-                  setFormData((p) => ({
-                    ...formData,
-                    isActive: e.target.checked,
-                  }))
-                }
-                id="active-check"
-                className="h-4 w-4 rounded border-gray-300 accent-primary"
-              />
-              <Label htmlFor="active-check">Set as Active</Label>
+            
+            {/* Filter Bar - Rectangle with ALL ROLES, ALL STATUS, ALL DEPARTMENTS */}
+            <div className="flex flex-wrap items-center gap-2 p-2 bg-white border border-gray-200 rounded-lg">
+              {/* All Roles Dropdown */}
+              <div className="relative">
+                <select
+                  value={selectedRole}
+                  onChange={(e) => { setSelectedRole(e.target.value); setCurrentPage(1); }}
+                  className="px-3 py-1.5 text-sm text-gray-700 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer"
+                >
+                  {roles.map(role => (
+                    <option key={role} value={role}>{role}</option>
+                  ))}
+                </select>
+              </div>
+              
+              {/* Separator */}
+              <span className="text-gray-300">|</span>
+              
+              {/* All Status Dropdown */}
+              <div className="relative">
+                <select
+                  value={selectedStatus}
+                  onChange={(e) => { setSelectedStatus(e.target.value); setCurrentPage(1); }}
+                  className="px-3 py-1.5 text-sm text-gray-700 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer"
+                >
+                  {statuses.map(status => (
+                    <option key={status} value={status}>{status}</option>
+                  ))}
+                </select>
+              </div>
+              
+              {/* Separator */}
+              <span className="text-gray-300">|</span>
+              
+              {/* All Departments Dropdown */}
+              <div className="relative flex-1 max-w-xs">
+                <select
+                  value={selectedDepartment}
+                  onChange={(e) => { setSelectedDepartment(e.target.value); setCurrentPage(1); }}
+                  className="w-full px-3 py-1.5 text-sm text-gray-700 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer"
+                >
+                  {departments.map(dept => (
+                    <option key={dept} value={dept}>{dept}</option>
+                  ))}
+                </select>
+              </div>
+              
+              {/* Reset Button */}
+              {(selectedRole !== "All Roles" || selectedStatus !== "All Status" || selectedDepartment !== "All Departments" || searchTerm) && (
+                <button
+                  onClick={handleResetFilters}
+                  className="flex items-center gap-1 px-2 py-1.5 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  Reset
+                </button>
+              )}
             </div>
           </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setIsAddOpen(false);
-                setIsEditOpen(false);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={isEditOpen ? handleEditEmployee : handleAddEmployee}
-              disabled={isSubmitting}
-            >
-              {isSubmitting && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
-              {isEditOpen ? "Save Changes" : "Hire Employee"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
-      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Are you sure?</DialogTitle>
-            <DialogDescription>
-              This will permanently delete "{selectedEmployee?.name}". This
-              action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDeleteEmployee}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                "Delete Employee"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          {/* Employee Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            {paginatedEmployees.map((employee) => (
+              <div key={employee.id} className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-all">
+                {/* Employee Name */}
+                <h3 className="text-lg font-bold text-gray-900 mb-2">{employee.name}</h3>
+                
+                {/* Role and Department */}
+                <div className="mb-2">
+                  <span className="font-medium text-gray-800">{employee.role}</span>
+                  {employee.department && (
+                    <span className="text-gray-400 text-sm"> • {employee.department}</span>
+                  )}
+                </div>
+                
+                {/* Email */}
+                <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
+                  <Mail className="w-3.5 h-3.5 text-gray-400" />
+                  <a href={`mailto:${employee.email}`} className="hover:text-blue-600">{employee.email}</a>
+                </div>
+                
+                {/* Phone (for Kebede) */}
+                {employee.phone && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
+                    <Phone className="w-3.5 h-3.5 text-gray-400" />
+                    <span>{employee.phone}</span>
+                  </div>
+                )}
+                
+                {/* Hired Date */}
+                {employee.hiredDate && (
+                  <p className="text-sm text-gray-500 mb-2">Hired {employee.hiredDate}</p>
+                )}
+                
+                {/* Workload Completion Progress Bar */}
+                {employee.workload && (
+                  <div className="mb-2">
+                    <div className="flex justify-between text-xs text-gray-600 mb-1">
+                      <span>Workload Completion</span>
+                      <span className="font-medium">{employee.workload}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-1.5">
+                      <div 
+                        className={`h-1.5 rounded-full ${
+                          employee.workload >= 90 ? 'bg-green-500' : 
+                          employee.workload >= 80 ? 'bg-blue-500' : 'bg-yellow-500'
+                        }`}
+                        style={{ width: `${employee.workload}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Target Recovery (for Dr. Selam) */}
+                {employee.targetRecovery && (
+                  <div className="mb-2">
+                    <div className="flex justify-between text-xs text-gray-600 mb-1">
+                      <span>Target Recovery</span>
+                      <span className="font-medium">{employee.targetRecovery}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-1.5">
+                      <div className="bg-purple-500 h-1.5 rounded-full" style={{ width: `${employee.targetRecovery}%` }}></div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Efficiency Score (for Kebede) */}
+                {employee.efficiency && (
+                  <div className="flex items-center gap-1 mb-2">
+                    <Star className="w-3.5 h-3.5 text-yellow-500" />
+                    <span className="text-sm text-gray-700">Efficiency score: <strong>{employee.efficiency}</strong></span>
+                  </div>
+                )}
+                
+                {/* On Leave Badge */}
+                {employee.status === "leave" && (
+                  <div className="mb-2">
+                    <span className="text-xs font-medium px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full">On Leave</span>
+                  </div>
+                )}
+                
+                {/* Buttons - Edit and Schedule */}
+                <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
+                  {/* EDIT Button - FUNCTIONAL - Opens Edit Modal */}
+                  <button 
+                    onClick={() => handleEdit(employee)}
+                    className="flex-1 px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center gap-1"
+                  >
+                    <Edit className="w-3.5 h-3.5" />
+                    Edit
+                  </button>
+                  
+                  {/* SCHEDULE Button - BLUE BACKGROUND & FUNCTIONAL - Opens Schedule Modal */}
+                  <button 
+                    onClick={() => handleSchedule(employee)}
+                    className="flex-1 px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-1"
+                  >
+                    <Calendar className="w-3.5 h-3.5" />
+                    {employee.status === "leave" ? "Unavailable" : "Schedule"}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Showing info and Pagination */}
+          <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+            <p className="text-sm text-gray-500">
+              Showing {filteredEmployees.length === 0 ? 0 : startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredEmployees.length)} of {filteredEmployees.length} employees
+            </p>
+            
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Previous
+              </button>
+              
+              <span className="text-sm text-gray-600">
+                Page {currentPage} of {totalPages}
+              </span>
+              
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        </main>
+      </div>
+
+      {/* Modals */}
+      {showAddModal && <AddMemberModal />}
+      {showEditModal && <EditModal />}
+      {showScheduleModal && <ScheduleModal />}
+
+      {/* Print Styles */}
+      <style jsx global>{`
+        @media print {
+          nav, aside, .sticky, button:not(.print\\:block) {
+            display: none !important;
+          }
+          main {
+            padding: 20px !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }
