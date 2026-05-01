@@ -24,6 +24,8 @@ import {
   List,
   MoreVertical,
   Loader2,
+  CalendarIcon,
+  UserIcon,
 } from "lucide-react";
 import {
   Select,
@@ -60,13 +62,25 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import AcriveBadge from "@/components/ui/active-badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import Link from "next/link";
+import { useOrganizationStore } from "@/store";
 
 export default function ServicesPage() {
-  const [services, setServices] = useState([]);
+  const organization = useOrganizationStore(({ organization }) => organization);
+  const setOrganization = useOrganizationStore(
+    ({ setOrganization }) => setOrganization,
+  );
+  const services = useOrganizationStore(({ services }) => services);
+  const setServices = useOrganizationStore(({ setServices }) => setServices);
+  const serviceCount = useOrganizationStore(({ serviceCount }) => serviceCount);
+  const setServiceCount = useOrganizationStore(
+    ({ setServiceCount }) => setServiceCount,
+  );
+  // const [services, setServices] = useState([]);
   const [selectedServices, setSelectedServices] = useState({});
-  const [totalCount, setTotalCount] = useState(0);
-  const [organizationId, setOrganizationId] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // const [serviceCount, setServiceCount] = useState(0);
+  // const [organizationId, setOrganizationId] = useState(null);
+  const [isLoading, setIsLoading] = useState(services == null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // View & Filter States
@@ -90,19 +104,23 @@ export default function ServicesPage() {
     calendarId: null,
   });
 
+  const organizationId = organization?.id;
+
   // --- Data Fetching ---
   useEffect(() => {
-    RequestHandler.Get("/api/v1/organization").then(async (res) => {
-      if (res.ok) {
-        const { organization } = await res.json();
-        setOrganizationId(organization.id);
-      }
-    });
-  }, []);
+    if (organization == null) {
+      RequestHandler.Get("/api/v1/organization").then(async (res) => {
+        if (res.ok) {
+          const { organization } = await res.json();
+          setOrganization(organization);
+        }
+      });
+    }
+  }, [organization, setOrganization]);
 
   const fetchServices = useCallback(async () => {
     if (!organizationId) return;
-    (async () => setIsLoading(true))();
+    // (async () => setIsLoading(true))();
 
     const offset = (page - 1) * limit;
     const params = new URLSearchParams({
@@ -123,7 +141,7 @@ export default function ServicesPage() {
 
     if (countRes.ok) {
       const { count } = await countRes.json();
-      (async () => setTotalCount(count))();
+      (async () => setServiceCount(count))();
     }
 
     if (dataRes.ok) {
@@ -142,10 +160,19 @@ export default function ServicesPage() {
             s.description.toLowerCase().includes(searchQuery.toLowerCase()),
         );
       }
-      (async () => setServices(results))();
+      setServices(results);
+      // (async () => setServices(results))();
     }
     (async () => setIsLoading(false))();
-  }, [organizationId, page, limit, statusFilter, searchQuery]);
+  }, [
+    setServiceCount,
+    setServices,
+    organizationId,
+    page,
+    limit,
+    statusFilter,
+    searchQuery,
+  ]);
 
   useEffect(() => {
     fetchServices();
@@ -214,7 +241,7 @@ export default function ServicesPage() {
     setIsDeleteOpen(true);
   };
 
-  const totalPages = Math.ceil(totalCount / limit);
+  const totalPages = Math.ceil(serviceCount / limit);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -222,7 +249,7 @@ export default function ServicesPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Services</h1>
           <p className="text-sm text-muted-foreground">
-            Manage your organization's service offerings.
+            Manage your organization&apos;s service offerings.
           </p>
         </div>
         <Button onClick={() => setIsAddOpen(true)}>
@@ -314,13 +341,28 @@ export default function ServicesPage() {
                     <AcriveBadge isActive={service.isActive} />
                   </TableCell>
                   <TableCell className="text-right">
-                    {/* <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => openViewCalendar(service)}
-                    >
-                      <CalendarClock className="h-4 w-4" />
-                    </Button> */}
+                    <Button variant="ghost" size="icon" asChild>
+                      <Link
+                        href={`/dashboard/organization/service/${service.id}/first_employees`}
+                      >
+                        <UserIcon />
+                      </Link>
+                    </Button>
+                    {service.calendarId != null ? (
+                      <Button variant="ghost" size="icon" asChild>
+                        <Link
+                          href={`/dashboard/organization/service/${service.id}/calendar/${
+                            service.calendarId
+                          }`}
+                        >
+                          <CalendarIcon />
+                        </Link>
+                      </Button>
+                    ) : (
+                      <Button variant="ghost" disabled size="icon">
+                        <CalendarIcon />
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="icon"
@@ -399,9 +441,9 @@ export default function ServicesPage() {
             Showing{" "}
             <span className="font-medium">{(page - 1) * limit + 1}</span> to{" "}
             <span className="font-medium">
-              {Math.min(page * limit, totalCount)}
+              {Math.min(page * limit, serviceCount)}
             </span>{" "}
-            of <span className="font-medium">{totalCount}</span>
+            of <span className="font-medium">{serviceCount}</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Rows:</span>

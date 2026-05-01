@@ -1,3 +1,5 @@
+// backend/base.ts
+
 import { JWT, type JwtSymmetricAlgorithm } from "@bepalo/jwt";
 import type { CTXAddress, RouterContext } from "@bepalo/router";
 import { securityConfig } from "./config";
@@ -396,6 +398,10 @@ export type OrganizationPure = Partial<
   Omit<Organization, "admin" | "pricingPlan">
 >;
 
+export type OrganizationWithAdmin = Partial<Omit<Organization, "pricingPlan">>;
+
+export type OrganizationWithPricingPlan = Partial<Omit<Organization, "admin">>;
+
 export type CTXOrganization = {
   organization: Organization;
 };
@@ -425,6 +431,7 @@ export type OrganizationCalendarUpdate = Partial<
   Pick<OrganizationCalendar, "id" | "organizationId">;
 
 export interface Employee {
+  id: string;
   jobTitle: string;
   jobDescription: string;
   isActive: boolean;
@@ -440,7 +447,7 @@ export interface Employee {
 
 export type EmployeeInit = Omit<
   Employee,
-  "createdAt" | "updatedAt" | "user" | "organization"
+  "id" | "createdAt" | "updatedAt" | "user" | "organization"
 > &
   Partial<
     Pick<
@@ -452,10 +459,10 @@ export type EmployeeInit = Omit<
 export type EmployeeUpdate = Partial<
   Omit<
     EmployeeInit,
-    "calendar" | "userId" | "user" | "organizationId" | "organization"
+    "id" | "calendar" | "userId" | "user" | "organizationId" | "organization"
   >
 > &
-  Pick<Employee, "userId">;
+  Pick<Employee, "id">;
 
 export type EmployeePure = Omit<Employee, "organization" | "user" | "calendar">;
 
@@ -530,6 +537,49 @@ export type OrganizationServicePure = Omit<
   OrganizationService,
   "organization" | "calendar"
 >;
+
+export interface OrganizationServiceFirstEmployee {
+  serviceId: string;
+  service: OrganizationService;
+  employeeId: string;
+  employee: Employee;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export type OrganizationServiceFirstEmployeeInit = Omit<
+  OrganizationServiceFirstEmployee,
+  "service" | "employee" | "createdAt" | "updatedAt"
+> &
+  Partial<
+    Pick<
+      OrganizationServiceFirstEmployee,
+      "service" | "employee" | "createdAt" | "updatedAt"
+    >
+  >;
+
+export type OrganizationServiceFirstEmployeePure = Omit<
+  OrganizationServiceFirstEmployee,
+  "service" | "employee"
+>;
+
+export type OrganizationServiceFirstEmployeeWithService = Omit<
+  OrganizationServiceFirstEmployee,
+  "employee"
+>;
+
+export type OrganizationServiceFirstEmployeeWithEmployee = Omit<
+  OrganizationServiceFirstEmployee,
+  "service"
+>;
+
+export type OrganizationServiceFirstEmployeeUpdate = Partial<
+  Omit<
+    OrganizationServiceFirstEmployeeInit,
+    "serviceId" | "createdAt" | "service" | "employee"
+  >
+> &
+  Pick<OrganizationServiceFirstEmployee, "serviceId">;
 
 export interface TaskProgress {
   index: number;

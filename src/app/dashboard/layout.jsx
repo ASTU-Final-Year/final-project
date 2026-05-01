@@ -15,14 +15,17 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { redirect, RedirectType, usePathname } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useSessionStore } from "@/store";
 import { AppSidebarEmployee } from "@/components/app-sidebar-employee";
 import { AppSidebarOrganization } from "@/components/app-sidebar-organization";
 import { AppSidebarClient } from "@/components/app-sidebar-client";
+import { AppSidebarPlaceholder } from "@/components/app-sidebar-placeholder";
 
 export default function OrganizationDashboardLayout({ children }) {
   const session = useSessionStore(({ session }) => session);
+  const hasHydrated = useSessionStore((s) => s.hasHydrated);
+  const role = session?.user?.role;
   const pathname = usePathname();
   const pathSegments = pathname.split("/").filter(Boolean).slice(2); // Skip 'dashboard' and 'organization'
 
@@ -35,18 +38,20 @@ export default function OrganizationDashboardLayout({ children }) {
     }
   }, [_loaded, session?.user]);
 
-  // if (!_loaded || session?.user == null) {
-  //   return <div>Loading...</div>;
-  // }
-
   return (
-    <SidebarProvider>
-      {session?.user?.role === "organization_admin" ? (
+    <SidebarProvider
+      style={{
+        "--sidebar-width": "11rem",
+      }}
+    >
+      {role === "organization_admin" ? (
         <AppSidebarOrganization />
-      ) : session?.user?.role === "employee" ? (
+      ) : role === "employee" ? (
         <AppSidebarEmployee />
-      ) : (
+      ) : role === "client" ? (
         <AppSidebarClient />
+      ) : (
+        <AppSidebarPlaceholder />
       )}
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 border-b px-4">

@@ -70,6 +70,7 @@ import { Badge } from "@/components/ui/badge";
 import { EthDateTime } from "ethiopian-calendar-date-converter";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { useOrganizationStore } from "@/store";
 
 const startMonth = new Date();
 const endMonth = new Date(Date.now() + 10 * 365.25 * 24 * 60 * 60 * 1000);
@@ -107,7 +108,19 @@ const monthStrs = {
 };
 
 export default function CalendarsPage() {
-  const [calendars, setCalendars] = useState([]);
+  const organization = useOrganizationStore(({ organization }) => organization);
+  const setOrganization = useOrganizationStore(
+    ({ setOrganization }) => setOrganization,
+  );
+  const calendars = useOrganizationStore(({ calendars }) => calendars);
+  const setCalendars = useOrganizationStore(({ setCalendars }) => setCalendars);
+  const calendarCount = useOrganizationStore(
+    ({ calendarCount }) => calendarCount,
+  );
+  const setCalendarCount = useOrganizationStore(
+    ({ setCalendarCount }) => setCalendarCount,
+  );
+  // const [calendars, setCalendars] = useState([]);
   const [calendarMode, setCalendarMode] = useState("ethiopian");
   const [selectedCalendars, setSelectedCalendars] = useState({});
   // const [selectedDates, setSelectedDates] = useState([]);
@@ -116,9 +129,9 @@ export default function CalendarsPage() {
   const [weeklySelects, setWeeklySelects] = useState([]);
   const [weeklyDeselects, setWeeklyDeselects] = useState([]);
   const [selectedDateMode, setSelectedDateMode] = useState("multiple");
-  const [totalCount, setTotalCount] = useState(0);
-  const [organizationId, setOrganizationId] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // const [calendarCount, setCalendarCount] = useState(0);
+  // const [organizationId, setOrganizationId] = useState(null);
+  const [isLoading, setIsLoading] = useState(calendars == null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // View & Filter States
@@ -142,19 +155,22 @@ export default function CalendarsPage() {
     unavailable: null,
   });
 
+  const organizationId = organization?.id;
   // --- Data Fetching ---
   useEffect(() => {
-    RequestHandler.Get("/api/v1/organization").then(async (res) => {
-      if (res.ok) {
-        const { organization } = await res.json();
-        setOrganizationId(organization.id);
-      }
-    });
-  }, []);
+    if (organization == null) {
+      RequestHandler.Get("/api/v1/organization").then(async (res) => {
+        if (res.ok) {
+          const { organization } = await res.json();
+          setOrganization(organization);
+        }
+      });
+    }
+  }, [organization, setOrganization]);
 
   const fetchCalendars = useCallback(async () => {
     if (!organizationId) return;
-    (async () => setIsLoading(true))();
+    // (async () => setIsLoading(true))();
 
     const offset = (page - 1) * limit;
     const params = new URLSearchParams({
@@ -175,7 +191,7 @@ export default function CalendarsPage() {
 
     if (countRes.ok) {
       const { count } = await countRes.json();
-      (async () => setTotalCount(count))();
+      (async () => setCalendarCount(count))();
     }
 
     if (dataRes.ok) {
@@ -225,10 +241,18 @@ export default function CalendarsPage() {
             : [],
         },
       }));
-      (async () => setCalendars(results))();
+      setCalendars(results);
     }
     (async () => setIsLoading(false))();
-  }, [organizationId, page, limit, statusFilter, searchQuery]);
+  }, [
+    setCalendarCount,
+    setCalendars,
+    organizationId,
+    page,
+    limit,
+    statusFilter,
+    searchQuery,
+  ]);
 
   useEffect(() => {
     fetchCalendars();
@@ -378,7 +402,7 @@ export default function CalendarsPage() {
     setIsDeleteOpen(true);
   };
 
-  const totalPages = Math.ceil(totalCount / limit);
+  const totalPages = Math.ceil(calendarCount / limit);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -386,7 +410,7 @@ export default function CalendarsPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Calendars</h1>
           <p className="text-sm text-muted-foreground">
-            Manage your organization's calendars.
+            Manage your organization&apos;s calendars.
           </p>
         </div>
         <Button onClick={() => setIsAddOpen(true)}>
@@ -578,9 +602,9 @@ export default function CalendarsPage() {
             Showing{" "}
             <span className="font-medium">{(page - 1) * limit + 1}</span> to{" "}
             <span className="font-medium">
-              {Math.min(page * limit, totalCount)}
+              {Math.min(page * limit, calendarCount)}
             </span>{" "}
-            of <span className="font-medium">{totalCount}</span>
+            of <span className="font-medium">{calendarCount}</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Rows:</span>

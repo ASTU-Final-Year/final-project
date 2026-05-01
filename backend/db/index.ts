@@ -1,18 +1,21 @@
 import { config, dbConfig } from "~/config";
 import { drizzle as drizzlePG } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
-import { drizzle as drizzleSQLite } from "drizzle-orm/bun-sqlite";
-import { Database } from "bun:sqlite";
+import { drizzle as drizzleSQLite } from "drizzle-orm/libsql";
 import pgSchema from "./schema/pg";
 import sqliteSchema from "./schema/sqlite";
 import PaymentService from "~/services/payment.service";
 import defaultPricingPlans from "@/data/default-pricing-plans";
+import { createClient } from "@libsql/client";
 
 const pool = new Pool({
   connectionString: dbConfig.pgDatabaseURL,
 });
 
-const sqlite = new Database(dbConfig.sqliteDatabaseURL);
+const sqlite = createClient({ url: "file:" + dbConfig.sqliteDatabaseURL });
+sqlite.execute("PRAGMA journal_mode = WAL;");
+sqlite.execute("PRAGMA synchronous = NORMAL;");
+sqlite.execute("PRAGMA foreign_keys = ON;");
 export const dbPG = drizzlePG({ client: pool, schema: pgSchema });
 export const dbSQLite = drizzleSQLite(sqlite, { schema: sqliteSchema });
 // export const db = config.isProduction ? dbPG : dbSQLite;

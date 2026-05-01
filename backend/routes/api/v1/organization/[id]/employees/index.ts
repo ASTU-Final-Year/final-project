@@ -34,14 +34,14 @@ const THireOrganizationEmployees = THireOrganizationEmployee.array();
 type HireOrganizationEmployee = typeof THireOrganizationEmployee.infer;
 type HireOrganizationEmployees = typeof THireOrganizationEmployees.infer;
 
-const TPagenater = type({
+const TQuery = type({
   "o?": "string",
   "l?": "string",
   "iuser?": "unknown",
   "icalendar?": "unknown",
 });
 
-type Pagenater = typeof TPagenater.infer;
+type Query = typeof TQuery.infer;
 
 export default {
   POST: {
@@ -119,7 +119,7 @@ export default {
       parseSession(),
       parseQuery(),
       (req, ctx) => {
-        const q = TPagenater(ctx.query);
+        const q = TQuery(ctx.query);
         if (q instanceof ArkErrors) {
           return status(Status._400_BadRequest, "Invalid query");
         }
@@ -192,7 +192,7 @@ export default {
       employeesForm: HireOrganizationEmployees;
     };
     GET: CTXQuery & {
-      query: Pagenater;
+      query: Query;
       q: {
         offset: number;
         limit: number;

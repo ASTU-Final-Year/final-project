@@ -3,45 +3,63 @@
 import { useEffect, useState } from "react";
 import RequestHandler from "@/lib/request-handler";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Briefcase, Users, CalendarDays, Activity, User } from "lucide-react";
+import {
+  Briefcase,
+  Users,
+  CalendarDays,
+  Activity,
+  User,
+  Loader2,
+  UserIcon,
+} from "lucide-react";
 import { useSessionStore } from "@/store";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 export default function DashboardOverview() {
-  const [employee, setEmployee] = useState(null);
+  const [employmentIndex, setEmploymentIndex] = useState(0);
+  const [employments, setEmployments] = useState(null);
   // const session = useSessionStore(({ session }) => session);
   const [stats, setStats] = useState({
     tasks: 0,
-    calendars: 0,
+    employments: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
+  const employee =
+    employments && employments.length > 0 && employments[employmentIndex];
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const orgRes = await RequestHandler.Get("/api/v1/employee");
-        if (orgRes.ok) {
-          const { employee } = await orgRes.json();
-          setEmployee(employee);
+        const empRes = await RequestHandler.Get("/api/v1/employee");
+        if (empRes.ok) {
+          const { employee: employments } = await empRes.json();
+          setEmployments(employments);
+          setStats((p) => ({
+            ...p,
+            employments: employments?.length || 0,
+          }));
 
           // Fetch aggregate stats concurrently
-          const [empRes, calRes] = await Promise.all([
-            RequestHandler.Get(
-              `/api/v1/employee/${employee.id}/employees&iuser&icalendar`,
-            ),
-            // RequestHandler.Get(
-            //   `/api/v1/employee/${employee.id}/tasks`,
-            // ),
-            RequestHandler.Get(`/api/v1/employee/${employee.id}/calendars`),
-          ]);
-          setEmployee(await empRes.json());
-          setStats({
-            calendars: calRes.ok
-              ? (await calRes.json()).calendars?.length || 0
-              : 0,
-            // tasks: taskRes.ok
-            //   ? (await taskRes.json()).tasks?.length || 0
-            //   : 0,
-          });
+          // const empRes = await Promise.all(
+          //   employments.map((employee) => [
+          //     RequestHandler.Get(
+          //       `/api/v1/employee/${employee.id}/employees&iuser&icalendar`,
+          //     ),
+          //     RequestHandler.Get(`/api/v1/employee/${employee.id}/calendars`),
+          //   ]),
+          // );
+          // if (employments && employments.length > 0) {
+          //   setEmployee(employments[0]);
+          // }
+          // setStats({
+          //   calendars: calRes.ok
+          //     ? (await calRes.json()).calendars?.length || 0
+          //     : 0,
+          // tasks: taskRes.ok
+          //   ? (await taskRes.json()).tasks?.length || 0
+          //   : 0,
+          // });
         }
       } catch (error) {
         console.error("Failed to load overview data", error);
@@ -53,7 +71,12 @@ export default function DashboardOverview() {
     fetchDashboardData();
   }, []);
 
-  if (isLoading) return <div>Loading overview...</div>;
+  if (isLoading)
+    return (
+      <div className="h-48 flex items-center justify-center border rounded bg-card">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
   if (!employee) return <div>Employee not found.</div>;
 
   return (
@@ -74,10 +97,10 @@ export default function DashboardOverview() {
                   Verified
                 </Badge> */}
               </div>
-              <p className="text-muted-foreground mb-4">
+              {/* <p className="text-muted-foreground mb-4">
                 <b>{employee.jobTitle ?? ""}</b> |
                 {employee.jobDescription ?? ""}
-              </p>
+              </p> */}
               <div className="flex gap-6">
                 <div>
                   <p className="text-sm text-muted-foreground">Email</p>
@@ -114,9 +137,10 @@ export default function DashboardOverview() {
       <div className="grid gap-3 md:grid-cols-1 lg:grid-cols-3">
         <StatCard title="Active Tasks" value={stats.tasks} icon={Briefcase} />
         <StatCard
-          title="Calendars"
-          value={stats.calendars}
-          icon={CalendarDays}
+          title="Employments"
+          value={stats.employments}
+          href={`/dashboard/employee/employments`}
+          icon={UserIcon}
         />
         <StatCard
           title="Employee Status"
@@ -128,12 +152,39 @@ export default function DashboardOverview() {
   );
 }
 
-function StatCard({ title, value, icon: Icon }) {
+const StatCardTitle = ({ href, className, children, ...props }) => {
+  return href ? (
+    <Link
+      href={href}
+      className={cn(
+        "flex flex-row items-center justify-between space-y-0 hover:underline w-full",
+        className,
+      )}
+      {...props}
+    >
+      {children}
+    </Link>
+  ) : (
+    <div
+      className={cn(
+        "flex flex-row items-center justify-between space-y-0 w-full",
+        className,
+      )}
+      {...props}
+    >
+      {children}
+    </div>
+  );
+};
+
+function StatCard({ title, value, icon: Icon, href }) {
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <Icon className="h-4 w-4 text-muted-foreground" />
+      <CardHeader className="pb-2">
+        <StatCardTitle href={href}>
+          <CardTitle className="text-sm font-medium">{title}</CardTitle>
+          <Icon className="h-4 w-4 text-muted-foreground" />
+        </StatCardTitle>
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">{value}</div>

@@ -26,6 +26,7 @@ import {
   Loader2,
   User,
   CalendarIcon,
+  CalendarCogIcon,
 } from "lucide-react";
 import {
   Select,
@@ -64,13 +65,26 @@ import { Textarea } from "@/components/ui/textarea";
 import AcriveBadge from "@/components/ui/active-badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
+import { useOrganizationStore } from "@/store";
 
 export default function EmployeesPage() {
-  const [employees, setEmployees] = useState([]);
+  const organization = useOrganizationStore(({ organization }) => organization);
+  const setOrganization = useOrganizationStore(
+    ({ setOrganization }) => setOrganization,
+  );
+  const employees = useOrganizationStore(({ employees }) => employees);
+  const setEmployees = useOrganizationStore(({ setEmployees }) => setEmployees);
+  const employeeCount = useOrganizationStore(
+    ({ employeeCount }) => employeeCount,
+  );
+  const setEmployeeCount = useOrganizationStore(
+    ({ setEmployeeCount }) => setEmployeeCount,
+  );
+  // const [employees, setEmployees] = useState([]);
   const [selectedEmployees, setSelectedEmployees] = useState({});
-  const [totalCount, setTotalCount] = useState(0);
-  const [organizationId, setOrganizationId] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // const [employeeCount, setEmployeeCount] = useState(0);
+  // const [organizationId, setOrganizationId] = useState(null);
+  const [isLoading, setIsLoading] = useState(employees == null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // View & Filter States
@@ -95,19 +109,22 @@ export default function EmployeesPage() {
     calendarId: null,
   });
 
+  const organizationId = organization?.id;
   // --- Data Fetching ---
   useEffect(() => {
-    RequestHandler.Get("/api/v1/organization").then(async (res) => {
-      if (res.ok) {
-        const { organization } = await res.json();
-        setOrganizationId(organization.id);
-      }
-    });
-  }, []);
+    if (organization == null) {
+      RequestHandler.Get("/api/v1/organization").then(async (res) => {
+        if (res.ok) {
+          const { organization } = await res.json();
+          setOrganization(organization);
+        }
+      });
+    }
+  }, [organization, setOrganization]);
 
   const fetchEmployees = useCallback(async () => {
     if (!organizationId) return;
-    (async () => setIsLoading(true))();
+    // (async () => setIsLoading(true))();
 
     const offset = (page - 1) * limit;
     const params = new URLSearchParams({
@@ -128,7 +145,7 @@ export default function EmployeesPage() {
 
     if (countRes.ok) {
       const { count } = await countRes.json();
-      (async () => setTotalCount(count))();
+      (async () => setEmployeeCount(count))();
     }
 
     if (dataRes.ok) {
@@ -153,10 +170,18 @@ export default function EmployeesPage() {
               .includes(searchQuery.toLowerCase()),
         );
       }
-      (async () => setEmployees(results))();
+      setEmployees(results);
     }
     (async () => setIsLoading(false))();
-  }, [organizationId, page, limit, statusFilter, searchQuery]);
+  }, [
+    setEmployees,
+    setEmployeeCount,
+    organizationId,
+    page,
+    limit,
+    statusFilter,
+    searchQuery,
+  ]);
 
   useEffect(() => {
     fetchEmployees();
@@ -171,7 +196,7 @@ export default function EmployeesPage() {
     );
     if (res.ok) {
       setIsAddOpen(false);
-      setFormData({ name: "", description: "", isActive: true });
+      setFormData({ email: "", name: "", description: "", isActive: true });
       fetchEmployees();
     }
     setIsSubmitting(false);
@@ -221,7 +246,7 @@ export default function EmployeesPage() {
     setIsDeleteOpen(true);
   };
 
-  const totalPages = Math.ceil(totalCount / limit);
+  const totalPages = Math.ceil(employeeCount / limit);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -286,13 +311,13 @@ export default function EmployeesPage() {
             <TableHeader className="bg-muted/30 uppercase">
               <TableRow>
                 <TableHead className="px-2"></TableHead>
-                <TableHead className="font-bold">ID</TableHead>
+                {/* <TableHead className="font-bold">ID</TableHead> */}
                 <TableHead className="font-bold">Fullname</TableHead>
-                <TableHead className="font-bold">Gender</TableHead>
                 <TableHead className="font-bold">Job</TableHead>
-                <TableHead className="font-bold text-center">
+                <TableHead className="font-bold">Gender</TableHead>
+                {/* <TableHead className="font-bold text-center">
                   Calendar
-                </TableHead>
+                </TableHead> */}
                 <TableHead className="font-bold text-center">Status</TableHead>
                 <TableHead className="text-right font-bold">Actions</TableHead>
               </TableRow>
@@ -315,19 +340,22 @@ export default function EmployeesPage() {
                       }
                     />
                   </TableCell>
-                  <TableCell>
+                  {/* <TableCell>
                     <div className="text-xs font-mono">
                       {employee.userId.slice(0, 8)}
                     </div>
-                  </TableCell>
+                  </TableCell> */}
                   <TableCell>
                     <div className="font-semibold">
                       {`${employee.user?.firstname} ${employee.user?.lastname}`}
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-xs text-muted-foreground truncate max-w-[400px]">
-                      {employee.user?.gender}
+                    <div className="text-xs text-foreground/80">
+                      <Link
+                        href={`mailto:${employee.user?.email}`}
+                        className="text-blue-800/90 hover:underline"
+                      >
+                        {employee.user?.email}
+                      </Link>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -339,14 +367,22 @@ export default function EmployeesPage() {
                     </div>
                   </TableCell>
                   <TableCell>
+                    <div className="text-xs text-center text-muted-foreground truncate max-w-[400px]">
+                      {employee.user?.gender}
+                    </div>
+                  </TableCell>
+                  {/* <TableCell>
                     <div className="text-xs text-muted-foreground truncate max-w-[400px] overflow-auto">
                       {employee.calendar?.name}
                     </div>
-                  </TableCell>
+                  </TableCell> */}
                   <TableCell className="text-center">
                     <AcriveBadge isActive={employee.isActive} />
                   </TableCell>
                   <TableCell className="text-right">
+                    <Button variant="ghost" size="icon">
+                      <CalendarCogIcon />
+                    </Button>
                     {employee.calendarId != null ? (
                       <Button variant="ghost" size="icon" asChild>
                         <Link
@@ -452,9 +488,9 @@ export default function EmployeesPage() {
             Showing{" "}
             <span className="font-medium">{(page - 1) * limit + 1}</span> to{" "}
             <span className="font-medium">
-              {Math.min(page * limit, totalCount)}
+              {Math.min(page * limit, employeeCount)}
             </span>{" "}
-            of <span className="font-medium">{totalCount}</span>
+            of <span className="font-medium">{employeeCount}</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Rows:</span>
@@ -520,21 +556,24 @@ export default function EmployeesPage() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Employee Email</Label>
-              <Input
-                value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
-              />
-            </div>
+            {!isEditOpen && (
+              <div className="space-y-2">
+                <Label>Employee Email</Label>
+                <Input
+                  value={formData.email}
+                  onChange={(e) =>
+                    setFormData((p) => ({ ...p, email: e.target.value }))
+                  }
+                />
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label>Job Title</Label>
               <Input
                 value={formData.jobTitle}
                 onChange={(e) =>
-                  setFormData({ ...formData, jobTitle: e.target.value })
+                  setFormData((p) => ({ ...p, jobTitle: e.target.value }))
                 }
               />
             </div>
@@ -543,7 +582,10 @@ export default function EmployeesPage() {
               <Textarea
                 value={formData.jobDescription}
                 onChange={(e) =>
-                  setFormData({ ...formData, jobDescription: e.target.value })
+                  setFormData((p) => ({
+                    ...p,
+                    jobDescription: e.target.value,
+                  }))
                 }
               />
             </div>
@@ -552,7 +594,10 @@ export default function EmployeesPage() {
                 type="checkbox"
                 checked={formData.isActive}
                 onChange={(e) =>
-                  setFormData({ ...formData, isActive: e.target.checked })
+                  setFormData((p) => ({
+                    ...formData,
+                    isActive: e.target.checked,
+                  }))
                 }
                 id="active-check"
                 className="h-4 w-4 rounded border-gray-300 accent-primary"

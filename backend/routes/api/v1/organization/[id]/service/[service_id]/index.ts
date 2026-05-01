@@ -5,9 +5,11 @@ import {
   CTXAuth,
   CTXBody,
   CTXCookie,
+  CTXQuery,
   json,
   parseBody,
   parseCookie,
+  parseQuery,
   RouterHandlers,
   Status,
   status,
@@ -27,34 +29,76 @@ const TServiceUpdate = type({
 
 type ServiceUpdate = typeof TServiceUpdate.infer;
 
+const TQuery = type({
+  "iorganization?": "unknown",
+  "icalendar?": "unknown",
+});
+
+type Query = typeof TQuery.infer;
+
 export default {
   GET: {
     FILTER: [
       parseCookie(),
-      authenticate({ parseAuth: parseAuth }),
-      authorize({
-        allowRole: (role) => role === "organization_admin",
-      }),
-      parseSession(),
+      authenticate({ parseAuth: parseAuth, checkOnly: true }),
+      parseQuery(),
+      (req, ctx) => {
+        const q = TQuery(ctx.query);
+        if (q instanceof ArkErrors) {
+          return status(Status._400_BadRequest, "Invalid query");
+        }
+        ctx.q = {
+          iorganization: q.iorganization !== undefined,
+          icalendar: q.icalendar !== undefined,
+        };
+      },
     ],
     HANDLER: [
-      async (req, { session, params }) => {
+      async (req, { auth, params, q }) => {
+        const isOrgAdmin = auth?.role === "organization_admin";
         const { id, service_id } = params;
-        const organization =
-          await OrganizationService.getOrganizationByAdminIdPure(
-            session.userId,
-          );
+        const { iorganization, icalendar } = q;
+        const organization = await OrganizationService.getOrganizationById(id);
         if (organization == null) {
           return status(Status._404_NotFound, "Organization not found");
         }
         if (organization.id !== id) {
           return status(Status._403_Forbidden);
         }
-        const service =
-          await OrganizationServicesService.getServiceByIdByOrganizationId(
-            service_id,
-            organization.id,
-          );
+        let service;
+        if (iorganization && icalendar) {
+          service = isOrgAdmin
+            ? await OrganizationServicesService.getServiceByIdByOrganizationId(
+                service_id,
+                organization.id,
+              )
+            : await OrganizationServicesService.getServiceByIdByOrganizationIdPublic(
+                service_id,
+                organization.id,
+              );
+        } else if (iorganization) {
+          service = isOrgAdmin
+            ? await OrganizationServicesService.getServiceByIdByOrganizationIdWithOrganizationByOrganizationid(
+                service_id,
+                organization.id,
+              )
+            : await OrganizationServicesService.getServiceByIdByOrganizationIdWithOrganizationByOrganizationidPublic(
+                service_id,
+                organization.id,
+              );
+        } else if (icalendar) {
+          service =
+            await OrganizationServicesService.getServiceByIdByOrganizationIdWithCalendarByOrganizationid(
+              service_id,
+              organization.id,
+            );
+        } else {
+          service =
+            await OrganizationServicesService.getServiceByIdByOrganizationIdPure(
+              service_id,
+              organization.id,
+            );
+        }
         if (service == null) {
           return status(Status._404_NotFound, "Service not found");
         }
@@ -64,6 +108,7 @@ export default {
       },
     ],
   },
+
   PATCH: {
     FILTER: [
       parseCookie(),
@@ -113,6 +158,7 @@ export default {
       },
     ],
   },
+
   DELETE: {
     FILTER: [
       parseCookie(),
@@ -151,11 +197,20 @@ export default {
     ],
   },
 } satisfies RouterHandlers<
-  CTXCookie & CTXAuth & CTXSession,
+  CTXCookie & CTXAuth,
   {
-    PATCH: CTXBody & {
-      body: ServiceUpdate;
-      serviceForm: ServiceUpdate;
+    GET: CTXQuery & {
+      query: Query;
+      q: {
+        iorganization: boolean;
+        icalendar: boolean;
+      };
     };
+    PATCH: CTXBody &
+      CTXSession & {
+        body: ServiceUpdate;
+        serviceForm: ServiceUpdate;
+      };
+    DELETE: CTXSession;
   }
 >;

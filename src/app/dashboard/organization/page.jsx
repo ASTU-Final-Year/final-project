@@ -9,18 +9,26 @@ import {
   CalendarDays,
   Activity,
   Building2,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useOrganizationStore } from "@/store";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 export default function DashboardOverview() {
-  const [organization, setOrganization] = useState(null);
-  const [stats, setStats] = useState({
-    employees: 0,
-    services: 0,
-    calendars: 0,
-  });
-  const [isLoading, setIsLoading] = useState(true);
+  const organization = useOrganizationStore(({ organization }) => organization);
+  const setOrganization = useOrganizationStore(
+    ({ setOrganization }) => setOrganization,
+  );
+  const stats = useOrganizationStore(
+    ({ organizationStats }) => organizationStats,
+  );
+  const setStats = useOrganizationStore(
+    ({ setOrganizationStats }) => setOrganizationStats,
+  );
+  const [isLoading, setIsLoading] = useState(organization == null);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -33,26 +41,20 @@ export default function DashboardOverview() {
           // Fetch aggregate stats concurrently
           const [empRes, srvRes, calRes] = await Promise.all([
             RequestHandler.Get(
-              `/api/v1/organization/${organization.id}/employees`,
+              `/api/v1/organization/${organization.id}/employees/count`,
             ),
             RequestHandler.Get(
-              `/api/v1/organization/${organization.id}/services`,
+              `/api/v1/organization/${organization.id}/services/count`,
             ),
             RequestHandler.Get(
-              `/api/v1/organization/${organization.id}/calendars`,
+              `/api/v1/organization/${organization.id}/calendars/count`,
             ),
           ]);
 
           setStats({
-            employees: empRes.ok
-              ? (await empRes.json()).employees?.length || 0
-              : 0,
-            services: srvRes.ok
-              ? (await srvRes.json()).services?.length || 0
-              : 0,
-            calendars: calRes.ok
-              ? (await calRes.json()).calendars?.length || 0
-              : 0,
+            employees: empRes.ok ? (await empRes.json()).count || 0 : 0,
+            services: srvRes.ok ? (await srvRes.json()).count || 0 : 0,
+            calendars: calRes.ok ? (await calRes.json()).count || 0 : 0,
           });
         }
       } catch (error) {
@@ -65,8 +67,13 @@ export default function DashboardOverview() {
     fetchDashboardData();
   }, []);
 
-  if (isLoading) return <div>Loading overview...</div>;
-  if (!organization) return <div>Organization not found.</div>;
+  if (isLoading)
+    return (
+      <div className="h-48 flex items-center justify-center border rounded bg-card">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  if (!isLoading && !organization) return <div>Organization not found.</div>;
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -124,16 +131,19 @@ export default function DashboardOverview() {
         <StatCard
           title="Total Employees"
           value={stats.employees}
+          href={`/dashboard/organization/employees`}
           icon={Users}
         />
         <StatCard
           title="Active Services"
           value={stats.services}
+          href={`/dashboard/organization/services`}
           icon={Briefcase}
         />
         <StatCard
           title="Calendars"
           value={stats.calendars}
+          href={`/dashboard/organization/calendars`}
           icon={CalendarDays}
         />
         <StatCard
@@ -146,12 +156,39 @@ export default function DashboardOverview() {
   );
 }
 
-function StatCard({ title, value, icon: Icon }) {
+const StatCardTitle = ({ href, className, children, ...props }) => {
+  return href ? (
+    <Link
+      href={href}
+      className={cn(
+        "flex flex-row items-center justify-between space-y-0 hover:underline w-full",
+        className,
+      )}
+      {...props}
+    >
+      {children}
+    </Link>
+  ) : (
+    <div
+      className={cn(
+        "flex flex-row items-center justify-between space-y-0 w-full",
+        className,
+      )}
+      {...props}
+    >
+      {children}
+    </div>
+  );
+};
+
+function StatCard({ title, value, icon: Icon, href }) {
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <Icon className="h-4 w-4 text-muted-foreground" />
+      <CardHeader className="pb-2">
+        <StatCardTitle href={href}>
+          <CardTitle className="text-sm font-medium">{title}</CardTitle>
+          <Icon className="h-4 w-4 text-muted-foreground" />
+        </StatCardTitle>
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">{value}</div>

@@ -38,85 +38,87 @@ export default {
     ],
     HANDLER: [
       async (req, { session, params }) => {
-        const userId = params.id;
+        const { id } = params;
         const adminId = session.userId;
-        if (!(await EmployeeService.hasEmployeeById(userId))) {
+        const employee = await EmployeeService.getEmployeeById(id);
+        if (!employee) {
           return status(Status._404_NotFound, "Employee not found");
         }
+        const userId = employee.userId;
         if (
           !(await OrganizationService.hasEmployeeByAdminId(adminId, userId))
         ) {
           return status(Status._403_Forbidden, "Not own employee");
         }
-        const employee = await EmployeeService.getEmployeeById(userId);
+        // const employee = await EmployeeService.getEmployeeById(userId);
         return json({ employee });
       },
     ],
   },
-  PATCH: {
-    FILTER: [
-      parseCookie(),
-      authenticate({ parseAuth }),
-      authorize({
-        allowRole: (role) => role === "employee",
-      }),
-      parseBody({
-        accept: ["application/x-www-form-urlencoded", "application/json"],
-        maxSize: 1024,
-        once: true,
-      }),
-      parseSession(),
-      (req, { body }) => {
-        const error = TEmployeeUpdater(body);
-        if (error instanceof ArkErrors) {
-          return status(Status._400_BadRequest, "Invalid body");
-        }
-      },
-    ],
-    HANDLER: [
-      async (req, { session, body, params }) => {
-        const userId = session.user.id;
-        const adminId = session.userId;
-        const employeeUpdateInit = { userId, ...body };
-        if (!(await EmployeeService.hasEmployeeById(userId))) {
-          return status(Status._404_NotFound, "Employee not found");
-        }
-        if (
-          !(await OrganizationService.hasEmployeeByAdminId(adminId, userId))
-        ) {
-          return status(Status._403_Forbidden, "Not own employee");
-        }
-        await EmployeeService.updateEmployeeById(employeeUpdateInit);
-        return status(Status._200_OK);
-      },
-    ],
-  },
-  DELETE: {
-    FILTER: [
-      parseCookie(),
-      authenticate({ parseAuth }),
-      authorize({
-        allowRole: (role) => role === "employee",
-      }),
-      parseSession(),
-    ],
-    HANDLER: [
-      async (req, { session, params }) => {
-        const userId = params.id;
-        const adminId = session.userId;
-        if (!(await EmployeeService.hasEmployeeById(userId))) {
-          return status(Status._404_NotFound, "Employee not found");
-        }
-        if (
-          !(await OrganizationService.hasEmployeeByAdminId(adminId, userId))
-        ) {
-          return status(Status._403_Forbidden, "Not own employee");
-        }
-        await EmployeeService.deleteEmployeeById(userId);
-        return status(Status._200_OK);
-      },
-    ],
-  },
+  // PATCH: {
+  //   FILTER: [
+  //     parseCookie(),
+  //     authenticate({ parseAuth }),
+  //     authorize({
+  //       allowRole: (role) => role === "employee",
+  //     }),
+  //     parseBody({
+  //       accept: ["application/x-www-form-urlencoded", "application/json"],
+  //       maxSize: 1024,
+  //       once: true,
+  //     }),
+  //     parseSession(),
+  //     (req, { body }) => {
+  //       const error = TEmployeeUpdater(body);
+  //       if (error instanceof ArkErrors) {
+  //         return status(Status._400_BadRequest, "Invalid body");
+  //       }
+  //     },
+  //   ],
+  //   HANDLER: [
+  //     async (req, { session, body, params }) => {
+  //       const userId = session.user.id;
+  //       const adminId = session.userId;
+  //       const employeeUpdateInit = { userId, ...body };
+  //       if (!(await EmployeeService.hasEmployeeById(userId))) {
+  //         return status(Status._404_NotFound, "Employee not found");
+  //       }
+  //       if (
+  //         !(await OrganizationService.hasEmployeeByAdminId(adminId, userId))
+  //       ) {
+  //         return status(Status._403_Forbidden, "Not own employee");
+  //       }
+  //       await EmployeeService.updateEmployeeById(employeeUpdateInit);
+  //       return status(Status._200_OK);
+  //     },
+  //   ],
+  // },
+  // DELETE: {
+  //   FILTER: [
+  //     parseCookie(),
+  //     authenticate({ parseAuth }),
+  //     authorize({
+  //       allowRole: (role) => role === "employee",
+  //     }),
+  //     parseSession(),
+  //   ],
+  //   HANDLER: [
+  //     async (req, { session, params }) => {
+  //       const userId = params.id;
+  //       const adminId = session.userId;
+  //       if (!(await EmployeeService.hasEmployeeById(userId))) {
+  //         return status(Status._404_NotFound, "Employee not found");
+  //       }
+  //       if (
+  //         !(await OrganizationService.hasEmployeeByAdminId(adminId, userId))
+  //       ) {
+  //         return status(Status._403_Forbidden, "Not own employee");
+  //       }
+  //       await EmployeeService.deleteEmployeeById(userId);
+  //       return status(Status._200_OK);
+  //     },
+  //   ],
+  // },
 } satisfies RouterHandlers<
   CTXCookie & CTXAuth & CTXSession & { params: { id: string } },
   {

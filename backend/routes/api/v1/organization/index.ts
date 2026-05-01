@@ -104,40 +104,51 @@ export default {
         if (plan == null) {
           return status(Status._403_Forbidden, "Invalid pricing plan");
         }
-        // Register
-        const admin = await UserService.createAdminUser({
-          firstname: body.admin.firstname,
-          lastname: body.admin.lastname,
-          gender: body.admin.gender,
-          email: body.admin.email,
-          phone: body.admin.phone,
-          password: body.admin.password,
-        });
-        const organization = await OrganizationService.createOrganization({
-          name: body.name,
-          slug: body.slug,
-          description: body.description,
-          sector: body.sector,
-          isGovernment: body.isGovernment,
-          isActive: true,
-          address: body.address,
-          email: body.email,
-          phone: body.phone,
-          rating: body.rating,
-          adminId: admin.id,
-          pricingPlanId: body.pricingPlanId,
-          billingPeriod: body.billingPeriod,
-          billingStart:
-            plan.price > 0 ? new Date(Time.after(7).days.fromNow()._ms) : null,
-          billingEnd:
-            plan.price > 0
-              ? new Date(
-                  Time.after(
-                    body.billingPeriod === "annually" ? 365.25 : 30,
-                  ).days.fromNow()._ms,
-                )
-              : null,
-        });
+        let admin, organization;
+        try {
+          // Register
+          admin = await UserService.createAdminUser({
+            firstname: body.admin.firstname,
+            lastname: body.admin.lastname,
+            gender: body.admin.gender,
+            email: body.admin.email,
+            phone: body.admin.phone,
+            password: body.admin.password,
+          });
+          organization = await OrganizationService.createOrganization({
+            name: body.name,
+            slug: body.slug,
+            description: body.description,
+            sector: body.sector,
+            isGovernment: body.isGovernment,
+            isActive: true,
+            address: body.address,
+            email: body.email,
+            phone: body.phone,
+            rating: body.rating,
+            adminId: admin.id,
+            pricingPlanId: body.pricingPlanId,
+            billingPeriod: body.billingPeriod,
+            billingStart:
+              plan.price > 0
+                ? new Date(Time.after(7).days.fromNow()._ms)
+                : null,
+            billingEnd:
+              plan.price > 0
+                ? new Date(
+                    Time.after(
+                      body.billingPeriod === "annually" ? 365.25 : 30,
+                    ).days.fromNow()._ms,
+                  )
+                : null,
+          });
+        } catch (error) {
+          console.error(error);
+          if (admin != null) {
+            await UserService.deleteUserById(admin.id);
+          }
+          return json({ error: error.message }, { status: 500 });
+        }
         return json(
           {
             organization,
