@@ -132,7 +132,7 @@ export const pgOrganizations = pgTable("organizations", {
       onUpdate: "cascade",
       onDelete: "cascade",
     }),
-  pricingPlanId: cpuuid("pricing_plan_id")
+  pricingPlanId: varchar("pricing_plan_id", { length: 16 })
     .notNull()
     .references(() => pgPricingPlans.id, {
       onUpdate: "cascade",

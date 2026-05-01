@@ -1,3 +1,5 @@
+// backend/base.ts
+
 import { JWT, type JwtSymmetricAlgorithm } from "@bepalo/jwt";
 import type { CTXAddress, RouterContext } from "@bepalo/router";
 import { securityConfig } from "./config";

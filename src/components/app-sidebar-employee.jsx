@@ -14,6 +14,7 @@ import {
   UserPlus,
   Plus,
   Activity,
+  User,
 } from "lucide-react";
 
 import {
@@ -37,6 +38,7 @@ import {
 import { useSessionStore } from "@/store";
 import Auth from "@/lib/auth";
 import { useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
 
 const navData = [
   {
@@ -45,10 +47,15 @@ const navData = [
     icon: LayoutDashboard,
   },
   {
-    title: "Calendars",
-    url: "/dashboard/employee/calendars",
-    icon: CalendarDays,
+    title: "Employments",
+    url: "/dashboard/employments",
+    icon: User,
   },
+  // {
+  //   title: "Calendars",
+  //   url: "/dashboard/employee/calendars",
+  //   icon: CalendarDays,
+  // },
   // {
   //   title: "Analytics",
   //   url: "/dashboard/employee/analytics",

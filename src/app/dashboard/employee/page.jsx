@@ -10,45 +10,56 @@ import {
   Activity,
   User,
   Loader2,
+  UserIcon,
 } from "lucide-react";
 import { useSessionStore } from "@/store";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 export default function DashboardOverview() {
-  const [employee, setEmployee] = useState(null);
+  const [employmentIndex, setEmploymentIndex] = useState(0);
+  const [employments, setEmployments] = useState(null);
   // const session = useSessionStore(({ session }) => session);
   const [stats, setStats] = useState({
     tasks: 0,
-    calendars: 0,
+    employments: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
+  const employee =
+    employments && employments.length > 0 && employments[employmentIndex];
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const orgRes = await RequestHandler.Get("/api/v1/employee");
-        if (orgRes.ok) {
-          const { employee } = await orgRes.json();
-          setEmployee(employee);
+        const empRes = await RequestHandler.Get("/api/v1/employee");
+        if (empRes.ok) {
+          const { employee: employments } = await empRes.json();
+          setEmployments(employments);
+          setStats((p) => ({
+            ...p,
+            employments: employments?.length || 0,
+          }));
 
           // Fetch aggregate stats concurrently
-          const [empRes, calRes] = await Promise.all([
-            RequestHandler.Get(
-              `/api/v1/employee/${employee.id}/employees&iuser&icalendar`,
-            ),
-            // RequestHandler.Get(
-            //   `/api/v1/employee/${employee.id}/tasks`,
-            // ),
-            RequestHandler.Get(`/api/v1/employee/${employee.id}/calendars`),
-          ]);
-          setEmployee(await empRes.json());
-          setStats({
-            calendars: calRes.ok
-              ? (await calRes.json()).calendars?.length || 0
-              : 0,
-            // tasks: taskRes.ok
-            //   ? (await taskRes.json()).tasks?.length || 0
-            //   : 0,
-          });
+          // const empRes = await Promise.all(
+          //   employments.map((employee) => [
+          //     RequestHandler.Get(
+          //       `/api/v1/employee/${employee.id}/employees&iuser&icalendar`,
+          //     ),
+          //     RequestHandler.Get(`/api/v1/employee/${employee.id}/calendars`),
+          //   ]),
+          // );
+          // if (employments && employments.length > 0) {
+          //   setEmployee(employments[0]);
+          // }
+          // setStats({
+          //   calendars: calRes.ok
+          //     ? (await calRes.json()).calendars?.length || 0
+          //     : 0,
+          // tasks: taskRes.ok
+          //   ? (await taskRes.json()).tasks?.length || 0
+          //   : 0,
+          // });
         }
       } catch (error) {
         console.error("Failed to load overview data", error);
@@ -86,10 +97,10 @@ export default function DashboardOverview() {
                   Verified
                 </Badge> */}
               </div>
-              <p className="text-muted-foreground mb-4">
+              {/* <p className="text-muted-foreground mb-4">
                 <b>{employee.jobTitle ?? ""}</b> |
                 {employee.jobDescription ?? ""}
-              </p>
+              </p> */}
               <div className="flex gap-6">
                 <div>
                   <p className="text-sm text-muted-foreground">Email</p>
@@ -126,10 +137,10 @@ export default function DashboardOverview() {
       <div className="grid gap-3 md:grid-cols-1 lg:grid-cols-3">
         <StatCard title="Active Tasks" value={stats.tasks} icon={Briefcase} />
         <StatCard
-          title="Calendars"
-          value={stats.calendars}
-          href={`/dashboard/employee/calendars`}
-          icon={CalendarDays}
+          title="Employments"
+          value={stats.employments}
+          href={`/dashboard/employee/employments`}
+          icon={UserIcon}
         />
         <StatCard
           title="Employee Status"

@@ -135,4 +135,31 @@
   .bg-primary {
     @apply bg-linear-to-br from-primary-0 via-primary to-primary-1;
   }
+
+  .bg-pattern-1 {
+    position: relative;
+    overflow: hidden;
+    background-color: var(--background); /* */
+    perspective: 100vw; /* Creates the 3D space */
+  }
+
+  .bg-pattern-1::before {
+    content: "";
+    position: absolute;
+    inset: -100%; /* Larger than container to cover gaps during rotation */
+    width: 300%;
+    height: 300%;
+    background-color: var(--color-primary);
+    background-image:
+      radial-gradient(var(--color-primary-foreground) 15%, transparent 16%),
+      radial-gradient(var(--color-primary-foreground) 25%, transparent 26%);
+    background-size: 60px 60px;
+    background-position:
+      0 0,
+      30px 30px;
+
+    transform: rotateZ(-4deg) rotateY(-40deg);
+    transform-origin: center center;
+    pointer-events: none;
+  }
 }

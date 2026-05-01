@@ -10,41 +10,37 @@ import {
   Activity,
   User,
   Loader2,
+  UserIcon,
+  CalendarIcon,
 } from "lucide-react";
 import { useSessionStore } from "@/store";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useParams } from "next/navigation";
+import { Button } from "@/components/ui/button";
 
 export default function DashboardOverview() {
-  const [client, setClient] = useState(null);
-  const [appointments, setAppointments] = useState(null);
+  const { employee_id } = useParams();
+  const [employee, setEmploymee] = useState(null);
   // const session = useSessionStore(({ session }) => session);
   const [stats, setStats] = useState({
-    appointments: 0,
+    tasks: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const clientRes = await RequestHandler.Get("/api/v1/user");
-        if (clientRes.ok) {
-          const { user } = await clientRes.json();
-          setClient(user);
-          const clientId = user.id;
-
-          // Fetch aggregate stats concurrently
-          const [countRes] = await Promise.all([
-            RequestHandler.Get(`/api/v1/client/${clientId}/tasks/count`),
-          ]);
-
-          if (countRes.ok) {
-            setStats({
-              appointments: countRes.ok
-                ? (await countRes.json()).count || 0
-                : 0,
-            });
-          }
+        const empRes = await RequestHandler.Get(
+          "/api/v1/employee/" + employee_id,
+        );
+        if (empRes.ok) {
+          const { employee } = await empRes.json();
+          setEmploymee(employee);
+          setStats((p) => ({
+            ...p,
+            isActive: employee.isActive,
+          }));
         }
       } catch (error) {
         console.error("Failed to load overview data", error);
@@ -54,7 +50,7 @@ export default function DashboardOverview() {
     };
 
     fetchDashboardData();
-  }, []);
+  }, [employee_id]);
 
   if (isLoading)
     return (
@@ -62,11 +58,11 @@ export default function DashboardOverview() {
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
-  if (!client) return <div>Client not found.</div>;
+  if (!employee) return <div>Employee not found.</div>;
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      {/* Client Profile Card */}
+      {/* Employee Profile Card */}
       <Card className="border-primary/20">
         <CardContent className="p-6">
           <div className="flex items-start gap-6">
@@ -76,28 +72,47 @@ export default function DashboardOverview() {
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
                 <h2 className="text-2xl font-bold">
-                  {client.firstname + " " + client.lastname}
+                  {employee.user.firstname + " " + employee.user.lastname}
                 </h2>
                 {/* <Badge className="bg-primary/10 text-primary border-primary/20">
                   Verified
                 </Badge> */}
               </div>
-              <p className="text-muted-foreground mb-4">
-                <b>Client</b>
-              </p>
+              <div className="flex items-baseline">
+                <p className="text-muted-foreground mb-4">
+                  <b>{employee.jobTitle ?? ""}</b> |
+                  {employee.jobDescription ?? ""}
+                </p>
+                {employee.calendarId ? (
+                  <Button variant="ghost" size="icon" asChild>
+                    <Link
+                      href={
+                        "/dashboard/employee/calendar/" + employment.calendarId
+                      }
+                    >
+                      <CalendarIcon />
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button variant="ghost" size="icon" disabled>
+                    <CalendarIcon />
+                  </Button>
+                )}
+              </div>
+
               <div className="flex gap-6">
                 <div>
                   <p className="text-sm text-muted-foreground">Email</p>
-                  <p className="font-medium">{client.email}</p>
+                  <p className="font-medium">{employee.user.email}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Phone</p>
-                  <p className="font-medium">{client.phone}</p>
+                  <p className="font-medium">{employee.user.phone}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Joined</p>
                   <p className="font-medium">
-                    {new Date(client.createdAt).getFullYear()}
+                    {new Date(employee.createdAt).getFullYear()}
                   </p>
                 </div>
               </div>
@@ -111,24 +126,24 @@ export default function DashboardOverview() {
 
       <div>
         <h2 className="text-2xl font-bold tracking-tight">
-          Welcome back, {client.firstname + " " + client.lastname}
+          Welcome back, {employee.user.firstname + " " + employee.user.lastname}
         </h2>
         <p className="text-muted-foreground">
           Here is an overview of your workspace today.
         </p>
       </div>
 
-      <div className="grid gap-3 grid-cols-1 md:grid-cols-2">
+      <div className="grid gap-3 md:grid-cols-1 lg:grid-cols-2">
+        <StatCard title="Active Tasks" value={stats.tasks} icon={Briefcase} />
+        {/* <StatCard
+          title="Employments"
+          value={stats.employments}
+          href={`/dashboard/employee/employments`}
+          icon={UserIcon}
+        /> */}
         <StatCard
-          title="Appointments"
-          value={stats.appointments}
-          href={"/dashboard/client/appointments"}
-          icon={CalendarDays}
-        />
-        <StatCard
-          title="Client Status"
-          // value={client.isActive ? "Active" : "Inactive"}
-          value={"Active"}
+          title="Employee Status"
+          value={employee.isActive ? "Active" : "Inactive"}
           icon={Activity}
         />
       </div>

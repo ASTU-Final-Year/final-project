@@ -196,7 +196,7 @@ export default function EmployeesPage() {
     );
     if (res.ok) {
       setIsAddOpen(false);
-      setFormData({ name: "", description: "", isActive: true });
+      setFormData({ email: "", name: "", description: "", isActive: true });
       fetchEmployees();
     }
     setIsSubmitting(false);
@@ -562,7 +562,7 @@ export default function EmployeesPage() {
                 <Input
                   value={formData.email}
                   onChange={(e) =>
-                    setFormData({ ...formData, email: e.target.value })
+                    setFormData((p) => ({ ...p, email: e.target.value }))
                   }
                 />
               </div>
@@ -573,7 +573,7 @@ export default function EmployeesPage() {
               <Input
                 value={formData.jobTitle}
                 onChange={(e) =>
-                  setFormData({ ...formData, jobTitle: e.target.value })
+                  setFormData((p) => ({ ...p, jobTitle: e.target.value }))
                 }
               />
             </div>
@@ -582,7 +582,10 @@ export default function EmployeesPage() {
               <Textarea
                 value={formData.jobDescription}
                 onChange={(e) =>
-                  setFormData({ ...formData, jobDescription: e.target.value })
+                  setFormData((p) => ({
+                    ...p,
+                    jobDescription: e.target.value,
+                  }))
                 }
               />
             </div>
@@ -591,7 +594,10 @@ export default function EmployeesPage() {
                 type="checkbox"
                 checked={formData.isActive}
                 onChange={(e) =>
-                  setFormData({ ...formData, isActive: e.target.checked })
+                  setFormData((p) => ({
+                    ...formData,
+                    isActive: e.target.checked,
+                  }))
                 }
                 id="active-check"
                 className="h-4 w-4 rounded border-gray-300 accent-primary"
