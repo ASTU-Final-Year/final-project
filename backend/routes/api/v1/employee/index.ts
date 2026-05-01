@@ -16,6 +16,7 @@ import { ArkErrors, type } from "arktype";
 import { CTXSession } from "~/base";
 import { parseAuth, parseSession } from "~/middleware";
 import EmployeeService from "~/services/organization.employees.service";
+import OrganizationService from "~/services/organization.service";
 
 const TEmployeeUpdater = type({
   "calendarId?": "string.uuid|null",
@@ -34,45 +35,51 @@ export default {
       parseSession(),
     ],
     HANDLER: [
-      async (req, { session }) => {
-        const employee = await EmployeeService.getEmployeeById(session.userId);
+      async (req, { auth, session }) => {
+        // const employee = await EmployeeService.getEmployeeById(session.userId);
+        const employee = await EmployeeService.getEmployeeByUserId(
+          session.userId,
+        );
+        // if (employee == null || employee.length === 0) {
+        //   return status(Status._403_Forbidden, "employee not found");
+        // }
         return json({ employee });
       },
     ],
   },
-  PATCH: {
-    FILTER: [
-      parseCookie(),
-      authenticate({ parseAuth }),
-      authorize({
-        allowRole: (role) => role === "organization_admin",
-      }),
-      parseSession(),
-      parseBody({
-        accept: ["application/x-www-form-urlencoded", "application/json"],
-        maxSize: 1024,
-        once: true,
-      }),
-      (req, { body }) => {
-        const error = TEmployeeUpdater(body);
-        if (error instanceof ArkErrors) {
-          return status(Status._400_BadRequest, "Invalid body");
-        }
-      },
-    ],
-    HANDLER: [
-      async (req, { session, body }) => {
-        const userId = session.userId;
-        const employeeUpdate = { userId, ...body };
-        const employee = await EmployeeService.getEmployeeById(userId);
-        if (!employee) {
-          return status(Status._403_Forbidden, "employee not found");
-        }
-        await EmployeeService.updateEmployeeById(employeeUpdate);
-        return status(Status._200_OK);
-      },
-    ],
-  },
+  // PATCH: {
+  //   FILTER: [
+  //     parseCookie(),
+  //     authenticate({ parseAuth }),
+  //     authorize({
+  //       allowRole: (role) => role === "employee",
+  //     }),
+  //     parseSession(),
+  //     parseBody({
+  //       accept: ["application/x-www-form-urlencoded", "application/json"],
+  //       maxSize: 1024,
+  //       once: true,
+  //     }),
+  //     (req, { body }) => {
+  //       const error = TEmployeeUpdater(body);
+  //       if (error instanceof ArkErrors) {
+  //         return status(Status._400_BadRequest, "Invalid body");
+  //       }
+  //     },
+  //   ],
+  //   HANDLER: [
+  //     async (req, { session, body }) => {
+  //       const userId = session.userId;
+  //       const employeeUpdate = { userId, ...body };
+  //       const employements = await EmployeeService.getEmployeeByUserId(userId);
+  //       if (employements == null || employements.length === 0) {
+  //         return status(Status._403_Forbidden, "employee not found");
+  //       }
+  //       await EmployeeService.updateEmployeeById(employeeUpdate);
+  //       return status(Status._200_OK);
+  //     },
+  //   ],
+  // },
 } satisfies RouterHandlers<
   CTXCookie & CTXAuth & CTXSession,
   {

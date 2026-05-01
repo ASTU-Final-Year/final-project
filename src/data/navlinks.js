@@ -1,12 +1,13 @@
 
 
 export const navlinks = [
-  { title: "Home", label: "home", path: "/" },
-  { title: "Contact", label: "contact", path: "/contact" },
+  { title: "Home", label: "Home", path: "/" },
+  { title: "Contact", label: "Contact", path: "/contact" },
+  { title: "Pricing", label: "Pricing", path: "/pricing" },
   {
-    title: "Legal", label: "legal", path: "/legal", children: [
-      { title: "Privacy Policy", label: "privacy policy", path: "/legal/privacy-policy", description: "Cookie, storage and data policies" },
-      { title: "Terms And Conditions", label: "terms and conditions", path: "/legal/terms-and-conditions", description: "Terms of use for our website and services" },
+    title: "Legal", label: "Legal", path: "/legal", children: [
+      { title: "Privacy Policy", label: "Privacy Policy", path: "/legal/privacy-policy", description: "Cookie, storage and data policies" },
+      { title: "Terms And Conditions", label: "Terms and Conditions", path: "/legal/terms-and-conditions", description: "Terms of use for our website and services" },
     ]
   },
 ];

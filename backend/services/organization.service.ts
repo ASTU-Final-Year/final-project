@@ -1,23 +1,39 @@
 // services/organization.service.ts
 
-import { eq, sql } from "drizzle-orm";
+import { and, eq, or, sql } from "drizzle-orm";
 import {
   Organization,
+  OrganizationCalendar,
+  OrganizationCalendarInit,
+  OrganizationCalendarPure,
+  OrganizationCalendarUpdate,
   OrganizationInit,
   OrganizationPure,
   OrganizationUpdate,
+  OrganizationWithAdmin,
+  OrganizationWithPricingPlan,
 } from "~/base";
 import { config, employeeHireJwt, securityConfig } from "~/config";
 import { db } from "~/db";
-import { employees, organizations, pricingPlans, users } from "~/db/schema";
+import {
+  employees,
+  organizationCalendars,
+  organizations,
+  pricingPlans,
+  users,
+} from "~/db/schema";
 import EmailService from "./email.service";
 import { JWT } from "@bepalo/jwt";
 import { Receipt } from "@upyo/core";
 import {
+  fullOrganizationCalendarSelect,
   fullOrganizationSelect,
+  fullPublicOrganizationSelect,
   organizationWithAdminsSelect,
   organizationWithPricingPlanSelect,
+  pureOrganizationCalendarSelect,
   pureOrganizationSelect,
+  purePublicOrganizationSelect,
 } from "./selects";
 
 export default class OrganizationService {
@@ -66,6 +82,21 @@ export default class OrganizationService {
     return organizationsResult;
   }
 
+  static async getAllOrganizationsPublicPure({
+    offset,
+    limit,
+  }: {
+    offset: number;
+    limit: number;
+  }): Promise<Omit<Organization, "pricingPlan" | "admin">[]> {
+    const organizationsResult = (await db
+      .select(purePublicOrganizationSelect)
+      .from(organizations)
+      .limit(limit)
+      .offset(offset)) as Omit<Organization, "pricingPlan" | "admin">[];
+    return organizationsResult;
+  }
+
   static async getAllOrganizationsWithAdmin({
     offset,
     limit,
@@ -98,6 +129,40 @@ export default class OrganizationService {
     return organizationsResult;
   }
 
+  static async getOrganizationByIdPure(
+    organizationId: string,
+  ): Promise<OrganizationPure | undefined> {
+    const [organization] = (await db
+      .select(pureOrganizationSelect)
+      .from(organizations)
+      .leftJoin(users, eq(organizations.adminId, users.id))
+      .rightJoin(pricingPlans, eq(organizations.pricingPlanId, pricingPlans.id))
+      .where(
+        or(
+          eq(organizations.id, organizationId),
+          eq(organizations.slug, organizationId),
+        ),
+      )) as OrganizationPure[];
+    return organization;
+  }
+
+  static async getOrganizationByIdPurePublic(
+    organizationId: string,
+  ): Promise<OrganizationPure | undefined> {
+    const [organization] = (await db
+      .select(purePublicOrganizationSelect)
+      .from(organizations)
+      .leftJoin(users, eq(organizations.adminId, users.id))
+      .rightJoin(pricingPlans, eq(organizations.pricingPlanId, pricingPlans.id))
+      .where(
+        or(
+          eq(organizations.id, organizationId),
+          eq(organizations.slug, organizationId),
+        ),
+      )) as OrganizationPure[];
+    return organization;
+  }
+
   static async getOrganizationById(
     organizationId: string,
   ): Promise<Organization | undefined> {
@@ -105,8 +170,47 @@ export default class OrganizationService {
       .select(fullOrganizationSelect)
       .from(organizations)
       .leftJoin(users, eq(organizations.adminId, users.id))
-      .leftJoin(pricingPlans, eq(organizations.pricingPlanId, pricingPlans.id))
-      .where(eq(organizations.id, organizationId))) as Organization[];
+      .rightJoin(pricingPlans, eq(organizations.pricingPlanId, pricingPlans.id))
+      .where(
+        or(
+          eq(organizations.id, organizationId),
+          eq(organizations.slug, organizationId),
+        ),
+      )) as Organization[];
+    return organization;
+  }
+
+  static async getOrganizationByIdWithAdmin(
+    organizationId: string,
+  ): Promise<OrganizationWithAdmin | undefined> {
+    const [organization] = (await db
+      .select(organizationWithAdminsSelect)
+      .from(organizations)
+      .leftJoin(users, eq(organizations.adminId, users.id))
+      .rightJoin(pricingPlans, eq(organizations.pricingPlanId, pricingPlans.id))
+      .where(
+        or(
+          eq(organizations.id, organizationId),
+          eq(organizations.slug, organizationId),
+        ),
+      )) as OrganizationWithAdmin[];
+    return organization;
+  }
+
+  static async getOrganizationByIdWithPricingPlan(
+    organizationId: string,
+  ): Promise<OrganizationWithPricingPlan | undefined> {
+    const [organization] = (await db
+      .select(organizationWithPricingPlanSelect)
+      .from(organizations)
+      .leftJoin(users, eq(organizations.adminId, users.id))
+      .rightJoin(pricingPlans, eq(organizations.pricingPlanId, pricingPlans.id))
+      .where(
+        or(
+          eq(organizations.id, organizationId),
+          eq(organizations.slug, organizationId),
+        ),
+      )) as OrganizationWithPricingPlan[];
     return organization;
   }
 
@@ -168,6 +272,144 @@ export default class OrganizationService {
   }
 
   //
+  // Calendar
+  //
+  static async createCalendar(
+    calendarInit: OrganizationCalendarInit,
+  ): Promise<OrganizationCalendar> {
+    const [calendar] = (await db
+      .insert(organizationCalendars)
+      .values({
+        name: calendarInit.name,
+        description: calendarInit.description,
+        organizationId: calendarInit.organizationId,
+        available: calendarInit.available,
+        unavailable: calendarInit.unavailable,
+      })
+      .returning()) as OrganizationCalendar[];
+    return calendar;
+  }
+
+  static async getAllCalendarsByOrganizationId(
+    organizationId: string,
+    {
+      offset,
+      limit,
+    }: {
+      offset: number;
+      limit: number;
+    },
+  ): Promise<OrganizationCalendar[]> {
+    const calendarsResult = (await db
+      .select(fullOrganizationCalendarSelect)
+      .from(organizationCalendars)
+      .leftJoin(
+        organizations,
+        eq(organizationCalendars.organizationId, organizations.id),
+      )
+      .where(eq(organizationCalendars.organizationId, organizationId))
+      .limit(limit)
+      .offset(offset)) as OrganizationCalendar[];
+    return calendarsResult;
+  }
+
+  static async getAllCalendarsByOrganizationIdPure(
+    organizationId: string,
+    {
+      offset,
+      limit,
+    }: {
+      offset: number;
+      limit: number;
+    },
+  ): Promise<OrganizationCalendarPure[]> {
+    const calendarsResult = (await db
+      .select(pureOrganizationCalendarSelect)
+      .from(organizationCalendars)
+      .leftJoin(
+        organizations,
+        eq(organizationCalendars.organizationId, organizations.id),
+      )
+      .where(eq(organizationCalendars.organizationId, organizationId))
+      .limit(limit)
+      .offset(offset)) as OrganizationCalendarPure[];
+    return calendarsResult;
+  }
+
+  static async getCalendarCountByOrganizationId(
+    organizationId: string,
+  ): Promise<number> {
+    const countResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(organizationCalendars)
+      .where(eq(organizationCalendars.organizationId, organizationId));
+    return countResult[0]?.count ?? 0;
+  }
+
+  static async getCalendarById(
+    calendarId: string,
+  ): Promise<OrganizationCalendar> {
+    const [calendar] = (await db
+      .select()
+      .from(organizationCalendars)
+      .where(eq(organizationCalendars.id, calendarId))
+      .limit(1)) as OrganizationCalendar[];
+    return calendar;
+  }
+
+  static async getCalendarByIdByOrganizationId(
+    calendarId: string,
+    organizationId: string,
+  ): Promise<OrganizationCalendar> {
+    const [calendar] = (await db
+      .select()
+      .from(organizationCalendars)
+      .where(
+        and(
+          eq(organizationCalendars.id, calendarId),
+          eq(organizationCalendars.organizationId, organizationId),
+        ),
+      )
+      .limit(1)) as OrganizationCalendar[];
+    return calendar;
+  }
+
+  static async updateCalendar(
+    calendarUpdate: OrganizationCalendarUpdate,
+  ): Promise<OrganizationCalendar> {
+    const [calendar] = (await db
+      .update(organizationCalendars)
+      .set({
+        name: calendarUpdate.name,
+        description: calendarUpdate.description,
+        available: calendarUpdate.available,
+        unavailable: calendarUpdate.unavailable,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(organizationCalendars.id, calendarUpdate.id),
+          eq(
+            organizationCalendars.organizationId,
+            calendarUpdate.organizationId,
+          ),
+        ),
+      )
+      .returning()) as OrganizationCalendar[];
+    return calendar;
+  }
+
+  static async deleteCalendarById(
+    calendarId: string,
+  ): Promise<OrganizationCalendarPure> {
+    const [calendar] = (await db
+      .delete(organizationCalendars)
+      .where(eq(organizationCalendars.id, calendarId))
+      .returning()) as OrganizationCalendarPure[];
+    return calendar;
+  }
+
+  //
   // Employee
   //
   static async hasEmployeeByAdminId(
@@ -179,6 +421,23 @@ export default class OrganizationService {
       .from(organizations)
       .innerJoin(employees, eq(organizations.id, employees.organizationId))
       .where(eq(employees.userId, employeeId));
+    return employee?.userId === employeeId;
+  }
+
+  static async hasEmployeeByIdByOrganizationId(
+    employeeId: string,
+    organizationId: string,
+  ): Promise<boolean> {
+    const [employee] = await db
+      .select({ userId: employees.userId })
+      .from(organizations)
+      .innerJoin(employees, eq(organizations.id, employees.organizationId))
+      .where(
+        and(
+          eq(employees.userId, employeeId),
+          eq(employees.organizationId, organizationId),
+        ),
+      );
     return employee?.userId === employeeId;
   }
 
@@ -225,6 +484,9 @@ export default class OrganizationService {
               Use the following link to register as an employee at '${organization.name}'.
               <a href="${hireLink}">${hireLink}</a>
             </p>
+          </div>
+          <div>
+            &Copy; ${new Date().getFullYear()} ServeSync+ 
           </div>
         </div>`,
       },

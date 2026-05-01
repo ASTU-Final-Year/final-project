@@ -22,8 +22,11 @@ import OrganizationService from "~/services/organization.service";
 
 const THireOrganizationEmployee = type({
   email: "string.email",
-  jobTitle: "string",
-  jobDescription: "string",
+  jobTitle: "3 < string <= 50",
+  jobDescription: "string <= 200",
+}).pipe((e) => {
+  e.email = e.email.toLowerCase();
+  return e;
 });
 
 const THireOrganizationEmployees = THireOrganizationEmployee.array();
@@ -31,14 +34,14 @@ const THireOrganizationEmployees = THireOrganizationEmployee.array();
 type HireOrganizationEmployee = typeof THireOrganizationEmployee.infer;
 type HireOrganizationEmployees = typeof THireOrganizationEmployees.infer;
 
-const TPagenater = type({
+const TQuery = type({
   "o?": "string",
   "l?": "string",
   "iuser?": "unknown",
-  "iorganization?": "unknown",
+  "icalendar?": "unknown",
 });
 
-type Pagenater = typeof TPagenater.infer;
+type Query = typeof TQuery.infer;
 
 export default {
   POST: {
@@ -76,7 +79,7 @@ export default {
             await Promise.all(
               employeesForm.map(async (employeeForm) => {
                 const employee =
-                  await EmployeeService.getEmployeeByIdPureByOrganizationId(
+                  await EmployeeService.getEmployeeByEmailPureByOrganizationId(
                     organization.id,
                     employeeForm.email,
                   );
@@ -116,7 +119,7 @@ export default {
       parseSession(),
       parseQuery(),
       (req, ctx) => {
-        const q = TPagenater(ctx.query);
+        const q = TQuery(ctx.query);
         if (q instanceof ArkErrors) {
           return status(Status._400_BadRequest, "Invalid query");
         }
@@ -124,13 +127,13 @@ export default {
           offset: parseInt(q.o || "0"),
           limit: parseInt(q.l || "5"),
           iuser: q.iuser !== undefined,
-          iorganization: q.iorganization !== undefined,
+          icalendar: q.icalendar !== undefined,
         };
       },
     ],
     HANDLER: [
       async (req, { session, q }) => {
-        const { offset, limit, iuser, iorganization } = q;
+        const { offset, limit, iuser, icalendar } = q;
         const organization =
           await OrganizationService.getOrganizationByAdminIdPure(
             session.userId,
@@ -139,7 +142,7 @@ export default {
           return status(Status._404_NotFound, "Organization not found");
         }
         let employees = [];
-        if (iuser && iorganization) {
+        if (iuser && icalendar) {
           employees = await EmployeeService.getAllEmployeesByOrganizationId(
             organization.id,
             {
@@ -156,9 +159,9 @@ export default {
                 limit,
               },
             );
-        } else if (iorganization) {
+        } else if (icalendar) {
           employees =
-            await EmployeeService.getAllEmployeesWithOrganizationByOrganizationId(
+            await EmployeeService.getAllEmployeesWithCalendarByOrganizationId(
               organization.id,
               {
                 offset,
@@ -189,12 +192,12 @@ export default {
       employeesForm: HireOrganizationEmployees;
     };
     GET: CTXQuery & {
-      query: Pagenater;
+      query: Query;
       q: {
         offset: number;
         limit: number;
         iuser: boolean;
-        iorganization: boolean;
+        icalendar: boolean;
       };
     };
   }

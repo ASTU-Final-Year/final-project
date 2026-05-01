@@ -1,3 +1,5 @@
+// backend/base.ts
+
 import { JWT, type JwtSymmetricAlgorithm } from "@bepalo/jwt";
 import type { CTXAddress, RouterContext } from "@bepalo/router";
 import { securityConfig } from "./config";
@@ -42,16 +44,20 @@ export interface DateRange {
 }
 
 export interface CalendarBase {
+  name: string;
+  description: string;
   available?: {
-    ranges?: DateRange[];
-    weekly?: WeekDay[];
-    yearly?: Date[];
-  };
+    ranges?: DateRange[] | null;
+    weekly?: WeekDay[] | null;
+    monthly?: number[] | null;
+    exactly?: Date[] | null;
+  } | null;
   unavailable?: {
-    ranges?: DateRange[];
-    weekly?: WeekDay[];
-    yearly?: Date[];
-  };
+    ranges?: DateRange[] | null;
+    weekly?: WeekDay[] | null;
+    monthly?: number[] | null;
+    exactly?: Date[] | null;
+  } | null;
 }
 
 export type PermissionType = "create" | "view" | "update" | "delete" | "make";
@@ -349,6 +355,8 @@ export interface PricingPlan {
 export type PricingPlanInit = Omit<PricingPlan, "createdAt" | "updatedAt"> &
   Partial<Pick<PricingPlan, "createdAt" | "updatedAt">>;
 
+export type OrganizationBillingPeriod = "monthly" | "annually";
+
 export interface Organization {
   id: string;
   name: string;
@@ -365,6 +373,9 @@ export interface Organization {
   admin: User;
   pricingPlanId: string;
   pricingPlan: PricingPlan;
+  billingPeriod?: OrganizationBillingPeriod | null;
+  billingStart?: Date | null;
+  billingEnd?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -387,6 +398,10 @@ export type OrganizationPure = Partial<
   Omit<Organization, "admin" | "pricingPlan">
 >;
 
+export type OrganizationWithAdmin = Partial<Omit<Organization, "pricingPlan">>;
+
+export type OrganizationWithPricingPlan = Partial<Omit<Organization, "admin">>;
+
 export type CTXOrganization = {
   organization: Organization;
 };
@@ -394,18 +409,29 @@ export type CTXOrganization = {
 export interface OrganizationCalendar extends CalendarBase {
   id: string;
   organizationId: string;
-  organization?: Organization;
+  organization: Organization;
   createdAt: Date;
   updatedAt: Date;
 }
 
+export type OrganizationCalendarPure = Omit<
+  OrganizationCalendar,
+  "organization"
+>;
+
 export type OrganizationCalendarInit = Omit<
   OrganizationCalendar,
-  "id" | "createdAt" | "updatedAt"
+  "id" | "createdAt" | "updatedAt" | "organization"
 > &
   Partial<Pick<OrganizationCalendar, "id" | "createdAt" | "updatedAt">>;
 
+export type OrganizationCalendarUpdate = Partial<
+  Omit<OrganizationCalendar, "organization" | "createdAt" | "updatedAt">
+> &
+  Pick<OrganizationCalendar, "id" | "organizationId">;
+
 export interface Employee {
+  id: string;
   jobTitle: string;
   jobDescription: string;
   isActive: boolean;
@@ -421,20 +447,30 @@ export interface Employee {
 
 export type EmployeeInit = Omit<
   Employee,
-  "createdAt" | "updatedAt" | "user" | "organization"
+  "id" | "createdAt" | "updatedAt" | "user" | "organization"
 > &
-  Partial<Pick<Employee, "createdAt" | "updatedAt" | "user" | "organization">>;
+  Partial<
+    Pick<
+      Employee,
+      "createdAt" | "updatedAt" | "user" | "organization" | "calendar"
+    >
+  >;
 
 export type EmployeeUpdate = Partial<
   Omit<
     EmployeeInit,
-    "calendar" | "userId" | "user" | "organizationId" | "organization"
+    "id" | "calendar" | "userId" | "user" | "organizationId" | "organization"
   >
 > &
-  Pick<Employee, "userId">;
+  Pick<Employee, "id">;
 
-export type EmployeePure = Omit<Employee, "organization" | "user"> &
-  Partial<Pick<Employee, "organization" | "user">>;
+export type EmployeePure = Omit<Employee, "organization" | "user" | "calendar">;
+
+export type EmployeeWithCalendar = Omit<Employee, "organization" | "user">;
+
+export type EmployeeWithOrganization = Omit<Employee, "calendar" | "user">;
+
+export type EmployeeWithUser = Omit<Employee, "calendar" | "organization">;
 
 export type CTXEmployee = {
   employee: Employee;
@@ -443,16 +479,23 @@ export type CTXEmployee = {
 export interface EmployeeCalendar extends CalendarBase {
   id: string;
   employeeId: string;
-  employee?: Employee;
+  employee: Employee;
   createdAt: Date;
   updatedAt: Date;
 }
 
+export type EmployeeCalendarPure = Omit<EmployeeCalendar, "employee">;
+
 export type EmployeeCalendarInit = Omit<
   EmployeeCalendar,
-  "id" | "createdAt" | "updatedAt"
+  "id" | "createdAt" | "updatedAt" | "employee"
 > &
   Partial<Pick<EmployeeCalendar, "id" | "createdAt" | "updatedAt">>;
+
+export type EmployeeCalendarUpdate = Partial<
+  Omit<EmployeeCalendar, "id" | "employee" | "createdAt" | "updatedAt">
+> &
+  Pick<EmployeeCalendar, "id" | "employeeId">;
 
 export interface OrganizationService {
   id: string;
@@ -494,6 +537,49 @@ export type OrganizationServicePure = Omit<
   OrganizationService,
   "organization" | "calendar"
 >;
+
+export interface OrganizationServiceFirstEmployee {
+  serviceId: string;
+  service: OrganizationService;
+  employeeId: string;
+  employee: Employee;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export type OrganizationServiceFirstEmployeeInit = Omit<
+  OrganizationServiceFirstEmployee,
+  "service" | "employee" | "createdAt" | "updatedAt"
+> &
+  Partial<
+    Pick<
+      OrganizationServiceFirstEmployee,
+      "service" | "employee" | "createdAt" | "updatedAt"
+    >
+  >;
+
+export type OrganizationServiceFirstEmployeePure = Omit<
+  OrganizationServiceFirstEmployee,
+  "service" | "employee"
+>;
+
+export type OrganizationServiceFirstEmployeeWithService = Omit<
+  OrganizationServiceFirstEmployee,
+  "employee"
+>;
+
+export type OrganizationServiceFirstEmployeeWithEmployee = Omit<
+  OrganizationServiceFirstEmployee,
+  "service"
+>;
+
+export type OrganizationServiceFirstEmployeeUpdate = Partial<
+  Omit<
+    OrganizationServiceFirstEmployeeInit,
+    "serviceId" | "createdAt" | "service" | "employee"
+  >
+> &
+  Pick<OrganizationServiceFirstEmployee, "serviceId">;
 
 export interface TaskProgress {
   index: number;

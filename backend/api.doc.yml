@@ -4,7 +4,8 @@ info:
   version: 1.0.0
 
 servers:
-  - url: http://localhost:4000/api/v1
+  # - url: http://localhost:4000/api/v1
+  - url: /api/v1
 
 components:
   securitySchemes:
@@ -405,6 +406,38 @@ paths:
 
   /organization/{orgId}/employees:
     get:
+      summary: List employees in an organization
+      parameters:
+        - name: orgId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: o
+          in: query
+          description: Pagenation offset
+          required: false
+          schema:
+            type: number
+        - name: l
+          in: query
+          description: Pagenation limit size
+          required: false
+          schema:
+            type: number
+        - name: iuser
+          in: query
+          description: Include user info in response
+          required: false
+          schema:
+            type: string
+        - name: iorganization
+          in: query
+          description: Include organization info in response
+          required: false
+          schema:
+            type: string
       responses:
         "200": { description: Employees list }
         "401": { $ref: "#/components/responses/Unauthorized" }

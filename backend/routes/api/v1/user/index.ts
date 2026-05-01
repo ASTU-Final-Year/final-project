@@ -25,6 +25,9 @@ const TUserRegister = type({
   email: "string.email <= 40",
   phone: /^\+\d{2,3}\s?\d{9,10}$/,
   password: "8 <= string <= 30",
+}).pipe((u) => {
+  u.email = u.email.toLowerCase();
+  return u;
 });
 
 type UserRegister = typeof TUserRegister.infer;

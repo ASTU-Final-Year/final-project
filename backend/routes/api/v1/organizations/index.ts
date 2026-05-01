@@ -1,30 +1,37 @@
 // ROUTE: /api/v1/organizations
 import {
+  authenticate,
+  CTXAuth,
+  CTXCookie,
   CTXQuery,
   json,
+  parseCookie,
   parseQuery,
   RouterHandlers,
   status,
   Status,
 } from "@bepalo/router";
 import { ArkErrors, type } from "arktype";
+import { parseAuth } from "~/middleware";
 import OrganizationService from "~/services/organization.service";
 
-const TPagenater = type({
+const TQuery = type({
   "o?": "string",
   "l?": "string",
   "iadmin?": "unknown",
   "ipricing_plan?": "unknown",
 });
 
-type Pagenater = typeof TPagenater.infer;
+type Query = typeof TQuery.infer;
 
 export default {
   GET: {
     FILTER: [
+      parseCookie(),
+      authenticate({ parseAuth: parseAuth, checkOnly: true }),
       parseQuery(),
       (req, ctx) => {
-        const q = TPagenater(ctx.query);
+        const q = TQuery(ctx.query);
         if (q instanceof ArkErrors) {
           return status(Status._400_BadRequest, "Invalid query");
         }
@@ -37,31 +44,47 @@ export default {
       },
     ],
     HANDLER: [
-      async (req, { q }) => {
+      async (req, { auth, q }) => {
+        const isOrgAdmin = auth?.role === "organization_admin";
         const { offset, limit, iadmin, ipricing_plan } = q;
         let organizations = [];
         if (iadmin && ipricing_plan) {
+          if (!isOrgAdmin) {
+            return status(Status._403_Forbidden);
+          }
           organizations = await OrganizationService.getAllOrganizations({
             offset,
             limit,
           });
         } else if (iadmin) {
+          if (!isOrgAdmin) {
+            return status(Status._403_Forbidden);
+          }
           organizations =
             await OrganizationService.getAllOrganizationsWithAdmin({
               offset,
               limit,
             });
         } else if (ipricing_plan) {
+          if (!isOrgAdmin) {
+            return status(Status._403_Forbidden);
+          }
           organizations =
             await OrganizationService.getAllOrganizationsWithPricingPlan({
               offset,
               limit,
             });
-        } else {
+        } else if (isOrgAdmin) {
           organizations = await OrganizationService.getAllOrganizationsPure({
             offset,
             limit,
           });
+        } else {
+          organizations =
+            await OrganizationService.getAllOrganizationsPublicPure({
+              offset,
+              limit,
+            });
         }
         return json({
           count: organizations.length,
@@ -71,14 +94,16 @@ export default {
     ],
   },
 } satisfies RouterHandlers<
-  CTXQuery & {
-    params: { id: string };
-    query: Pagenater;
-    q: {
-      offset: number;
-      limit: number;
-      iadmin: boolean;
-      ipricing_plan: boolean;
-    };
-  }
+  CTXCookie &
+    CTXAuth &
+    CTXQuery & {
+      params: { id: string };
+      query: Query;
+      q: {
+        offset: number;
+        limit: number;
+        iadmin: boolean;
+        ipricing_plan: boolean;
+      };
+    }
 >;

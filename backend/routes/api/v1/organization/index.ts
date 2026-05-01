@@ -12,10 +12,12 @@ import {
   status,
   Status,
 } from "@bepalo/router";
+import { Time } from "@bepalo/time";
 import { ArkErrors, type } from "arktype";
 import { CTXSession, OrganizationInit, Role, UserSecInit } from "~/base";
 import { parseAuth, parseSession } from "~/middleware";
 import OrganizationService from "~/services/organization.service";
+import PaymentService from "~/services/payment.service";
 import UserService from "~/services/user.service";
 
 const TOrganizationRegistration = type({
@@ -37,6 +39,9 @@ const TOrganizationRegistration = type({
   phone: /^\+\d{2,3}\s?\d{9,10}$/,
   "rating?": "number|null",
   pricingPlanId: "string",
+  "billingPeriod?": "'monthly'|'annually'",
+  // "billingStart?": "Date|null",
+  // "billingEnd?": "Date|null",
 });
 
 const TOrganizationUpdate = type({
@@ -51,7 +56,10 @@ const TOrganizationUpdate = type({
   "email?": "string.email <= 30",
   "phone?": /^\+\d{2,3}\s?\d{9,10}$/,
   "rating?": "number|null",
-  "pricingPlanId?": "string",
+  // "pricingPlanId?": "string",
+  // "billingPeriod?": "'monthly'|'annually'",
+  // "billingStart?": "number.integer < 30",
+  // "billingEnd?": "number.integer < 30",
 });
 
 type OrganizationRegistration = typeof TOrganizationRegistration.infer;
@@ -90,29 +98,57 @@ export default {
             "Organization with the same email already exists",
           );
         }
-        // Register
-        const admin = await UserService.createAdminUser({
-          firstname: body.admin.firstname,
-          lastname: body.admin.lastname,
-          gender: body.admin.gender,
-          email: body.admin.email,
-          phone: body.admin.phone,
-          password: body.admin.password,
-        });
-        const organization = await OrganizationService.createOrganization({
-          name: body.name,
-          slug: body.slug,
-          description: body.description,
-          sector: body.sector,
-          isGovernment: body.isGovernment,
-          isActive: true,
-          address: body.address,
-          email: body.email,
-          phone: body.phone,
-          rating: body.rating,
-          adminId: admin.id,
-          pricingPlanId: body.pricingPlanId,
-        });
+        const plan = await PaymentService.getPricingPlansById(
+          body.pricingPlanId,
+        );
+        if (plan == null) {
+          return status(Status._403_Forbidden, "Invalid pricing plan");
+        }
+        let admin, organization;
+        try {
+          // Register
+          admin = await UserService.createAdminUser({
+            firstname: body.admin.firstname,
+            lastname: body.admin.lastname,
+            gender: body.admin.gender,
+            email: body.admin.email,
+            phone: body.admin.phone,
+            password: body.admin.password,
+          });
+          organization = await OrganizationService.createOrganization({
+            name: body.name,
+            slug: body.slug,
+            description: body.description,
+            sector: body.sector,
+            isGovernment: body.isGovernment,
+            isActive: true,
+            address: body.address,
+            email: body.email,
+            phone: body.phone,
+            rating: body.rating,
+            adminId: admin.id,
+            pricingPlanId: body.pricingPlanId,
+            billingPeriod: body.billingPeriod,
+            billingStart:
+              plan.price > 0
+                ? new Date(Time.after(7).days.fromNow()._ms)
+                : null,
+            billingEnd:
+              plan.price > 0
+                ? new Date(
+                    Time.after(
+                      body.billingPeriod === "annually" ? 365.25 : 30,
+                    ).days.fromNow()._ms,
+                  )
+                : null,
+          });
+        } catch (error) {
+          console.error(error);
+          if (admin != null) {
+            await UserService.deleteUserById(admin.id);
+          }
+          return json({ error: error.message }, { status: 500 });
+        }
         return json(
           {
             organization,

@@ -24,7 +24,7 @@ import OrganizationServicesService from "~/services/organization.services.servic
 const TServiceRegistration = type({
   name: "string <= 54",
   description: "string <= 200",
-  isActive: "boolean",
+  "isActive?": "boolean|null",
   "calendarId?": "string.uuid|null",
 });
 
@@ -64,7 +64,7 @@ export default {
         const service = await OrganizationServicesService.createService({
           name: serviceForm.name,
           description: serviceForm.description,
-          isActive: serviceForm.isActive,
+          isActive: serviceForm.isActive ?? true,
           calendarId: serviceForm.calendarId,
           organizationId: organization.id,
         });

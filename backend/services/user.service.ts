@@ -3,7 +3,7 @@
 import { eq } from "drizzle-orm";
 import { User, UserSec, UserSecInit } from "~/base";
 import { db } from "~/db";
-import { users } from "~/db/schema";
+import { employees, organizations, users } from "~/db/schema";
 import PasswordService from "./password.service";
 
 export default class UserService {
@@ -113,6 +113,8 @@ export default class UserService {
   }
 
   static async deleteUserById(userId: string): Promise<void> {
+    await db.delete(organizations).where(eq(organizations.adminId, userId));
+    await db.delete(employees).where(eq(employees.userId, userId));
     await db.delete(users).where(eq(users.id, userId));
   }
 }

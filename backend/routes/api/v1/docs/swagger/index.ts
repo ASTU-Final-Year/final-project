@@ -18,7 +18,11 @@ export default {
                   <script>
                     SwaggerUIBundle({
                       spec: ${JSON.stringify(swaggerDocs)},
-                      dom_id: '#swagger-ui'
+                      dom_id: '#swagger-ui',
+                      presets: [
+                        SwaggerUIBundle.presets.apis,
+                        SwaggerUIBundle.SwaggerUIStandalonePreset
+                      ],
                     });
                   </script>
                 </body>

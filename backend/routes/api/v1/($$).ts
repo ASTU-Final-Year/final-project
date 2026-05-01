@@ -11,7 +11,7 @@ import { config } from "~/config";
 import { LOGE } from "~/lib";
 
 export default {
-  CRUD: {
+  ALL: {
     FILTER: [
       limitRate({
         key: (_req, ctx) => ctx.address.address,
