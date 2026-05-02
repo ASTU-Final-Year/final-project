@@ -26,56 +26,17 @@ import {
   BookOpen,
   HelpCircle,
 } from "lucide-react";
+import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
 
 export default function TermsOfServicePage() {
   const lastUpdated = "April 1, 2026";
   const effectiveDate = "April 1, 2026";
 
-  const handlePrint = () => {
-    window.print();
-  };
-
-  const handleDownload = () => {
-    const content = document.getElementById("terms-content")?.innerText || "";
-    const blob = new Blob([content], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "servesync-plus-terms-of-service.txt";
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/20">
-      {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b bg-white/80 backdrop-blur-sm">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-indigo-700 flex items-center justify-center">
-              <Scale className="h-4 w-4 text-white" />
-            </div>
-            <Link href="/" className="font-semibold text-indigo-950">ServeSync+</Link>
-          </div>
-          <nav className="hidden md:flex gap-6">
-            <Link href="/" className="text-sm text-indigo-600 hover:text-indigo-800">Home</Link>
-            <Link href="/pricing" className="text-sm text-indigo-600 hover:text-indigo-800">Pricing</Link>
-            <Link href="/contact" className="text-sm text-indigo-600 hover:text-indigo-800">Contact</Link>
-            <Link href="/privacy" className="text-sm text-indigo-600 hover:text-indigo-800">Privacy</Link>
-            <Link href="/terms" className="text-sm text-indigo-800 font-semibold">Terms</Link>
-          </nav>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handlePrint} className="gap-1">
-              <Printer className="h-4 w-4" />
-              Print
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleDownload} className="gap-1">
-              <Download className="h-4 w-4" />
-              Download
-            </Button>
-          </div>
-        </div>
-      </header>
+    // <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/20">
+    <div className="flex min-h-screen flex-col font-sans">
+      <SiteHeader />
 
       <main className="container mx-auto px-4 py-12 max-w-4xl" id="terms-content">
         {/* Hero Section */}
@@ -424,6 +385,8 @@ export default function TermsOfServicePage() {
           </p>
         </div>
       </main>
+      
+      <SiteFooter />
     </div>
   );
 }
