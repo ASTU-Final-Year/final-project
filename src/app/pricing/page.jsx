@@ -32,6 +32,8 @@ import {
 import { usePricingPlanStore } from "@/store";
 import Link from "next/link";
 import RequestHandler from "@/lib/request-handler";
+import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
 
 // Compact Discount Badge for inline usage
 function CompactDiscountBadge({ value }) {
@@ -453,9 +455,13 @@ export function PricingComparisonTable() {
 
 export default function PricingPlansPage() {
   return (
-    <div className="min-h-screen py-16 px-4 md:px-8 flex flex-col items-center bg-background">
-      <PricingPlanView />
-      <PricingComparisonTable />
+    <div>
+      <SiteHeader />
+      <div className="min-h-screen py-16 px-4 md:px-8 flex flex-col items-center bg-background">
+        <PricingPlanView />
+        <PricingComparisonTable />
+      </div>
+      <SiteFooter />
     </div>
   );
 }
