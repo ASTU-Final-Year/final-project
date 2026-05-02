@@ -12,6 +12,10 @@ const nextConfig = {
         source: '/api/:path*',
         destination: 'http://localhost:' + backendPort + '/api/:path*',
       },
+      {
+        source: '/support/api',
+        destination: 'http://localhost:' + backendPort + '/api/v1/docs/swagger',
+      },
     ]
   },
 };
