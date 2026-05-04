@@ -81,7 +81,7 @@ export default function OrganizationDashboardLayout({ children }) {
         </header>
 
         {/* Main Content Area */}
-        <div className="flex flex-1 flex-col gap-4 p-4 pt-0 bg-accent">
+        <div className="flex flex-1 flex-col gap-4 p-4 pt-0 bg-dots">
           <main className="py-6 h-full">{children}</main>
         </div>
       </SidebarInset>

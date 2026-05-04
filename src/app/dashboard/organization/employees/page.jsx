@@ -282,7 +282,7 @@ export default function EmployeesPage() {
       </div>
 
       {/* Toolbar */}
-      <Card className="p-3 bg-muted/20 border-none shadow-none bg-background">
+      <Card className="p-3 bg-muted/20 border-none shadow-none">
         <div className="flex flex-col md:flex-row gap-4 justify-between">
           <div className="flex flex-1 items-center gap-3">
             <div className="relative w-full max-w-sm">
@@ -672,8 +672,8 @@ export default function EmployeesPage() {
           <DialogHeader>
             <DialogTitle>Are you sure?</DialogTitle>
             <DialogDescription>
-              This will permanently delete "{selectedEmployee?.name}". This
-              action cannot be undone.
+              This will permanently delete &quot;{selectedEmployee?.name}&quot;.
+              This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

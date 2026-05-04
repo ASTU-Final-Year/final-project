@@ -133,7 +133,7 @@ export default function ServicesPage() {
       icalendar: 1,
     });
 
-    const [countRes, dataRes] = await Promise.all([
+    const [countRes, dataRes, calRes] = await Promise.all([
       RequestHandler.Get(
         `/api/v1/organization/${organizationId}/services/count`,
       ),
@@ -599,8 +599,8 @@ export default function ServicesPage() {
           <DialogHeader>
             <DialogTitle>Are you sure?</DialogTitle>
             <DialogDescription>
-              This will permanently delete "{selectedService?.name}". This
-              action cannot be undone.
+              This will permanently delete &quot;{selectedService?.name}&quot;.
+              This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

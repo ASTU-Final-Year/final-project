@@ -292,7 +292,6 @@ export const sqUsersRelations = relations(sqUsers, ({ many }) => ({
   sessions: many(sqSessions),
   employeeProfile: many(sqEmployees),
   tasks: many(sqTasks),
-  organizationCalendars: many(sqOrganizationCalendars),
 }));
 
 export const sqSessionsRelations = relations(sqSessions, ({ one }) => ({
@@ -321,7 +320,12 @@ export const sqEmployeesRelations = relations(sqEmployees, ({ one, many }) => ({
 
 export const sqOrganizationCalendarsRelations = relations(
   sqOrganizationCalendars,
-  ({ one }) => ({}),
+  ({ one }) => ({
+    organization: one(sqOrganizations, {
+      fields: [sqOrganizationCalendars.organizationId],
+      references: [sqOrganizations.id],
+    }),
+  }),
 );
 
 export const sqOrganizationServicesRelations = relations(

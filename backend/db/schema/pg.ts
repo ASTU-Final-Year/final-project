@@ -178,7 +178,7 @@ export const pgEmployees = pgTable(
   "employees",
   {
     id: cpuuid("id").primaryKey().notNull().$defaultFn(randomCUUID),
-    organizationId: cpuuid("organization_office_id")
+    organizationId: cpuuid("organization_id")
       .notNull()
       .references(() => pgOrganizations.id, {
         onUpdate: "cascade",
@@ -186,7 +186,7 @@ export const pgEmployees = pgTable(
       }),
     userId: cpuuid("user_id").notNull(),
     jobTitle: varchar("job_title", { length: 50 }).notNull(),
-    jobDescription: varchar("job_description", { length: 200 }).notNull(),
+    jobDescription: varchar("job_description", { length: 200 }).notNull().default(""),
     isActive: boolean("is_active").notNull().default(true),
     calendarId: cpuuid("calendar_id").references(
       () => pgOrganizationCalendars.id,
@@ -258,6 +258,12 @@ export const pgTasks = pgTable("tasks", {
       onDelete: "cascade",
     })
     .notNull(),
+  organizationId: cpuuid("organization_id")
+    .references(() => pgOrganizations.id, {
+      onUpdate: "cascade",
+      onDelete: "cascade",
+    })
+    .notNull(),
   clientId: cpuuid("client_id")
     .references(() => pgUsers.id, {
       onUpdate: "cascade",
@@ -273,7 +279,6 @@ export const pgUsersRelations = relations(pgUsers, ({ many }) => ({
   sessions: many(pgSessions),
   employeeProfile: many(pgEmployees),
   tasks: many(pgTasks),
-  organizationCalendars: many(pgOrganizationCalendars),
 }));
 
 export const pgSessionsRelations = relations(pgSessions, ({ one }) => ({
@@ -358,6 +363,10 @@ export const pgTasksRelations = relations(pgTasks, ({ one }) => ({
   service: one(pgOrganizationServices, {
     fields: [pgTasks.serviceId],
     references: [pgOrganizationServices.id],
+  }),
+  organization: one(pgOrganizations, {
+    fields: [pgTasks.organizationId],
+    references: [pgOrganizations.id],
   }),
   client: one(pgUsers, {
     fields: [pgTasks.clientId],
