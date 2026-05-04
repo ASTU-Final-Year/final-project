@@ -1,6 +1,6 @@
 // services/session.service.ts
 
-import { and, eq, gte } from "drizzle-orm";
+import { and, eq, gte, lt } from "drizzle-orm";
 import { Session, SessionBlacklist, SessionInit } from "~/base";
 import { db } from "~/db";
 import { sessions, sessionsBlacklist, users } from "~/db/schema";
@@ -135,6 +135,16 @@ export default class SessionService {
 
   static async deleteSessionBlacklistById(sessionId: string): Promise<void> {
     await db.delete(sessions).where(eq(sessions.id, sessionId));
+  }
+
+  static async deleteExpiredSessions(): Promise<void> {
+    await db.delete(sessions).where(lt(sessions.expiresAt, new Date()));
+  }
+
+  static async deleteExpiredSessionsBlacklist(): Promise<void> {
+    await db
+      .delete(sessionsBlacklist)
+      .where(lt(sessionsBlacklist.expiresAt, new Date()));
   }
 }
 

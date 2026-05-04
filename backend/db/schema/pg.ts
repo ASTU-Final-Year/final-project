@@ -159,20 +159,20 @@ export const pgOrganizationCalendars = pgTable("organization_calendars", {
   ...basicTimestamps(),
 });
 
-export const pgEmployeeCalendars = pgTable("employee_calendars", {
-  id: cpuuid("id").primaryKey().notNull().$defaultFn(randomCUUID),
-  employeeId: cpuuid("employeeId")
-    .notNull()
-    .references(() => pgUsers.id, {
-      onUpdate: "cascade",
-      onDelete: "cascade",
-    }),
-  name: varchar("name", { length: 54 }).notNull(),
-  description: varchar("description", { length: 200 }).notNull().default(""),
-  available: jsonb("available"),
-  unavailable: jsonb("unavailable"),
-  ...basicTimestamps(),
-});
+// export const pgOrganizationCalendars = pgTable("employee_calendars", {
+//   id: cpuuid("id").primaryKey().notNull().$defaultFn(randomCUUID),
+//   employeeId: cpuuid("employeeId")
+//     .notNull()
+//     .references(() => pgUsers.id, {
+//       onUpdate: "cascade",
+//       onDelete: "cascade",
+//     }),
+//   name: varchar("name", { length: 54 }).notNull(),
+//   description: varchar("description", { length: 200 }).notNull().default(""),
+//   available: jsonb("available"),
+//   unavailable: jsonb("unavailable"),
+//   ...basicTimestamps(),
+// });
 
 export const pgEmployees = pgTable(
   "employees",
@@ -188,10 +188,13 @@ export const pgEmployees = pgTable(
     jobTitle: varchar("job_title", { length: 50 }).notNull(),
     jobDescription: varchar("job_description", { length: 200 }).notNull(),
     isActive: boolean("is_active").notNull().default(true),
-    calendarId: cpuuid("calendar_id").references(() => pgEmployeeCalendars.id, {
-      onUpdate: "cascade",
-      onDelete: "cascade",
-    }),
+    calendarId: cpuuid("calendar_id").references(
+      () => pgOrganizationCalendars.id,
+      {
+        onUpdate: "cascade",
+        onDelete: "cascade",
+      },
+    ),
     ...basicTimestamps(),
   },
   (table: any) => [
@@ -270,7 +273,7 @@ export const pgUsersRelations = relations(pgUsers, ({ many }) => ({
   sessions: many(pgSessions),
   employeeProfile: many(pgEmployees),
   tasks: many(pgTasks),
-  employeeCalendars: many(pgEmployeeCalendars),
+  organizationCalendars: many(pgOrganizationCalendars),
 }));
 
 export const pgSessionsRelations = relations(pgSessions, ({ one }) => ({
@@ -290,26 +293,26 @@ export const pgEmployeesRelations = relations(pgEmployees, ({ one, many }) => ({
     fields: [pgEmployees.userId],
     references: [pgUsers.id],
   }),
-  calendar: one(pgEmployeeCalendars, {
+  calendar: one(pgOrganizationCalendars, {
     fields: [pgEmployees.calendarId],
-    references: [pgEmployeeCalendars.id],
+    references: [pgOrganizationCalendars.id],
   }),
   firstEmployeeOfServices: many(pgServiceFirstEmployees),
 }));
 
-export const pgEmployeeCalendarsRelations = relations(
-  pgEmployeeCalendars,
-  ({ one }) => ({
-    user: one(pgUsers, {
-      fields: [pgEmployeeCalendars.employeeId],
-      references: [pgUsers.id],
-    }),
-    employee: one(pgEmployees, {
-      fields: [pgEmployeeCalendars.employeeId],
-      references: [pgEmployees.id],
-    }),
-  }),
-);
+// export const pgOrganizationCalendarsRelations = relations(
+//   pgOrganizationCalendars,
+//   ({ one }) => ({
+//     user: one(pgUsers, {
+//       fields: [pgOrganizationCalendars.employeeId],
+//       references: [pgUsers.id],
+//     }),
+//     employee: one(pgEmployees, {
+//       fields: [pgOrganizationCalendars.employeeId],
+//       references: [pgEmployees.id],
+//     }),
+//   }),
+// );
 
 export const pgOrganizationCalendarsRelations = relations(
   pgOrganizationCalendars,
@@ -369,7 +372,6 @@ export const pgSchema = {
   pricingPlans: pgPricingPlans,
   organizations: pgOrganizations,
   organizationCalendars: pgOrganizationCalendars,
-  employeeCalendars: pgEmployeeCalendars,
   employees: pgEmployees,
   organizationServices: pgOrganizationServices,
   serviceFirstEmployees: pgServiceFirstEmployees,
@@ -379,7 +381,6 @@ export const pgSchema = {
   sessionsRelations: pgSessionsRelations,
   organizationsRelations: pgOrganizationsRelations,
   employeesRelations: pgEmployeesRelations,
-  employeeCalendarsRelations: pgEmployeeCalendarsRelations,
   organizationCalendarsRelations: pgOrganizationCalendarsRelations,
   organizationServicesRelations: pgOrganizationServicesRelations,
   serviceFirstEmployeesRelations: pgServiceFirstEmployeesRelations,

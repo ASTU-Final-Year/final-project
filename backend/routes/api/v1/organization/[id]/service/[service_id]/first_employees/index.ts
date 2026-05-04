@@ -21,7 +21,7 @@ import OrganizationService from "~/services/organization.service";
 import OrganizationServicesService from "~/services/organization.services.service";
 
 const TServiceFirstEmployeesUpdate = type({
-  employeesId: "string.uuid[]",
+  employeesId: "string[]",
 });
 
 type ServiceFirstEmployeesUpdate = typeof TServiceFirstEmployeesUpdate.infer;
@@ -30,7 +30,7 @@ const TQuery = type({
   "o?": "string",
   "l?": "string",
   "iservice?": "unknown",
-  "ifirst_employees?": "unknown",
+  "iemployee?": "unknown",
 });
 
 type Query = typeof TQuery.infer;
@@ -54,13 +54,13 @@ export default {
           offset: parseInt(q.o || "0"),
           limit: parseInt(q.l || "5"),
           iservice: q.iservice !== undefined,
-          ifirst_employees: q.ifirst_employees !== undefined,
+          iemployee: q.iemployee !== undefined,
         };
       },
     ],
     HANDLER: [
       async (req, { session, params, q }) => {
-        const { offset, limit, iservice, ifirst_employees } = q;
+        const { offset, limit, iservice, iemployee } = q;
         const { id, service_id } = params;
         const organization =
           await OrganizationService.getOrganizationByAdminIdPure(
@@ -73,7 +73,7 @@ export default {
           return status(Status._403_Forbidden);
         }
         let firstEmployees;
-        if (iservice && ifirst_employees) {
+        if (iservice && iemployee) {
           firstEmployees =
             await OrganizationServicesService.getAllServiceFirstEmployeesByServiceId(
               service_id,
@@ -85,7 +85,7 @@ export default {
               service_id,
               { offset, limit },
             );
-        } else if (ifirst_employees) {
+        } else if (iemployee) {
           firstEmployees =
             await OrganizationServicesService.getAllServiceFirstEmployeesWithFirstEmployeesByServiceId(
               service_id,
@@ -160,7 +160,7 @@ export default {
         offset: number;
         limit: number;
         iservice: boolean;
-        ifirst_employees: boolean;
+        iemployee: boolean;
       };
     };
   }

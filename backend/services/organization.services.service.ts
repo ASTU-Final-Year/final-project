@@ -556,11 +556,8 @@ export default class OrganizationServicesService {
         organizationServices,
         eq(organizationServices.id, serviceFirstEmployees.serviceId),
       )
-      .leftJoin(
-        employees,
-        eq(employees.userId, serviceFirstEmployees.employeeId),
-      )
-      .leftJoin(users, eq(users.id, serviceFirstEmployees.employeeId))
+      .leftJoin(employees, eq(employees.id, serviceFirstEmployees.employeeId))
+      .leftJoin(users, eq(users.id, employees.userId))
       .where(eq(serviceFirstEmployees.serviceId, serviceId))
       .limit(limit)
       .offset(offset)) as unknown as OrganizationServiceFirstEmployee[];
@@ -584,7 +581,7 @@ export default class OrganizationServicesService {
         organizationServices,
         eq(organizationServices.id, serviceFirstEmployees.serviceId),
       )
-      .leftJoin(users, eq(users.id, serviceFirstEmployees.employeeId))
+      .leftJoin(users, eq(users.id, employees.userId))
       .where(eq(serviceFirstEmployees.serviceId, serviceId))
       .limit(limit)
       .offset(
@@ -606,10 +603,7 @@ export default class OrganizationServicesService {
     const servicesResult = (await db
       .select(organizationServiceFirstEmployeesWithFirstEmployeeSelect)
       .from(serviceFirstEmployees)
-      .leftJoin(
-        employees,
-        eq(employees.userId, serviceFirstEmployees.employeeId),
-      )
+      .leftJoin(employees, eq(employees.id, serviceFirstEmployees.employeeId))
       .leftJoin(users, eq(users.id, serviceFirstEmployees.employeeId))
       .where(eq(serviceFirstEmployees.serviceId, serviceId))
       .limit(limit)
@@ -651,10 +645,7 @@ export default class OrganizationServicesService {
         organizationServices,
         eq(organizationServices.id, serviceFirstEmployees.serviceId),
       )
-      .leftJoin(
-        employees,
-        eq(employees.userId, serviceFirstEmployees.employeeId),
-      )
+      .leftJoin(employees, eq(employees.id, serviceFirstEmployees.employeeId))
       .where(
         and(
           eq(serviceFirstEmployees.serviceId, serviceId),
@@ -693,10 +684,7 @@ export default class OrganizationServicesService {
     const [service] = (await db
       .select(organizationServiceFirstEmployeesWithFirstEmployeeSelect)
       .from(serviceFirstEmployees)
-      .leftJoin(
-        employees,
-        eq(employees.userId, serviceFirstEmployees.employeeId),
-      )
+      .leftJoin(employees, eq(employees.id, serviceFirstEmployees.employeeId))
       .where(
         and(
           eq(serviceFirstEmployees.serviceId, serviceId),

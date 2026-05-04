@@ -30,6 +30,7 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -76,6 +77,8 @@ export default function ServicesPage() {
   const setServiceCount = useOrganizationStore(
     ({ setServiceCount }) => setServiceCount,
   );
+  const calendars = useOrganizationStore(({ calendars }) => calendars);
+  const setCalendars = useOrganizationStore(({ setCalendars }) => setCalendars);
   // const [services, setServices] = useState([]);
   const [selectedServices, setSelectedServices] = useState({});
   // const [serviceCount, setServiceCount] = useState(0);
@@ -137,6 +140,7 @@ export default function ServicesPage() {
       RequestHandler.Get(
         `/api/v1/organization/${organizationId}/services?${params.toString()}`,
       ),
+      RequestHandler.Get(`/api/v1/organization/${organizationId}/calendars`),
     ]);
 
     if (countRes.ok) {
@@ -162,9 +166,14 @@ export default function ServicesPage() {
       }
       setServices(results);
       // (async () => setServices(results))();
+      if (calRes.ok) {
+        const { calendars } = await calRes.json();
+        setCalendars(calendars);
+      }
     }
     (async () => setIsLoading(false))();
   }, [
+    setCalendars,
     setServiceCount,
     setServices,
     organizationId,
@@ -527,15 +536,28 @@ export default function ServicesPage() {
                 }
               />
             </div>
-            {/* <div className="space-y-2">
+            <div className="space-y-2">
               <Label>Calendar</Label>
-              <input
-                value={formData.calendarId}
-                onChange={(e) =>
-                  setFormData({ ...formData, calendarId: e.target.value })
+              <Select
+                value={formData.calendarId ?? undefined}
+                onValueChange={(calendarId) =>
+                  setFormData((p) => ({ ...p, calendarId }))
                 }
-              />
-            </div> */}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a calendar" />
+                </SelectTrigger>
+                <SelectContent position={"item-aligned"}>
+                  <SelectGroup>
+                    {calendars?.map((calendar, idx) => (
+                      <SelectItem key={idx} value={calendar.id.toString()}>
+                        {calendar.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
             <div className="flex items-center gap-2">
               <input
                 type="checkbox"

@@ -15,7 +15,7 @@ import {
 } from "~/base";
 import { db } from "~/db";
 import {
-  employeeCalendars,
+  organizationCalendars as employeeCalendars,
   employees,
   organizations,
   users,
@@ -243,7 +243,7 @@ export default class OrganizationEmployeesService {
       .leftJoin(organizations, eq(employees.organizationId, organizations.id))
       .leftJoin(
         employeeCalendars,
-        eq(employeeCalendars.employeeId, employees.id),
+        eq(employeeCalendars.id, employees.calendarId),
       )
       .where(eq(employees.id, employeeId))) as Employee[];
     return employee;
@@ -257,7 +257,7 @@ export default class OrganizationEmployeesService {
       .leftJoin(organizations, eq(employees.organizationId, organizations.id))
       .leftJoin(
         employeeCalendars,
-        eq(employeeCalendars.employeeId, employees.id),
+        eq(employeeCalendars.id, employees.calendarId),
       )
       .where(eq(employees.userId, userId))) as Employee[];
     return employee;
@@ -302,21 +302,21 @@ export default class OrganizationEmployeesService {
   //
   // Calendar
   //
-  static async createCalendar(
-    calendarInit: EmployeeCalendarInit,
-  ): Promise<EmployeeCalendar> {
-    const [calendar] = (await db
-      .insert(employeeCalendars)
-      .values({
-        name: calendarInit.name,
-        description: calendarInit.description,
-        employeeId: calendarInit.employeeId,
-        available: calendarInit.available,
-        unavailable: calendarInit.unavailable,
-      })
-      .returning()) as EmployeeCalendar[];
-    return calendar;
-  }
+  // static async createCalendar(
+  //   calendarInit: EmployeeCalendarInit,
+  // ): Promise<EmployeeCalendar> {
+  //   const [calendar] = (await db
+  //     .insert(employeeCalendars)
+  //     .values({
+  //       name: calendarInit.name,
+  //       description: calendarInit.description,
+  //       employeeId: calendarInit.employeeId,
+  //       available: calendarInit.available,
+  //       unavailable: calendarInit.unavailable,
+  //     })
+  //     .returning()) as EmployeeCalendar[];
+  //   return calendar;
+  // }
 
   static async getAllCalendarsByEmployeeId(
     employeeId: string,
@@ -331,8 +331,8 @@ export default class OrganizationEmployeesService {
     const calendarsResult = (await db
       .select(fullEmployeeCalendarSelect)
       .from(employeeCalendars)
-      .leftJoin(employees, eq(employeeCalendars.employeeId, employees.userId))
-      .where(eq(employeeCalendars.employeeId, employeeId))
+      .leftJoin(employees, eq(employees.calendarId, employeeCalendars.id))
+      // .where(eq(employeeCalendars.id, employees.calendarId))
       .limit(limit)
       .offset(offset)) as EmployeeCalendar[];
     return calendarsResult;
@@ -351,8 +351,8 @@ export default class OrganizationEmployeesService {
     const calendarsResult = (await db
       .select(pureEmployeeCalendarSelect)
       .from(employeeCalendars)
-      .leftJoin(employees, eq(employeeCalendars.employeeId, employees.userId))
-      .where(eq(employeeCalendars.employeeId, employeeId))
+      .leftJoin(employees, eq(employeeCalendars.id, employees.calendarId))
+      // .where(eq(employeeCalendars.employeeId, employeeId))
       .limit(limit)
       .offset(offset)) as EmployeeCalendarPure[];
     return calendarsResult;
@@ -364,14 +364,16 @@ export default class OrganizationEmployeesService {
     const countResult = await db
       .select({ count: sql<number>`count(*)` })
       .from(employeeCalendars)
-      .where(eq(employeeCalendars.employeeId, employeeId));
+      .leftJoin(employees, eq(employeeCalendars.id, employees.calendarId))
+      .where(eq(employees.id, employeeId));
     return countResult[0]?.count ?? 0;
   }
 
   static async getCalendarById(calendarId: string): Promise<EmployeeCalendar> {
     const [calendar] = (await db
-      .select()
+      .select(fullEmployeeCalendarSelect)
       .from(employeeCalendars)
+      .leftJoin(employees, eq(employeeCalendars.id, employees.calendarId))
       .where(eq(employeeCalendars.id, calendarId))
       .limit(1)) as EmployeeCalendar[];
     return calendar;
@@ -382,13 +384,11 @@ export default class OrganizationEmployeesService {
     employeeId: string,
   ): Promise<EmployeeCalendar> {
     const [calendar] = (await db
-      .select()
+      .select(fullEmployeeCalendarSelect)
       .from(employeeCalendars)
+      .leftJoin(employees, eq(employeeCalendars.id, employees.calendarId))
       .where(
-        and(
-          eq(employeeCalendars.id, calendarId),
-          eq(employeeCalendars.employeeId, employeeId),
-        ),
+        and(eq(employeeCalendars.id, calendarId), eq(employees.id, employeeId)),
       )
       .limit(1)) as EmployeeCalendar[];
     return calendar;
@@ -407,7 +407,7 @@ export default class OrganizationEmployeesService {
       .where(
         and(
           eq(employeeCalendars.id, calendarUpdate.id),
-          eq(employeeCalendars.employeeId, calendarUpdate.employeeId),
+          eq(employeeCalendars.id, calendarUpdate.id),
         ),
       )
       .returning()) as EmployeeCalendar[];

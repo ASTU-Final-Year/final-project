@@ -19,7 +19,7 @@ import EmployeeService from "~/services/organization.employees.service";
 import OrganizationService from "~/services/organization.service";
 
 const TEmployeeUpdater = type({
-  "calendarId?": "string.uuid|null",
+  "calendarId?": "string|null",
 });
 
 type EmployeeUpdater = typeof TEmployeeUpdater.infer;

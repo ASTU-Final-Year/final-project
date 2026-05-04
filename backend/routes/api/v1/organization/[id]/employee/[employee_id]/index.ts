@@ -22,7 +22,7 @@ const TEmployeeUpdate = type({
   "jobTitle?": "string <= 54",
   "jobDescription?": "string <= 200",
   "isActive?": "boolean",
-  "calendarId?": "string.uuid|null",
+  "calendarId?": "(5 < string <= 25) | null",
 });
 
 type EmployeeUpdate = typeof TEmployeeUpdate.infer;
@@ -107,14 +107,14 @@ export default {
           return status(Status._404_NotFound, "Employee not found");
         }
         const employee = await OrganizationEmployeesService.updateEmployeeById({
-          userId: employee_id,
+          id: employee_id,
           jobTitle: employeeForm.jobTitle,
           jobDescription: employeeForm.jobDescription,
           isActive: employeeForm.isActive,
           calendarId: employeeForm.calendarId,
         });
         if (employee == null) {
-          return status(Status._404_NotFound, "Employee not found");
+          return status(Status._404_NotFound, "Employee update failed");
         }
         return json({ employee });
       },

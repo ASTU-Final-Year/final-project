@@ -30,7 +30,7 @@ export const sessionsBlacklist = sqliteSchema.sessionsBlacklist;
 export const pricingPlans = sqliteSchema.pricingPlans;
 export const organizations = sqliteSchema.organizations;
 export const organizationCalendars = sqliteSchema.organizationCalendars;
-export const employeeCalendars = sqliteSchema.employeeCalendars;
+// export const employeeCalendars = sqliteSchema.employeeCalendars;
 export const employees = sqliteSchema.employees;
 export const organizationServices = sqliteSchema.organizationServices;
 export const serviceFirstEmployees = sqliteSchema.serviceFirstEmployees;
@@ -40,8 +40,8 @@ export const usersRelations = sqliteSchema.usersRelations;
 export const sessionsRelations = sqliteSchema.sessionsRelations;
 export const organizationsRelations = sqliteSchema.organizationsRelations;
 export const employeesRelations = sqliteSchema.employeesRelations;
-export const employeeCalendarsRelations =
-  sqliteSchema.employeeCalendarsRelations;
+// export const employeeCalendarsRelations =
+//   sqliteSchema.employeeCalendarsRelations;
 export const organizationCalendarsRelations =
   sqliteSchema.organizationCalendarsRelations;
 export const organizationServicesRelations =
