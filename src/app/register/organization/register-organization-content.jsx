@@ -235,7 +235,6 @@ export default function RegisterOrganizationContent({ searchParams }) {
     <div className="max-w-3xl mx-auto w-full">
       <div className="text-center mb-10">
         <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-primary/10 mb-4">
-          pricingPlans selectedPlan
           <Building2 className="h-8 w-8 text-primary" />
         </div>
         <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
