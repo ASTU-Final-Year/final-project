@@ -27,7 +27,8 @@ export default function ContactPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        setStatus({ type: 'success', message: data.message || 'Message sent successfully!' });
+        // ✅ CHANGED: success message now says "Successfully submitted!"
+        setStatus({ type: 'success', message: 'Successfully submitted!' });
         setFormData({ name: '', email: '', message: '' });
       } else {
         setStatus({ type: 'error', message: data.error || 'Something went wrong.' });
@@ -44,8 +45,8 @@ export default function ContactPage() {
     name: 'ServeSync Plus',
     email: 'privacy@servesyncplus.et',
     phone: '+251-11-554-3322',
-    address: 'Adama Science & Technology University, Department of CSE, P.O. Box 1888, Adama, Ethiopia',
-    hours: 'Monday – Friday, 8:00 – 17:00 (EAT)',
+    address: 'Adama Science & Technology University, Department of CSE,  Adama, Ethiopia',
+    hours: 'Monday – Friday, 8:00 – 11:30 ',
   };
 
   return (
@@ -128,7 +129,7 @@ export default function ContactPage() {
   );
 }
 
-// Inline styles – you can also move these to a CSS module or global CSS
+// Inline styles – unchanged
 const styles = {
   container: {
     minHeight: '100vh',
@@ -237,4 +238,3 @@ const styles = {
     textDecoration: 'none',
   },
 };
-
