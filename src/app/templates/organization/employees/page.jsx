@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import { 
   LayoutDashboard, Users, Calendar as CalendarIcon, 
@@ -272,125 +271,11 @@ export default function EmployeeManagementPage() {
     </div>
   );
 
-  // Add Member Modal
-  const AddMemberModal = () => (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl w-full max-w-md">
-        <div className="flex justify-between items-center p-4 border-b border-gray-200">
-          <h2 className="text-xl font-bold">Add New Member</h2>
-          <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-gray-600">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-        <form onSubmit={handleAddMember} className="p-5 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-            <input type="text" required value={newEmployee.name} onChange={(e) => setNewEmployee({...newEmployee, name: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="e.g., Dr. John Doe" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-            <input type="text" required value={newEmployee.role} onChange={(e) => setNewEmployee({...newEmployee, role: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="e.g., Cardiologist" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
-            <input type="text" required value={newEmployee.department} onChange={(e) => setNewEmployee({...newEmployee, department: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="e.g., Cardiology" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input type="email" required value={newEmployee.email} onChange={(e) => setNewEmployee({...newEmployee, email: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="email@example.com" />
-          </div>
-          <button type="submit" className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
-            <UserPlus className="w-4 h-4" />
-            Add Member
-          </button>
-        </form>
-      </div>
-    </div>
-  );
-
-  // Edit Employee Modal
-  const EditModal = () => (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl w-full max-w-md">
-        <div className="flex justify-between items-center p-4 border-b border-gray-200">
-          <h2 className="text-xl font-bold">Edit Employee</h2>
-          <button onClick={() => setShowEditModal(false)} className="text-gray-400 hover:text-gray-600">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-        <form onSubmit={handleSaveEdit} className="p-5 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-            <input type="text" required value={editData.name} onChange={(e) => setEditData({...editData, name: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-            <input type="text" required value={editData.role} onChange={(e) => setEditData({...editData, role: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
-            <input type="text" required value={editData.department} onChange={(e) => setEditData({...editData, department: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input type="email" required value={editData.email} onChange={(e) => setEditData({...editData, email: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-          </div>
-          <button type="submit" className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
-            <CheckCircle className="w-4 h-4" />
-            Save Changes
-          </button>
-        </form>
-      </div>
-    </div>
-  );
-
-  // Schedule Modal
-  const ScheduleModal = () => (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl w-full max-w-md">
-        <div className="flex justify-between items-center p-4 border-b border-gray-200">
-          <h2 className="text-xl font-bold">Schedule Appointment</h2>
-          <button onClick={() => setShowScheduleModal(false)} className="text-gray-400 hover:text-gray-600">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-        <form onSubmit={handleSaveSchedule} className="p-5 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Employee</label>
-            <input type="text" value={selectedEmployee?.name || ""} disabled className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-600" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-            <input type="date" required value={scheduleData.date} onChange={(e) => setScheduleData({...scheduleData, date: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
-            <input type="time" required value={scheduleData.time} onChange={(e) => setScheduleData({...scheduleData, time: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Appointment Type</label>
-            <select value={scheduleData.type} onChange={(e) => setScheduleData({...scheduleData, type: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg" required>
-              <option value="">Select Type</option>
-              <option value="Consultation">Consultation</option>
-              <option value="Follow-up">Follow-up</option>
-              <option value="Emergency">Emergency</option>
-              <option value="Routine Check">Routine Check</option>
-            </select>
-          </div>
-          <button type="submit" className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
-            <Calendar className="w-4 h-4" />
-            Schedule Appointment
-          </button>
-        </form>
-      </div>
-    </div>
-  );
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-right">
+        <div className="fixed top-4 right-4 z-[9999] animate-in slide-in-from-right">
           <div className={`px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 ${
             toastMessage.type === "success" ? "bg-green-500 text-white" : "bg-blue-500 text-white"
           }`}>
@@ -707,22 +592,194 @@ export default function EmployeeManagementPage() {
         </main>
       </div>
 
-      {/* Modals */}
-      {showAddModal && <AddMemberModal />}
-      {showEditModal && <EditModal />}
-      {showScheduleModal && <ScheduleModal />}
+      {/* --- MODALS FIXED (Moved into main return to prevent focus loss) --- */}
 
-      {/* Print Styles */}
-      <style jsx global>{`
-        @media print {
-          nav, aside, .sticky, button:not(.print\\:block) {
-            display: none !important;
-          }
-          main {
-            padding: 20px !important;
-          }
-        }
-      `}</style>
+      {/* ADD MEMBER MODAL */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl animate-in zoom-in duration-200">
+            <div className="flex justify-between items-center p-6 border-b">
+              <h2 className="text-xl font-bold text-gray-800">Add New Member</h2>
+              <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:bg-gray-100 p-2 rounded-full transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleAddMember} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Full Name</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={newEmployee.name} 
+                  onChange={(e) => setNewEmployee({...newEmployee, name: e.target.value})} 
+                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all" 
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Role</label>
+                  <input 
+                    type="text" 
+                    required 
+                    value={newEmployee.role} 
+                    onChange={(e) => setNewEmployee({...newEmployee, role: e.target.value})} 
+                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Department</label>
+                  <input 
+                    type="text" 
+                    required 
+                    value={newEmployee.department} 
+                    onChange={(e) => setNewEmployee({...newEmployee, department: e.target.value})} 
+                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all" 
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Email</label>
+                <input 
+                  type="email" 
+                  required 
+                  value={newEmployee.email} 
+                  onChange={(e) => setNewEmployee({...newEmployee, email: e.target.value})} 
+                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all" 
+                />
+              </div>
+              <button type="submit" className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg transition-all flex items-center justify-center gap-2">
+                <UserPlus className="w-5 h-5" /> Add Member
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT MODAL */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl animate-in zoom-in duration-200">
+            <div className="flex justify-between items-center p-6 border-b">
+              <h2 className="text-xl font-bold text-gray-800">Edit Employee</h2>
+              <button onClick={() => setShowEditModal(false)} className="text-gray-400 hover:bg-gray-100 p-2 rounded-full transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveEdit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Full Name</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={editData.name} 
+                  onChange={(e) => setEditData({...editData, name: e.target.value})} 
+                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all" 
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Role</label>
+                  <input 
+                    type="text" 
+                    required 
+                    value={editData.role} 
+                    onChange={(e) => setEditData({...editData, role: e.target.value})} 
+                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Department</label>
+                  <input 
+                    type="text" 
+                    required 
+                    value={editData.department} 
+                    onChange={(e) => setEditData({...editData, department: e.target.value})} 
+                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all" 
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Email</label>
+                <input 
+                  type="email" 
+                  required 
+                  value={editData.email} 
+                  onChange={(e) => setEditData({...editData, email: e.target.value})} 
+                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all" 
+                />
+              </div>
+              <button type="submit" className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg transition-all flex items-center justify-center gap-2">
+                <CheckCircle className="w-5 h-5" /> Save Changes
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* SCHEDULE MODAL */}
+      {showScheduleModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl animate-in zoom-in duration-200">
+            <div className="flex justify-between items-center p-6 border-b">
+              <h2 className="text-xl font-bold text-gray-800">Schedule Appointment</h2>
+              <button onClick={() => setShowScheduleModal(false)} className="text-gray-400 hover:bg-gray-100 p-2 rounded-full transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveSchedule} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Employee</label>
+                <input 
+                  type="text" 
+                  value={selectedEmployee?.name || ""} 
+                  disabled 
+                  className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-xl text-gray-600 cursor-not-allowed" 
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Date</label>
+                  <input 
+                    type="date" 
+                    required 
+                    value={scheduleData.date} 
+                    onChange={(e) => setScheduleData({...scheduleData, date: e.target.value})} 
+                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition-all" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Time</label>
+                  <input 
+                    type="time" 
+                    required 
+                    value={scheduleData.time} 
+                    onChange={(e) => setScheduleData({...scheduleData, time: e.target.value})} 
+                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition-all" 
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Appointment Type</label>
+                <select 
+                  required 
+                  value={scheduleData.type} 
+                  onChange={(e) => setScheduleData({...scheduleData, type: e.target.value})} 
+                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer"
+                >
+                  <option value="">Select Type</option>
+                  <option value="Consultation">Consultation</option>
+                  <option value="Follow-up">Follow-up</option>
+                  <option value="Emergency">Emergency</option>
+                  <option value="Routine Check">Routine Check</option>
+                </select>
+              </div>
+              <button type="submit" className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg transition-all flex items-center justify-center gap-2">
+                <Calendar className="w-5 h-5" /> Confirm Schedule
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
