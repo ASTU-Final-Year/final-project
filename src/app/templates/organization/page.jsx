@@ -171,7 +171,7 @@ export default function OrganizationDashboard() {
                 disabled={isUploading}
               >
                 {isUploading ? <Clock size={14} className="animate-spin" /> : <Upload size={14}/>}
-                {isUploading ? "Uploading..." : "Upload Stats"}
+                {isUploading ? "exporting..." : "Export stats"}
               </button>
             </div>
           </div>
