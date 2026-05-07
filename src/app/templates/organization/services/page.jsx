@@ -124,19 +124,43 @@ const AllServicesPage = () => {
 
   return (
     <div className="flex h-screen bg-slate-50 font-sans text-slate-900">
-      {/* Sidebar - Matches image_e69ead.png */}
-      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col">
-        <div className="p-6">
-          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-6">Menu</p>
-          <nav className="space-y-1">
-            <NavItem icon={<LayoutDashboard size={20}/>} label="Dashboard" />
-            <NavItem icon={<ClipboardList size={20}/>} label="Services" active />
-            <NavItem icon={<Users size={20}/>} label="Employees" />
-            <NavItem icon={<CalendarCheck size={20}/>} label="Appointments" />
-            <NavItem icon={<CalendarDays size={20}/>} label="Calendar" />
-            <NavItem icon={<FileText size={20}/>} label="Reports" />
-            <NavItem icon={<Settings size={20}/>} label="Settings" />
-          </nav>
+      {/* NEW SIDEBAR INTEGRATED */}
+      <aside className="w-64 bg-white border-r border-gray-200 min-h-screen sticky top-0 overflow-y-auto">
+        <div className="p-4">
+          <div className="mb-6">
+            <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-3">Dashboard</h2>
+            <nav className="space-y-1">
+              <button className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
+                <LayoutDashboard className="w-4 h-4" />
+                Dashboard
+              </button>
+              {/* Active Item for Services */}
+              <button className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg bg-blue-50 text-blue-600 font-medium transition-colors">
+                <ClipboardList className="w-4 h-4" />
+                Services
+              </button>
+              <button className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
+                <Users className="w-4 h-4" />
+                Employees
+              </button>
+              <button className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
+                <CalendarCheck className="w-4 h-4" />
+                Appointments
+              </button>
+              <button className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
+                <CalendarDays className="w-4 h-4" />
+                Calendar
+              </button>
+              <button className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
+                <FileText className="w-4 h-4" />
+                Reports
+              </button>
+              <button className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
+                <Settings className="w-4 h-4" />
+                Settings
+              </button>
+            </nav>
+          </div>
         </div>
       </aside>
 
@@ -150,18 +174,18 @@ const AllServicesPage = () => {
               placeholder="Search by service name or code..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 pl-10 pr-4 text-sm outline-none"
+              className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 pl-10 pr-4 text-sm outline-none focus:ring-1 focus:ring-blue-100"
             />
           </div>
           <div className="flex items-center gap-6">
-            <Bell size={20} className="text-slate-400 cursor-pointer" />
-            <HelpCircle size={20} className="text-slate-400 cursor-pointer" />
+            <Bell size={20} className="text-slate-400 cursor-pointer hover:text-blue-600" />
+            <HelpCircle size={20} className="text-slate-400 cursor-pointer hover:text-blue-600" />
             <div className="flex items-center gap-3 pl-6 border-l border-slate-100">
               <div className="text-right">
                 <p className="text-xs font-bold text-slate-700">Organization Admin</p>
-                <p className="text-[10px] text-slate-400 font-medium">MAIN HOSPITAL BRANCH</p>
+                <p className="text-[10px] text-slate-400 font-medium uppercase">Main Hospital Branch</p>
               </div>
-              <div className="w-9 h-9 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold">OA</div>
+              <div className="w-9 h-9 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-md shadow-blue-100">OA</div>
             </div>
           </div>
         </header>
@@ -184,21 +208,21 @@ const AllServicesPage = () => {
             </div>
           </div>
 
-          {/* Filter Bar - Matches the screenshot layout */}
+          {/* Filter Bar */}
           <div className="bg-white p-3 rounded-xl border border-slate-200 flex flex-wrap gap-3 mb-8 shadow-sm">
             <div className="relative flex-[1.5] min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
               <input 
                 type="text" 
-                placeholder="Search by service name or code..." 
-                className="w-full border border-slate-200 rounded-lg py-2 pl-10 pr-4 text-sm outline-none"
+                placeholder="Search services..." 
+                className="w-full border border-slate-200 rounded-lg py-2 pl-10 pr-4 text-sm outline-none focus:border-blue-300"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
             
             <select 
-              className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none text-slate-600"
+              className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none text-slate-600 cursor-pointer focus:border-blue-300"
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
             >
@@ -210,7 +234,7 @@ const AllServicesPage = () => {
             </select>
 
             <select 
-              className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none text-slate-600"
+              className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none text-slate-600 cursor-pointer focus:border-blue-300"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             >
@@ -220,7 +244,7 @@ const AllServicesPage = () => {
             </select>
 
             <select 
-              className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none text-slate-600"
+              className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none text-slate-600 cursor-pointer focus:border-blue-300"
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
             >
@@ -234,7 +258,7 @@ const AllServicesPage = () => {
               <CalendarDays className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
               <input 
                 type="date" 
-                className="w-full border border-slate-200 rounded-lg py-2 pl-3 pr-10 text-sm outline-none text-slate-500 cursor-pointer" 
+                className="w-full border border-slate-200 rounded-lg py-2 pl-3 pr-10 text-sm outline-none text-slate-500 cursor-pointer focus:border-blue-300" 
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
               />
@@ -255,7 +279,7 @@ const AllServicesPage = () => {
         </div>
       </main>
 
-      {/* --- Modal --- */}
+      {/* Modal logic ... */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
@@ -306,15 +330,6 @@ const AllServicesPage = () => {
   );
 };
 
-const NavItem = ({ icon, label, active = false }) => (
-  <div className={`flex items-center gap-4 px-4 py-3 rounded-lg cursor-pointer transition-all ${
-    active ? 'bg-blue-50 text-blue-600 font-bold' : 'text-slate-500 hover:bg-slate-50'
-  }`}>
-    <span className={active ? "text-blue-600" : "text-slate-400"}>{icon}</span>
-    <span className="text-[14px]">{label}</span>
-  </div>
-);
-
 const ServiceCard = ({ service, onEdit, onDelete }) => {
   const [showOptions, setShowOptions] = useState(false);
 
@@ -329,7 +344,7 @@ const ServiceCard = ({ service, onEdit, onDelete }) => {
             service.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'
           }`}>{service.status}</span>
           <div className="relative">
-             <button onClick={() => setShowOptions(!showOptions)} className="p-1 hover:bg-slate-50 rounded text-slate-400">
+             <button onClick={() => setShowOptions(!showOptions)} className="p-1 hover:bg-slate-50 rounded text-slate-400 transition-colors">
                <MoreVertical size={16} />
              </button>
              {showOptions && (
@@ -343,7 +358,7 @@ const ServiceCard = ({ service, onEdit, onDelete }) => {
       </div>
 
       <h3 className="font-bold text-slate-800 text-lg mb-2">{service.name}</h3>
-      <p className="text-slate-500 text-xs leading-relaxed mb-6 flex-grow">
+      <p className="text-slate-500 text-xs leading-relaxed mb-6 flex-grow line-clamp-2">
         {service.description}
       </p>
 
