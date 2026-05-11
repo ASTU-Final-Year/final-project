@@ -11,10 +11,6 @@ import {
   Users,
   Award,
   Building2,
-  Linkedin,
-  Twitter,
-  Facebook,
-  Instagram,
   ArrowLeft,
   CheckCircle,
   Wrench,
@@ -25,6 +21,11 @@ import {
   Gauge,
   Shield,
   Briefcase,
+  Share2,
+  BookOpen,
+  Heart,
+  Star,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -123,7 +124,7 @@ function OrganizationDisplayPage() {
         </div>
       </div>
 
-      {/* Main Content (same as before – services as attractive cards, etc.) */}
+      {/* Main Content */}
       <div className="container mx-auto px-4 py-10 md:py-16">
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Left Sidebar – Snapshot + Contact */}
@@ -195,28 +196,28 @@ function OrganizationDisplayPage() {
                   {org.social.linkedin && (
                     <Button variant="outline" size="icon" asChild className="rounded-full hover:bg-primary hover:text-white transition">
                       <a href={org.social.linkedin} target="_blank" rel="noopener noreferrer">
-                        <Linkedin className="h-4 w-4" />
+                        <Briefcase className="h-4 w-4" />
                       </a>
                     </Button>
                   )}
                   {org.social.twitter && (
                     <Button variant="outline" size="icon" asChild className="rounded-full hover:bg-primary hover:text-white transition">
                       <a href={org.social.twitter} target="_blank" rel="noopener noreferrer">
-                        <Twitter className="h-4 w-4" />
+                        <X className="h-4 w-4" />
                       </a>
                     </Button>
                   )}
                   {org.social.facebook && (
                     <Button variant="outline" size="icon" asChild className="rounded-full hover:bg-primary hover:text-white transition">
                       <a href={org.social.facebook} target="_blank" rel="noopener noreferrer">
-                        <Facebook className="h-4 w-4" />
+                        <BookOpen className="h-4 w-4" />
                       </a>
                     </Button>
                   )}
                   {org.social.instagram && (
                     <Button variant="outline" size="icon" asChild className="rounded-full hover:bg-primary hover:text-white transition">
                       <a href={org.social.instagram} target="_blank" rel="noopener noreferrer">
-                        <Instagram className="h-4 w-4" />
+                        <Share2 className="h-4 w-4" />
                       </a>
                     </Button>
                   )}
