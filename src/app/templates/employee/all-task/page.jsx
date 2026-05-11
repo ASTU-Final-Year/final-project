@@ -531,12 +531,14 @@ export default function EmployeeDashboardPage() {
             </div>
           </div>
         </aside>
+
         {/* Main Content */}
         <main className="flex-1 p-6 overflow-auto">
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-gray-900">My Tasks & Appointments</h1>
             <p className="text-gray-500 text-sm">Manage your daily appointments and clinical duties</p>
           </div>
+
           {/* Stats Cards */}
           <div className="grid grid-cols-4 gap-4 mb-6">
             <StatCard label="TOTALS TASKS" value={stats.totalTasks} icon={ClipboardList} color="text-blue-600" bgColor="bg-blue-50" />
@@ -544,6 +546,7 @@ export default function EmployeeDashboardPage() {
             <StatCard label="COMPLETED" value={stats.completed} icon={CheckCircle} color="text-green-600" bgColor="bg-green-50" />
             <StatCard label="HIGH PRIORITY" value={stats.highPriority} icon={AlertCircle} color="text-red-600" bgColor="bg-red-50" />
           </div>
+
           {/* Tabs and Filters */}
           <div className="flex flex-wrap justify-between items-center mb-6">
             <div className="flex gap-2">

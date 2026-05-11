@@ -162,4 +162,40 @@
     transform-origin: center center;
     pointer-events: none;
   }
+
+  .bg-diag-stripe {
+    background: repeating-linear-gradient(
+      50deg,
+      oklch(85.775% 0.05003 247.529),
+      oklch(85.775% 0.05003 247.529) 20px,
+      oklch(92.053% 0.04059 247.188) 20px,
+      oklch(92.053% 0.04059 247.188) 40px
+    );
+  }
+
+  .bg-diag-stripe-faint {
+    background: repeating-linear-gradient(
+      50deg,
+      oklch(93.071% 0.03533 246.962),
+      oklch(93.071% 0.03533 246.962) 20px,
+      oklch(90.071% 0.03533 246.962) 20px,
+      oklch(90.071% 0.03533 246.962) 40px
+    );
+  }
+
+  .bg-dots {
+    background-color: #f5f5f5;
+    background-image:
+      linear-gradient(to right, #eaeaea 1px, transparent 1px),
+      linear-gradient(to bottom, #eaeaea 1px, transparent 1px),
+      radial-gradient(#eaeaea 3px, transparent 0);
+    background-size:
+      40px 40px,
+      40px 40px,
+      40px 40px;
+    background-position:
+      -5px -5px,
+      -5px -5px,
+      -25px -25px;
+  }
 }

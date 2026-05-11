@@ -53,7 +53,7 @@ export default {
         ctx.invite = payload;
       },
       async (req, { session, invite }) => {
-        const { organizationId, jobTitle, jobDescription } = invite;
+        const { organizationId, jobTitle, jobDescription, calendarId } = invite;
         const organization =
           await OrganizationService.getOrganizationById(organizationId);
         if (organization == null) {
@@ -70,6 +70,7 @@ export default {
             organizationId: organizationId,
             jobTitle,
             jobDescription,
+            calendarId,
             isActive: true,
           });
         }
@@ -80,6 +81,7 @@ export default {
             organization: organization.name,
             jobTitle,
             jobDescription,
+            calendarId,
           }),
         );
         console.log("/welcome/employee?i=" + welcomeInfo);

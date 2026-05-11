@@ -162,7 +162,6 @@ export default function ServiceFirstEmployeesPage() {
               .includes(searchQuery.toLowerCase()),
         );
       }
-      console.log(results);
       (async () => setEmployees(results))();
     }
     // (async () => setIsLoading(false))();
@@ -180,8 +179,8 @@ export default function ServiceFirstEmployeesPage() {
     const params = new URLSearchParams({
       o: offset.toString(),
       l: limit.toString(),
-      iuser: 1,
-      icalendar: 1,
+      iemployee: 1,
+      iservice: 1,
     });
 
     const [countRes, dataRes] = await Promise.all([
@@ -200,8 +199,8 @@ export default function ServiceFirstEmployeesPage() {
 
     if (dataRes.ok) {
       const data = await dataRes.json();
-      console.log(data);
       let results = data.firstEmployees || [];
+      // console.log(results);
 
       if (statusFilter !== "all") {
         results = results.filter(
@@ -234,13 +233,14 @@ export default function ServiceFirstEmployeesPage() {
   const handleAddFirstEmployee = async () => {
     setIsSubmitting(true);
     const res = await RequestHandler.Post(
-      `/api/v1/organization/${organizationId}/service/${service_id}/first_employee/${selectedEmployee}`,
-      { body: [formData] },
+      `/api/v1/organization/${organizationId}/service/${service_id}/first_employee`,
+      { body: formData },
     );
     if (res.ok) {
       setIsAddOpen(false);
       setFormData({ employeeId: "" });
       fetchEmployees();
+      fetchFirstEmployees();
     }
     setIsSubmitting(false);
   };
@@ -248,7 +248,7 @@ export default function ServiceFirstEmployeesPage() {
   // const handleEditFirstEmployee = async () => {
   //   setIsSubmitting(true);
   //   const res = await RequestHandler.Patch(
-  //     `/api/v1/organization/${organizationId}/service/${service_id}/first_employee/${selectedEmployee.userId}`,
+  //     `/api/v1/organization/${organizationId}/service/${service_id}/first_employee/${selectedEmployee.id}`,
   //     { body: formData },
   //   );
   //   if (res.ok) {
@@ -262,12 +262,13 @@ export default function ServiceFirstEmployeesPage() {
   const handleDeleteFristEmployee = async () => {
     setIsSubmitting(true);
     const res = await RequestHandler.Delete(
-      `/api/v1/organization/${organizationId}/service/${service_id}/first_employee/${selectedEmployee.userId}`,
+      `/api/v1/organization/${organizationId}/service/${service_id}/first_employee/${selectedEmployee.id}`,
     );
     if (res.ok) {
       setIsDeleteOpen(false);
       setSelectedEmployee(null);
       fetchEmployees();
+      fetchFirstEmployees();
     }
     setIsSubmitting(false);
   };
@@ -366,11 +367,11 @@ export default function ServiceFirstEmployeesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {firstEmployees.map(({ employee }) => (
-                <TableRow key={employee.userId}>
+              {firstEmployees?.map(({ employee, user }) => (
+                <TableRow key={employee.id}>
                   <TableCell className="w-8">
                     <Checkbox
-                      checked={selectedEmployees[employee.userId]}
+                      checked={selectedEmployees[employee.id] || false}
                       onCheckedChange={(checked) =>
                         setSelectedEmployees((prev) =>
                           Object.fromEntries(
@@ -385,25 +386,25 @@ export default function ServiceFirstEmployeesPage() {
                   </TableCell>
                   <TableCell>
                     <div className="text-xs font-mono">
-                      {employee.userId.slice(0, 8)}
+                      {employee.id.slice(0, 8)}
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="font-semibold">
-                      {`${employee.user?.firstname} ${employee.user?.lastname}`}
+                      {`${user?.firstname} ${user?.lastname}`}
                     </div>
                     <div className="text-xs text-foreground/80">
                       <Link
-                        href={`mailto:${employee.user?.email}`}
+                        href={`mailto:${user?.email}`}
                         className="text-blue-800/90 hover:underline"
                       >
-                        {employee.user?.email}
+                        {user?.email}
                       </Link>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="text-xs text-center text-muted-foreground truncate max-w-[400px]">
-                      {employee.user?.gender}
+                      {user?.gender}
                     </div>
                   </TableCell>
                   <TableCell>
@@ -426,7 +427,7 @@ export default function ServiceFirstEmployeesPage() {
                     {employee.calendarId != null ? (
                       <Button variant="ghost" size="icon" asChild>
                         <Link
-                          href={`/dashboard/organization/employee/${employee.userId}/calendar/${
+                          href={`/dashboard/organization/employee/${employee.id}/calendar/${
                             employee.calendarId
                           }`}
                         >
@@ -438,13 +439,13 @@ export default function ServiceFirstEmployeesPage() {
                         <CalendarIcon />
                       </Button>
                     )}
-                    <Button
+                    {/* <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => openEdit(employee)}
                     >
                       <Pencil className="h-4 w-4" />
-                    </Button>
+                    </Button> */}
                     <Button
                       variant="ghost"
                       size="icon"
@@ -462,9 +463,9 @@ export default function ServiceFirstEmployeesPage() {
       ) : (
         /* IMPROVED GRID VIEW */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {firstEmployees.map((employee) => (
+          {firstEmployees.map(({ employee, user }) => (
             <Card
-              key={employee.userId}
+              key={employee.id}
               className="bg-background  group flex flex-col relative overflow-hidden transition-all hover:ring-2 hover:ring-primary/20"
             >
               <CardHeader className="pb-3 border-b bg-muted/5 flex flex-row items-center justify-between space-y-0">
@@ -474,9 +475,7 @@ export default function ServiceFirstEmployeesPage() {
                       <User />
                     </div>
                     <div>
-                      <div>
-                        {`${employee.user?.firstname} ${employee.user?.lastname}`}
-                      </div>
+                      <div>{`${user?.firstname} ${user?.lastname}`}</div>
                       <p className="muted-foreground text-muted-foreground font-normal text-xs">
                         {employee.jobTitle}
                       </p>
@@ -492,14 +491,14 @@ export default function ServiceFirstEmployeesPage() {
                   <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => openEdit(employee)}>
+                    {/* <DropdownMenuItem onClick={() => openEdit(employee.id)}>
                       <Pencil className="mr-2 h-4 w-4" /> Edit Details
-                    </DropdownMenuItem>
+                    </DropdownMenuItem> */}
                     <DropdownMenuItem
-                      onClick={() => openDelete(employee)}
+                      onClick={() => openDelete(employee.id)}
                       className="text-destructive"
                     >
-                      <Trash2 className="mr-2 h-4 w-4" /> Delete Employee
+                      <Trash2 className="mr-2 h-4 w-4" /> Delete Fist Employee
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -507,13 +506,13 @@ export default function ServiceFirstEmployeesPage() {
               <CardContent className="flex-grow">
                 <p className="text-muted-foreground line-clamp-3 min-h-[60px]">
                   {employee.jobDescription ||
-                    "No job description provided for this employee."}
+                    "No job description provided for this employee.id."}
                 </p>
               </CardContent>
               <CardFooter className="pt-4 border-t flex justify-between items-center bg-muted/5">
-                <AcriveBadge isActive={employee.isActive} />
+                <AcriveBadge isActive={fistEmployee.isActive} />
                 <span className="text-[10px] font-mono text-muted-foreground">
-                  ID: {employee.userId.slice(0, 8)}
+                  ID: {employee.id.slice(0, 8)}
                 </span>
               </CardFooter>
             </Card>
@@ -613,17 +612,19 @@ export default function ServiceFirstEmployeesPage() {
                 </Field>
                 <Field>
                   <Select
-                    value={selectedEmployee}
-                    onValueChange={setSelectedEmployee}
+                    value={formData.employeeId}
+                    onValueChange={(employeeId) =>
+                      setFormData((p) => ({ ...p, employeeId }))
+                    }
                   >
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Select an Employee" />
                     </SelectTrigger>
                     <SelectContent position="item-aligned">
                       <SelectGroup>
                         {employees?.map((employee, idx) => (
-                          <SelectItem key={idx} value={employee.userId}>
-                            {`${employee.user.firstname} ${employee.user.lastname}`}
+                          <SelectItem key={idx} value={employee.id}>
+                            {`${employee.user.firstname} ${employee.user.lastname} | ${employee.jobTitle}`}
                           </SelectItem>
                         ))}
                       </SelectGroup>
@@ -670,8 +671,8 @@ export default function ServiceFirstEmployeesPage() {
           <DialogHeader>
             <DialogTitle>Are you sure?</DialogTitle>
             <DialogDescription>
-              This will permanently delete "{selectedEmployee?.name}". This
-              action cannot be undone.
+              This will permanently delete &quot;{selectedEmployee?.id}&quot;.
+              This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

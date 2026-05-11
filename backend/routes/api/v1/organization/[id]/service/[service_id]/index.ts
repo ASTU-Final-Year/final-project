@@ -24,7 +24,7 @@ const TServiceUpdate = type({
   "name?": "string <= 54",
   "description?": "string <= 200",
   "isActive?": "boolean",
-  "calendarId?": "string.uuid|null",
+  "calendarId?": "string|null",
 });
 
 type ServiceUpdate = typeof TServiceUpdate.infer;

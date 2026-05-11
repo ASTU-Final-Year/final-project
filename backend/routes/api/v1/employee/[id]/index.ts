@@ -21,7 +21,7 @@ import OrganizationService from "~/services/organization.service";
 const TEmployeeUpdater = type({
   "jobTitle?": "string|null",
   "jobDescription?": "string|null",
-  "calendarId?": "string.uuid|null",
+  "calendarId?": "string|null",
 });
 
 type EmployeeUpdater = typeof TEmployeeUpdater.infer;
