@@ -5,197 +5,148 @@ import {
   LayoutDashboard, Calendar, ClipboardList, 
   Users, UserCircle, Bell, 
   Search, CheckCircle, Clock, AlertCircle,
-  Eye, FileText, Video as VideoIcon,
-  Camera, LogOut, CircleCheck, CircleAlert, Circle,
-  ArrowUpDown, Filter, ChevronDown, ChevronRight,
-  TrendingUp, Activity, Award, Target
+  LogOut, Filter, ChevronRight, Settings, HelpCircle,
+  Lock, MoreVertical, Utensils, Briefcase, Stethoscope, HeartPulse,
+  ChevronDown, ArrowUpDown, TrendingUp, TrendingDown, X,
+  UserCheck, UserX, Eye, Edit3, Trash2
 } from "lucide-react";
 
 export default function EmployeeDashboardPage() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedDate, setSelectedDate] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState("All");
+  const [activeTab, setActiveTab] = useState("all tasks");
   const [sortBy, setSortBy] = useState("priority");
-  const [activeTab, setActiveTab] = useState("tasks");
+  const [showSortMenu, setShowSortMenu] = useState(false);
+  const [showFilterMenu, setShowFilterMenu] = useState(false);
+  const [showCheckInModal, setShowCheckInModal] = useState(false);
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [checkInData, setCheckInData] = useState({ notes: "", status: "on-time" });
+  const [filterStatus, setFilterStatus] = useState("all");
   const [toastMessage, setToastMessage] = useState(null);
 
-  useEffect(() => {
-    const today = new Date();
-    const formattedDate = today.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-    setSelectedDate(formattedDate);
-  }, []);
-
-  const stats = {
+  // Summary Stats data - Dynamic
+  const [stats, setStats] = useState({
     totalTasks: 12,
     dueToday: 5,
     completed: 3,
     highPriority: 2
+  });
+
+  // Sort options
+  const sortOptions = [
+    { value: "priority", label: "Priority (Highest)", icon: TrendingUp },
+    { value: "priority-low", label: "Priority (Lowest)", icon: TrendingDown },
+    { value: "time-asc", label: "Time (Earliest)", icon: Clock },
+    { value: "time-desc", label: "Time (Latest)", icon: Clock },
+    { value: "name-asc", label: "Name (A-Z)", icon: ArrowUpDown },
+    { value: "name-desc", label: "Name (Z-A)", icon: ArrowUpDown },
+  ];
+
+  // Filter options
+  const filterOptions = [
+    { value: "all", label: "All Tasks" },
+    { value: "in-progress", label: "In Progress" },
+    { value: "scheduled", label: "Scheduled" },
+    { value: "ready", label: "Ready" },
+    { value: "locked", label: "Locked" },
+  ];
+
+  const getSortLabel = () => {
+    const option = sortOptions.find(opt => opt.value === sortBy);
+    return option ? option.label : "Priority (Highest)";
   };
 
-  // Complete Task Schedule Data
-  const [allTaskSchedule, setAllTaskSchedule] = useState([
+  const getFilterLabel = () => {
+    const option = filterOptions.find(opt => opt.value === filterStatus);
+    return option ? option.label : "All Tasks";
+  };
+
+  const [taskSchedule, setTaskSchedule] = useState([
+    { id: 1, time: "8:00 AM", title: "Available Slot", type: "dotted", category: "available" },
     { 
-      id: 1,
-      time: "8:00 AM",
-      title: "Available Slot",
-      type: "available",
-      status: "available",
-      category: "available",
-      date: "2024-04-23",
-      priority: "low"
+      id: 2, time: "9:00 AM", title: "Sarah Johnson", subtitle: "PATIENT VISIT", 
+      desc: "Post-operative consultation • Room 302", type: "card", status: "in-progress", 
+      progress: 65, icon: Stethoscope, iconBg: "bg-blue-50", iconColor: "text-blue-600",
+      priority: "high", name: "Sarah Johnson"
     },
     { 
-      id: 2,
-      time: "9:00 AM",
-      title: "Sarah Johnson",
-      subtitle: "PATIENT VISIT",
-      description: "Post-operative consultation • Room 302",
-      status: "in-progress",
-      progress: 65,
-      type: "patient",
-      category: "appointment",
-      date: "2024-04-23",
-      priority: "high",
-      patientName: "Sarah Johnson"
+      id: 3, time: "10:30 AM", title: "Tekle Wondimu", subtitle: "READY", 
+      desc: "Diagnostic Review • Lab A", type: "card", arrival: "Arrived 10:15 AM", 
+      priority: "normal", icon: HeartPulse, iconBg: "bg-white border border-gray-100", iconColor: "text-gray-400",
+      name: "Tekle Wondimu", status: "ready"
     },
     { 
-      id: 3,
-      time: "10:30 AM",
-      title: "Tekle Wondimu",
-      subtitle: "READY",
-      description: "Diagnostic Review • Lab A",
-      status: "ready",
-      arrivedTime: "Arrived 10:15 AM",
-      priority: "normal",
-      type: "patient",
-      category: "appointment",
-      date: "2024-04-23",
-      patientName: "Tekle Wondimu"
+      id: 4, time: "11:30 AM", title: "Complete Patient Records", subtitle: "CLINICAL DUTY", 
+      desc: "Administrative updates for morning sessions", type: "card", isLocked: true, 
+      variant: "blue-tint", icon: Briefcase, iconBg: "bg-blue-100", iconColor: "text-blue-700",
+      priority: "medium", name: "Complete Patient Records", status: "locked"
     },
+    { id: 5, time: "12:00 PM", title: "LUNCH BREAK", type: "divider", category: "break" },
     { 
-      id: 4,
-      time: "11:30 AM",
-      title: "Complete Patient Records",
-      subtitle: "CLINICAL DUTY",
-      description: "Administrative updates for morning sessions",
-      status: "scheduled",
-      type: "duty",
-      category: "task",
-      date: "2024-04-23",
-      priority: "high"
+      id: 6, time: "1:00 PM", title: "Selam Tesfaye", subtitle: "SCHEDULED", 
+      desc: "Immunization Protocol - Pediatric Wing", type: "card", hasButton: "CHECK IN", 
+      icon: Stethoscope, iconBg: "bg-blue-50", iconColor: "text-blue-600",
+      priority: "medium", name: "Selam Tesfaye", status: "scheduled"
     },
+    { id: 7, time: "2:00 PM", title: "Available Slot", type: "dotted", category: "available" },
     { 
-      id: 5,
-      time: "12:00 PM",
-      title: "LUNCH BREAK",
-      type: "break",
-      category: "break",
-      date: "2024-04-23"
+      id: 8, time: "3:00 PM", title: "Abebe Kebede", subtitle: "SCHEDULED", 
+      desc: "Mobility Assessment • Therapy Room 2", type: "card", hasMenu: true, 
+      icon: Stethoscope, iconBg: "bg-blue-50", iconColor: "text-blue-600",
+      priority: "high", name: "Abebe Kebede", status: "scheduled"
     },
-    { 
-      id: 6,
-      time: "1:00 PM",
-      title: "Selam Tesfaye",
-      subtitle: "SCHEDULED",
-      description: "Immunization Protocol - Pediatric Wing",
-      status: "scheduled",
-      type: "patient",
-      category: "appointment",
-      date: "2024-04-23",
-      hasCheckIn: true,
-      priority: "normal",
-      patientName: "Selam Tesfaye"
-    },
-    { 
-      id: 7,
-      time: "2:00 PM",
-      title: "Available Slot",
-      type: "available",
-      category: "available",
-      date: "2024-04-23",
-      priority: "low"
-    },
-    { 
-      id: 8,
-      time: "3:00 PM",
-      title: "Abebe Kebede",
-      subtitle: "SCHEDULED",
-      description: "Mobility Assessment - Therapy Room 2",
-      status: "scheduled",
-      type: "patient",
-      category: "appointment",
-      date: "2024-04-23",
-      priority: "normal",
-      patientName: "Abebe Kebede"
-    },
-    { 
-      id: 9,
-      time: "4:00 PM",
-      title: "SHIFT END",
-      type: "shift-end",
-      category: "shift",
-      date: "2024-04-23"
-    },
-    // Tomorrow's tasks (for testing)
-    { 
-      id: 10,
-      time: "9:00 AM",
-      title: "Dr. Genet Mekonnen",
-      subtitle: "CONSULTATION",
-      description: "Cardiology Review • Room 405",
-      status: "scheduled",
-      type: "patient",
-      category: "appointment",
-      date: "2024-04-24",
-      priority: "high",
-      patientName: "Dr. Genet Mekonnen"
-    },
-    { 
-      id: 11,
-      time: "2:00 PM",
-      title: "Team Meeting",
-      subtitle: "DEPARTMENT MEETING",
-      description: "Weekly clinical review",
-      type: "duty",
-      category: "task",
-      date: "2024-04-25",
-      priority: "medium"
-    }
+    { id: 9, time: "4:00 PM", title: "Available Slot", type: "dotted", category: "available" },
+    { id: 10, time: "5:00 PM", title: "SHIFT END", type: "text-only" },
   ]);
 
-  // Filter tasks based on active tab
-  const getFilteredTasks = () => {
-    let filtered = [...allTaskSchedule];
-    const today = new Date().toISOString().split('T')[0];
-    const currentDate = "2024-04-23"; // Using the date from the schedule
+  const showToast = (message, type = "success") => {
+    setToastMessage({ message, type });
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  // Update stats dynamically
+  const updateStats = () => {
+    const total = taskSchedule.filter(t => t.type === "card").length;
+    const dueToday = taskSchedule.filter(t => t.type === "card" && t.status !== "completed").length;
+    const completed = taskSchedule.filter(t => t.status === "completed").length;
+    const highPriority = taskSchedule.filter(t => t.priority === "high").length;
     
-    if (activeTab === "today") {
-      filtered = filtered.filter(task => task.date === currentDate);
-    } else if (activeTab === "appointments") {
-      filtered = filtered.filter(task => task.category === "appointment");
-    } else if (activeTab === "tasks") {
-      // Show all tasks (appointments + duties + available slots)
-      filtered = filtered;
-    }
-    
-    // Apply search filter
-    if (searchTerm) {
-      filtered = filtered.filter(task => 
-        (task.title && task.title.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (task.description && task.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (task.subtitle && task.subtitle.toLowerCase().includes(searchTerm.toLowerCase()))
+    setStats({
+      totalTasks: total,
+      dueToday: dueToday,
+      completed: completed,
+      highPriority: highPriority
+    });
+  };
+
+  // Handle Check In
+  const handleCheckIn = (task) => {
+    setSelectedTask(task);
+    setCheckInData({ notes: "", status: "on-time" });
+    setShowCheckInModal(true);
+  };
+
+  const submitCheckIn = () => {
+    if (selectedTask) {
+      const updatedTasks = taskSchedule.map(task => 
+        task.id === selectedTask.id 
+          ? { ...task, status: "in-progress", progress: 10, checkedIn: true, checkInNotes: checkInData.notes }
+          : task
       );
+      setTaskSchedule(updatedTasks);
+      setShowCheckInModal(false);
+      updateStats();
+      showToast(`✅ Checked in: ${selectedTask.title}`, "success");
     }
-    
-    // Apply status filter
-    if (selectedStatus !== "All") {
-      filtered = filtered.filter(task => task.status === selectedStatus.toLowerCase());
-    }
-    
-    // Apply sorting
-    filtered = sortTasks(filtered);
-    
-    return filtered;
+  };
+
+  // Handle Lock/Unlock
+  const handleToggleLock = (taskId) => {
+    const updatedTasks = taskSchedule.map(task => 
+      task.id === taskId ? { ...task, isLocked: !task.isLocked } : task
+    );
+    setTaskSchedule(updatedTasks);
+    const task = taskSchedule.find(t => t.id === taskId);
+    showToast(task?.isLocked ? "🔓 Task unlocked" : "🔒 Task locked", "info");
   };
 
   // Sort function
@@ -203,192 +154,85 @@ export default function EmployeeDashboardPage() {
     const sorted = [...tasks];
     switch(sortBy) {
       case "priority":
-        const priorityOrder = { high: 0, normal: 1, medium: 2, low: 3 };
-        return sorted.sort((a, b) => {
-          const priorityA = priorityOrder[a.priority] ?? 4;
-          const priorityB = priorityOrder[b.priority] ?? 4;
-          return priorityA - priorityB;
-        });
-      case "time":
-        const timeToMinutes = (timeStr) => {
-          const match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
-          if (match) {
-            let hours = parseInt(match[1]);
-            const minutes = parseInt(match[2]);
-            const ampm = match[3].toUpperCase();
-            if (ampm === 'PM' && hours !== 12) hours += 12;
-            if (ampm === 'AM' && hours === 12) hours = 0;
-            return hours * 60 + minutes;
-          }
-          return 0;
-        };
-        return sorted.sort((a, b) => timeToMinutes(a.time) - timeToMinutes(b.time));
-      case "patient":
-        return sorted.sort((a, b) => {
-          const nameA = a.patientName || a.title || "";
-          const nameB = b.patientName || b.title || "";
-          return nameA.localeCompare(nameB);
-        });
+        const priorityOrder = { high: 3, medium: 2, normal: 1, low: 1 };
+        return sorted.sort((a, b) => (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0));
+      case "priority-low":
+        const priorityOrderLow = { high: 1, medium: 2, normal: 3, low: 3 };
+        return sorted.sort((a, b) => (priorityOrderLow[b.priority] || 0) - (priorityOrderLow[a.priority] || 0));
+      case "time-asc":
+        return sorted.sort((a, b) => (a.time || "").localeCompare(b.time || ""));
+      case "time-desc":
+        return sorted.sort((a, b) => (b.time || "").localeCompare(a.time || ""));
+      case "name-asc":
+        return sorted.sort((a, b) => (a.title || a.name || "").localeCompare(b.title || b.name || ""));
+      case "name-desc":
+        return sorted.sort((a, b) => (b.title || b.name || "").localeCompare(a.title || a.name || ""));
       default:
         return sorted;
     }
   };
 
-  // Summary Stats
-  const summaryStats = {
-    totalAppointments: allTaskSchedule.filter(t => t.category === "appointment").length,
-    completed: 7,
-    inProgress: 1,
-    remaining: 4,
-    onTimeRate: 98,
-    target: ">80%",
-    change: "+2 from yesterday"
+  // Filter by active tab
+  const filterByTab = (tasks) => {
+    if (activeTab === "today") {
+      return tasks.filter(t => t.type === "card" && (
+        t.time === "9:00 AM" || t.time === "10:30 AM" || t.time === "11:30 AM" || 
+        t.time === "1:00 PM" || t.time === "3:00 PM"
+      ));
+    } else if (activeTab === "appointments") {
+      return tasks.filter(t => t.type === "card" && t.subtitle !== "CLINICAL DUTY");
+    }
+    return tasks;
   };
 
-  const showToast = (message, type = "success") => {
-    setToastMessage({ message, type });
-    setTimeout(() => setToastMessage(null), 3000);
+  // Filter by status filter
+  const filterByStatus = (tasks) => {
+    if (filterStatus === "in-progress") {
+      return tasks.filter(t => t.status === "in-progress");
+    } else if (filterStatus === "scheduled") {
+      return tasks.filter(t => t.status === "scheduled");
+    } else if (filterStatus === "ready") {
+      return tasks.filter(t => t.subtitle === "READY");
+    } else if (filterStatus === "locked") {
+      return tasks.filter(t => t.isLocked === true);
+    }
+    return tasks;
   };
 
-  const handleApplyFilters = () => {
-    showToast(`Filters applied! View: ${activeTab === "tasks" ? "All Tasks" : activeTab === "today" ? "Today's Tasks" : "Appointments"}, Sort: ${sortBy === "priority" ? "Priority" : sortBy === "time" ? "Time" : "Patient Name"}`, "success");
-  };
-
-  const getStatusBadge = (status) => {
-    switch(status) {
-      case 'in-progress':
-        return <span className="text-xs font-medium px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">IN PROGRESS</span>;
-      case 'ready':
-        return <span className="text-xs font-medium px-2 py-0.5 bg-green-100 text-green-700 rounded-full">READY</span>;
-      case 'scheduled':
-        return <span className="text-xs font-medium px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full">SCHEDULED</span>;
-      default:
-        return null;
-    }
-  };
-
-  const StatCard = ({ label, value, icon: Icon, color, bgColor }) => (
-    <div className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-all">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-2xl font-bold text-gray-900">{value}</p>
-          <p className="text-xs text-gray-500 uppercase tracking-wider mt-1">{label}</p>
-        </div>
-        <div className={`p-2 rounded-lg ${bgColor}`}>
-          <Icon className={`w-5 h-5 ${color}`} />
-        </div>
-      </div>
-    </div>
-  );
-
-  // Task Schedule Card Component
-  const TaskScheduleCard = ({ task }) => {
-    if (task.type === "available") {
-      return (
-        <div className="border-l-4 border-green-400 bg-white rounded-r-xl border border-gray-200 p-4 mb-3 hover:shadow-md transition-all">
-          <div className="flex items-center gap-3">
-            <div className="w-20 flex-shrink-0">
-              <span className="text-sm font-semibold text-gray-700">{task.time}</span>
-            </div>
-            <div className="flex-1">
-              <p className="font-medium text-gray-600">{task.title}</p>
-            </div>
-            <button className="text-xs text-blue-600 bg-blue-50 px-3 py-1 rounded-lg">Book</button>
-          </div>
-        </div>
-      );
-    }
-
-    if (task.type === "break") {
-      return (
-        <div className="border-l-4 border-orange-400 bg-orange-50 rounded-r-xl border border-orange-200 p-4 mb-3">
-          <div className="flex items-center gap-3">
-            <div className="w-20 flex-shrink-0">
-              <span className="text-sm font-semibold text-gray-700">{task.time}</span>
-            </div>
-            <div className="flex-1">
-              <p className="font-medium text-orange-700">{task.title}</p>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    if (task.type === "shift-end") {
-      return (
-        <div className="border-l-4 border-gray-400 bg-gray-50 rounded-r-xl border border-gray-200 p-4 mb-3">
-          <div className="flex items-center gap-3">
-            <div className="w-20 flex-shrink-0">
-              <span className="text-sm font-semibold text-gray-700">{task.time}</span>
-            </div>
-            <div className="flex-1">
-              <p className="font-medium text-gray-700">{task.title}</p>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="border-l-4 border-blue-400 bg-white rounded-r-xl border border-gray-200 p-4 mb-3 hover:shadow-md transition-all">
-        <div className="flex items-start gap-3">
-          <div className="w-20 flex-shrink-0">
-            <span className="text-sm font-semibold text-gray-700">{task.time}</span>
-            {task.arrivedTime && (
-              <p className="text-xs text-green-600 mt-1">{task.arrivedTime}</p>
-            )}
-          </div>
-          <div className="flex-1">
-            <div className="flex justify-between items-start flex-wrap gap-2">
-              <div>
-                <p className="font-bold text-gray-900">{task.title}</p>
-                <p className="text-xs font-medium text-gray-500">{task.subtitle}</p>
-                <p className="text-sm text-gray-600 mt-1">{task.description}</p>
-                {task.priority && (
-                  <p className="text-xs text-gray-400 mt-1">PRIORITY: {task.priority.toUpperCase()}</p>
-                )}
-              </div>
-              {getStatusBadge(task.status)}
-            </div>
-            {task.progress && (
-              <div className="mt-2">
-                <div className="flex justify-between text-xs text-gray-600 mb-1">
-                  <span>In Progress</span>
-                  <span>{task.progress}%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-1.5">
-                  <div className="bg-blue-500 h-1.5 rounded-full" style={{ width: `${task.progress}%` }}></div>
-                </div>
-              </div>
-            )}
-            {task.hasCheckIn && (
-              <button className="mt-2 text-xs font-medium text-white bg-blue-600 px-3 py-1 rounded-lg hover:bg-blue-700">
-                Check In
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
+  // Filter by search term
+  const filterBySearch = (tasks) => {
+    if (!searchTerm) return tasks;
+    return tasks.filter(t => 
+      t.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.desc?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.subtitle?.toLowerCase().includes(searchTerm.toLowerCase())
     );
+  };
+
+  // Get filtered and sorted tasks
+  const getFilteredTasks = () => {
+    let filtered = taskSchedule.filter(t => t.type === "card");
+    filtered = filterByTab(filtered);
+    filtered = filterByStatus(filtered);
+    filtered = filterBySearch(filtered);
+    return sortTasks(filtered);
   };
 
   const filteredTasks = getFilteredTasks();
 
-  // Get count display for tabs
-  const getTabCount = () => {
-    if (activeTab === "today") {
-      return allTaskSchedule.filter(t => t.date === "2024-04-23").length;
-    }
-    return filteredTasks.length;
-  };
+  // Update stats on component mount and task changes
+  useEffect(() => {
+    updateStats();
+  }, [taskSchedule]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50 flex">
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-right">
           <div className={`px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 ${
-            toastMessage.type === "success" ? "bg-green-500 text-white" : "bg-blue-500 text-white"
+            toastMessage.type === "success" ? "bg-green-500 text-white" : 
+            toastMessage.type === "error" ? "bg-red-500 text-white" : "bg-blue-500 text-white"
           }`}>
             <CheckCircle className="w-4 h-4" />
             {toastMessage.message}
@@ -396,251 +240,408 @@ export default function EmployeeDashboardPage() {
         </div>
       )}
 
-      {/* Top Navigation Bar */}
-      <nav className="bg-white border-b border-gray-200 sticky top-0 z-20">
-        <div className="px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">SS</span>
+      {/* SIDEBAR */}
+      <aside className="w-64 bg-white border-r border-gray-200 min-h-screen flex flex-col sticky top-0">
+        <div className="p-6">
+          <div className="flex items-center gap-2 mb-10">
+            <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-white font-bold text-xl">S</div>
+            <div>
+              <h1 className="text-blue-600 font-bold text-lg leading-tight">ServeSync+</h1>
+              <p className="text-[10px] text-gray-400 tracking-widest font-semibold uppercase">Clinical Dashboard</p>
             </div>
-            <h1 className="text-xl font-bold text-gray-900">ServeSync+</h1>
-            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">EMPLOYEE PORTAL</span>
           </div>
           
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 bg-gray-100 rounded-lg">
-              <Calendar className="w-4 h-4 text-gray-500" />
-              <span>{selectedDate || "Wednesday, April 23, 2026"}</span>
-            </div>
-            <button className="relative p-2 text-gray-400 hover:text-gray-600">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+          <nav className="space-y-1">
+            <button className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-gray-500 hover:bg-gray-50 rounded-lg">
+              <LayoutDashboard className="w-4 h-4" /> My Dashboard
             </button>
+            <button className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-gray-500 hover:bg-gray-50 rounded-lg">
+              <Calendar className="w-4 h-4" /> My Schedule
+            </button>
+            <button className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-bold bg-blue-50 text-blue-600 rounded-lg">
+              <ClipboardList className="w-4 h-4" /> My Tasks
+            </button>
+            <button className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-gray-500 hover:bg-gray-50 rounded-lg">
+              <Users className="w-4 h-4" /> My Clients
+            </button>
+            <button className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-gray-500 hover:bg-gray-50 rounded-lg">
+              <UserCircle className="w-4 h-4" /> My Profile
+            </button>
+          </nav>
+        </div>
+
+        <div className="mt-auto p-4 border-t border-gray-100">
+          <div className="flex items-center gap-3 p-2 mb-4">
+            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Abebe" className="w-10 h-10 rounded-full bg-blue-100" alt="avatar" />
+            <div className="overflow-hidden">
+              <p className="text-xs font-bold text-gray-900 truncate">Dr. Abebe Bekele</p>
+              <p className="text-[10px] text-gray-400 truncate">abebe.b@servesync.com</p>
+            </div>
+          </div>
+          <button className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-500 hover:text-red-600 transition-colors">
+            <LogOut className="w-4 h-4" /> Logout
+          </button>
+        </div>
+      </aside>
+
+      {/* MAIN CONTENT */}
+      <main className="flex-1 p-8">
+        {/* Header Section */}
+        <header className="flex items-center justify-between mb-8">
+          <div className="relative w-96">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input 
+              type="text" 
+              placeholder="Search system..." 
+              className="w-full bg-gray-100 border-none rounded-full py-2 pl-10 pr-4 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2 text-sm text-gray-600 font-medium">
+              <Calendar className="w-4 h-4 text-gray-400" />
+              April 23, 2026
+            </div>
+            <div className="flex items-center gap-4 text-gray-400">
+              <Bell className="w-5 h-5 cursor-pointer hover:text-gray-600" />
+              <Settings className="w-5 h-5 cursor-pointer hover:text-gray-600" />
+              <HelpCircle className="w-5 h-5 cursor-pointer hover:text-gray-600" />
+            </div>
+            <div className="flex items-center gap-3 border-l pl-6 border-gray-200">
+              <div className="text-right">
+                <p className="text-sm font-bold text-gray-900">Organization Employee</p>
+                <p className="text-[10px] text-gray-400 font-bold">MAIN HOSPITAL BRANCH</p>
+              </div>
+              <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Abebe" className="w-9 h-9 rounded-lg bg-gray-200" alt="profile" />
+            </div>
+          </div>
+        </header>
+
+        <section className="mb-10">
+          <h2 className="text-2xl font-bold text-gray-900 mb-1">My Tasks & Appointments</h2>
+          <p className="text-sm text-gray-500">Manage your daily appointments and clinical duties</p>
+        </section>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-4 gap-6 mb-10">
+          {[
+            { label: "TOTAL TASKS", value: stats.totalTasks, icon: ClipboardList, color: "text-blue-600" },
+            { label: "DUE TODAY", value: stats.dueToday, icon: Calendar, color: "text-blue-500" },
+            { label: "COMPLETED", value: stats.completed, icon: CheckCircle, color: "text-green-500" },
+            { label: "HIGH PRIORITY", value: stats.highPriority, icon: AlertCircle, color: "text-red-500" },
+          ].map((stat, i) => (
+            <div key={i} className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between hover:shadow-md transition-all">
+              <div>
+                <p className="text-[10px] font-bold text-gray-400 tracking-wider mb-1">{stat.label}</p>
+                <p className="text-3xl font-black text-gray-900 leading-none">{stat.value}</p>
+              </div>
+              <stat.icon className={`w-5 h-5 ${stat.color}`} />
+            </div>
+          ))}
+        </div>
+
+        {/* Filters and Tabs - FUNCTIONAL */}
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+          <div className="flex bg-gray-100 p-1 rounded-lg">
+            {["All Tasks", "Today", "Appointments"].map((tab) => (
+              <button 
+                key={tab}
+                onClick={() => setActiveTab(tab.toLowerCase())}
+                className={`px-6 py-1.5 text-xs font-bold rounded-md transition-all ${
+                  activeTab === tab.toLowerCase() ? "bg-white text-blue-600 shadow-sm" : "text-gray-400 hover:text-gray-600"
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+          
+          <div className="flex items-center gap-3">
+            {/* Sort Dropdown */}
+            <div className="relative">
+              <button 
+                onClick={() => setShowSortMenu(!showSortMenu)}
+                className="flex items-center gap-2 px-4 py-1.5 bg-white border border-gray-200 rounded-full text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Sort: {getSortLabel()} <ChevronDown className="w-3 h-3" />
+              </button>
+              {showSortMenu && (
+                <div className="absolute top-full right-0 mt-2 w-56 bg-white border border-gray-200 rounded-xl shadow-lg z-20 overflow-hidden">
+                  {sortOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => {
+                        setSortBy(option.value);
+                        setShowSortMenu(false);
+                        showToast(`Sorted by: ${option.label}`, "info");
+                      }}
+                      className={`w-full flex items-center gap-2 px-4 py-2 text-xs font-medium transition-colors ${
+                        sortBy === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      <option.icon className="w-3 h-3" />
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Filter Dropdown */}
+            <div className="relative">
+              <button 
+                onClick={() => setShowFilterMenu(!showFilterMenu)}
+                className="flex items-center gap-2 text-xs font-bold text-gray-600 bg-white border border-gray-200 rounded-full px-4 py-1.5 hover:bg-gray-50 transition-colors"
+              >
+                <Filter className="w-3 h-3" /> Filter: {getFilterLabel()}
+              </button>
+              {showFilterMenu && (
+                <div className="absolute top-full right-0 mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-lg z-20 overflow-hidden">
+                  {filterOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => {
+                        setFilterStatus(option.value);
+                        setShowFilterMenu(false);
+                        showToast(`Filter: ${option.label}`, "info");
+                      }}
+                      className={`w-full text-left px-4 py-2 text-xs font-medium transition-colors ${
+                        filterStatus === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </nav>
 
-      {/* Sidebar + Main Content */}
-      <div className="flex">
-        {/* Sidebar Navigation */}
-        <aside className="w-64 bg-white border-r border-gray-200 min-h-[calc(100vh-65px)] sticky top-[65px]">
-          <div className="p-4">
-            <div className="mb-6">
-              <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">MENU</h2>
-              <nav className="space-y-1">
-                <button className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg text-gray-600 hover:bg-gray-50">
-                  <LayoutDashboard className="w-4 h-4" /> My Dashboard
-                </button>
-                <button className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg text-gray-600 hover:bg-gray-50">
-                  <Calendar className="w-4 h-4" /> My Schedule
-                </button>
-                <button className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg bg-blue-50 text-blue-600 font-medium">
-                  <ClipboardList className="w-4 h-4" /> My Tasks
-                </button>
-                <button className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg text-gray-600 hover:bg-gray-50">
-                  <Users className="w-4 h-4" /> My Clients
-                </button>
-                <button className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg text-gray-600 hover:bg-gray-50">
-                  <UserCircle className="w-4 h-4" /> My Profile
-                </button>
-              </nav>
-            </div>
-            
-            <div className="pt-4 border-t border-gray-200">
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center">
-                    <span className="text-white font-bold text-lg">AB</span>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">Dr. Abebe Bekele</p>
-                    <p className="text-xs text-gray-500">abebe.b@servesync.com</p>
+        <div className="mb-6">
+            <h3 className="text-xs font-black text-blue-900 tracking-wider">TASK SCHEDULE</h3>
+            <p className="text-xs text-gray-500 font-medium">Wednesday, April 23, 2026</p>
+        </div>
+
+        {/* Task List - Filtered and Sorted */}
+        <div className="space-y-4 mb-12">
+          {filteredTasks.length > 0 ? (
+            filteredTasks.map((item) => (
+              <div key={item.id} className="flex gap-8 group">
+                <div className="w-16 flex flex-col items-end pt-1">
+                  <span className="text-xs font-bold text-gray-400">{item.time}</span>
+                  <div className={`w-2 h-2 rounded-full mt-2 border-2 border-white shadow-sm ${
+                    item.status === 'in-progress' ? 'bg-blue-900 animate-pulse' : 
+                    item.subtitle === 'READY' ? 'bg-green-500' : 
+                    item.isLocked ? 'bg-gray-400' : 'bg-gray-200'
+                  }`} />
+                </div>
+
+                <div className="flex-1">
+                  <div className={`rounded-2xl p-4 flex items-center justify-between border shadow-sm transition-all hover:shadow-md ${
+                    item.variant === 'blue-tint' ? 'bg-blue-50/50 border-blue-100' : 'bg-white border-gray-50'
+                  }`}>
+                    <div className="flex items-center gap-4">
+                      <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${item.iconBg}`}>
+                        <item.icon className={`w-5 h-5 ${item.iconColor}`} />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                          <h4 className="text-[13px] font-black text-gray-900">{item.title}</h4>
+                          <span className={`text-[8px] font-black px-1.5 py-0.5 rounded ${
+                            item.subtitle === 'READY' ? 'bg-green-100 text-green-700' : 
+                            item.subtitle === 'CLINICAL DUTY' ? 'bg-blue-100 text-blue-700' : 
+                            item.status === 'in-progress' ? 'bg-yellow-100 text-yellow-700' :
+                            'bg-blue-600 text-white'
+                          }`}>
+                            {item.subtitle || (item.status === 'in-progress' ? 'IN PROGRESS' : 'SCHEDULED')}
+                          </span>
+                          {item.priority === 'high' && (
+                            <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-red-100 text-red-700">
+                              HIGH PRIORITY
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-gray-500 font-medium">{item.desc}</p>
+                        {item.checkedIn && (
+                          <p className="text-[9px] text-green-600 font-medium mt-1">✓ Checked in at {new Date().toLocaleTimeString()}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col items-end gap-2">
+                      {item.progress && (
+                        <div className="w-48">
+                          <div className="flex justify-between mb-1.5">
+                            <span className="text-[9px] font-black text-blue-900">{item.progress}% In Progress</span>
+                            <span className="text-[8px] font-bold text-gray-400">EST. DURATION: 45M</span>
+                          </div>
+                          <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
+                            <div className="bg-blue-900 h-full rounded-full transition-all" style={{ width: `${item.progress}%` }} />
+                          </div>
+                        </div>
+                      )}
+                      {item.arrival && (
+                        <div className="text-right">
+                          <p className="text-[9px] font-black text-gray-800">{item.arrival}</p>
+                          <p className="text-[8px] font-bold text-gray-400">PRIORITY: {item.priority?.toUpperCase()}</p>
+                        </div>
+                      )}
+                      
+                      {/* Lock Icon - FUNCTIONAL */}
+                      {item.isLocked !== undefined && (
+                        <button 
+                          onClick={() => handleToggleLock(item.id)}
+                          className="hover:scale-110 transition-transform"
+                          title={item.isLocked ? "Click to unlock" : "Click to lock"}
+                        >
+                          <Lock className={`w-4 h-4 ${item.isLocked ? 'text-blue-500' : 'text-gray-300'}`} />
+                        </button>
+                      )}
+                      
+                      {/* CHECK IN Button - FUNCTIONAL */}
+                      {item.hasButton && (
+                        <button 
+                          onClick={() => handleCheckIn(item)}
+                          className="border border-blue-600 text-blue-600 text-[9px] font-black px-4 py-1.5 rounded-lg hover:bg-blue-600 hover:text-white transition-colors"
+                        >
+                          {item.hasButton}
+                        </button>
+                      )}
+                      
+                      {item.hasMenu && <MoreVertical className="w-4 h-4 text-gray-300 cursor-pointer hover:text-gray-600" />}
+                    </div>
                   </div>
                 </div>
-                <p className="text-xs text-gray-400 mt-3 pt-2 border-t border-gray-200">Organization Employee</p>
-                <p className="text-xs font-medium text-gray-600">MAIN HOSPITAL BRANCH</p>
-                <button className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors">
-                  <LogOut className="w-4 h-4" />
-                  Logout
+              </div>
+            ))
+          ) : (
+            <div className="text-center py-12 bg-white rounded-2xl border border-gray-100">
+              <p className="text-gray-500">No tasks found matching your filters</p>
+              <button 
+                onClick={() => {
+                  setSearchTerm("");
+                  setFilterStatus("all");
+                  setActiveTab("all tasks");
+                }}
+                className="mt-3 text-blue-600 text-sm font-medium hover:underline"
+              >
+                Clear all filters
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Footer Summary Section */}
+        <section className="bg-white border border-gray-100 rounded-3xl p-8 shadow-sm">
+          <div className="flex items-center justify-between mb-8">
+            <h3 className="font-bold text-gray-800">Today's Summary</h3>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+              <span className="text-[10px] font-black text-gray-400 tracking-widest uppercase">Live Updates</span>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-5 gap-8">
+            <div className="space-y-1">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter leading-tight">Total<br />Appointments</p>
+              <p className="text-3xl font-black text-gray-900">{stats.totalTasks}</p>
+              <p className="text-[9px] font-bold text-gray-400">+2 from yesterday</p>
+            </div>
+            <div className="space-y-3">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Completed</p>
+              <p className="text-3xl font-black text-green-500">{stats.completed}</p>
+              <div className="w-full bg-gray-100 h-1 rounded-full">
+                <div className="bg-green-500 h-full rounded-full" style={{ width: `${(stats.completed / stats.totalTasks) * 100}%` }} />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">In Progress</p>
+              <p className="text-3xl font-black text-blue-900">
+                {taskSchedule.filter(t => t.status === "in-progress").length}
+              </p>
+              <p className="text-[9px] font-bold text-gray-400">
+                {taskSchedule.find(t => t.status === "in-progress")?.title || "None"}
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Remaining</p>
+              <p className="text-3xl font-black text-gray-300">{stats.dueToday - stats.completed}</p>
+              <p className="text-[9px] font-bold text-gray-400">
+                Next: {taskSchedule.find(t => t.type === "card" && t.status !== "completed" && t.status !== "in-progress")?.title || "None"}
+              </p>
+            </div>
+            <div className="bg-blue-900 rounded-2xl p-6 text-white text-center">
+              <p className="text-[10px] font-bold opacity-60 uppercase tracking-tighter mb-1">On-Time Rate</p>
+              <p className="text-3xl font-black mb-1">
+                {Math.round((stats.completed / Math.max(stats.dueToday, 1)) * 100)}%
+              </p>
+              <p className="text-[9px] font-bold opacity-60">Target: {">"}95%</p>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      {/* CHECK IN MODAL */}
+      {showCheckInModal && selectedTask && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+            <div className="bg-blue-600 px-6 py-4 text-white flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <UserCheck className="w-5 h-5" />
+                <h2 className="text-xl font-bold">Check In Patient</h2>
+              </div>
+              <button onClick={() => setShowCheckInModal(false)} className="hover:bg-white/20 p-1 rounded-full transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="bg-gray-50 p-4 rounded-xl">
+                <p className="text-xs text-gray-500 font-semibold uppercase">Patient Name</p>
+                <p className="text-lg font-bold text-gray-900">{selectedTask.title}</p>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Check In Status</label>
+                <select 
+                  value={checkInData.status}
+                  onChange={(e) => setCheckInData({...checkInData, status: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="on-time">On Time</option>
+                  <option value="late">Late (5-10 min)</option>
+                  <option value="very-late">Very Late (10+ min)</option>
+                  <option value="reschedule">Reschedule Requested</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Notes (Optional)</label>
+                <textarea 
+                  value={checkInData.notes}
+                  onChange={(e) => setCheckInData({...checkInData, notes: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500"
+                  rows="3"
+                  placeholder="Any additional notes about the patient..."
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button 
+                  onClick={() => setShowCheckInModal(false)}
+                  className="flex-1 py-2.5 border border-gray-200 rounded-xl font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={submitCheckIn}
+                  className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors"
+                >
+                  Confirm Check In
                 </button>
               </div>
             </div>
           </div>
-        </aside>
-
-        {/* Main Content */}
-        <main className="flex-1 p-6 overflow-auto">
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">My Tasks & Appointments</h1>
-            <p className="text-gray-500 text-sm">Manage your daily appointments and clinical duties</p>
-          </div>
-
-          {/* Stats Cards */}
-          <div className="grid grid-cols-4 gap-4 mb-6">
-            <StatCard label="TOTAL TASKS" value={stats.totalTasks} icon={ClipboardList} color="text-blue-600" bgColor="bg-blue-50" />
-            <StatCard label="DUE TODAY" value={stats.dueToday} icon={Clock} color="text-yellow-600" bgColor="bg-yellow-50" />
-            <StatCard label="COMPLETED" value={stats.completed} icon={CheckCircle} color="text-green-600" bgColor="bg-green-50" />
-            <StatCard label="HIGH PRIORITY" value={stats.highPriority} icon={AlertCircle} color="text-red-600" bgColor="bg-red-50" />
-          </div>
-
-          {/* Search Input */}
-          <div className="mb-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search appointments or tasks..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-
-          {/* Tabs and Filter Row */}
-          <div className="flex flex-wrap justify-between items-center mb-6">
-            <div className="flex gap-4">
-              <button 
-                onClick={() => { setActiveTab("tasks"); setSearchTerm(""); }}
-                className={`px-4 py-2 text-sm font-medium rounded-lg transition-all flex items-center gap-2 ${
-                  activeTab === "tasks" 
-                    ? "bg-blue-600 text-white shadow-md" 
-                    : "text-gray-600 hover:bg-gray-100"
-                }`}
-              >
-                All Tasks
-                <span className={`text-xs px-1.5 py-0.5 rounded-full ${activeTab === "tasks" ? "bg-white/20 text-white" : "bg-gray-200 text-gray-600"}`}>
-                  {allTaskSchedule.length}
-                </span>
-              </button>
-              <button 
-                onClick={() => { setActiveTab("today"); setSearchTerm(""); }}
-                className={`px-4 py-2 text-sm font-medium rounded-lg transition-all flex items-center gap-2 ${
-                  activeTab === "today" 
-                    ? "bg-blue-600 text-white shadow-md" 
-                    : "text-gray-600 hover:bg-gray-100"
-                }`}
-              >
-                Today
-                <span className={`text-xs px-1.5 py-0.5 rounded-full ${activeTab === "today" ? "bg-white/20 text-white" : "bg-gray-200 text-gray-600"}`}>
-                  {allTaskSchedule.filter(t => t.date === "2024-04-23").length}
-                </span>
-              </button>
-              <button 
-                onClick={() => { setActiveTab("appointments"); setSearchTerm(""); }}
-                className={`px-4 py-2 text-sm font-medium rounded-lg transition-all flex items-center gap-2 ${
-                  activeTab === "appointments" 
-                    ? "bg-blue-600 text-white shadow-md" 
-                    : "text-gray-600 hover:bg-gray-100"
-                }`}
-              >
-                Appointments
-                <span className={`text-xs px-1.5 py-0.5 rounded-full ${activeTab === "appointments" ? "bg-white/20 text-white" : "bg-gray-200 text-gray-600"}`}>
-                  {allTaskSchedule.filter(t => t.category === "appointment").length}
-                </span>
-              </button>
-            </div>
-            
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500">Sort by:</span>
-                <select 
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white"
-                >
-                  <option value="priority">Priority (Highest)</option>
-                  <option value="time">Time (Earliest)</option>
-                  <option value="patient">Patient Name (A-Z)</option>
-                </select>
-              </div>
-              <button 
-                onClick={handleApplyFilters}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
-              >
-                <Filter className="w-4 h-4" />
-                Apply Filters
-              </button>
-            </div>
-          </div>
-
-          {/* Results Info */}
-          <div className="mb-3 flex justify-between items-center">
-            <p className="text-sm text-gray-500">
-              Showing <span className="font-medium text-gray-700">{filteredTasks.length}</span> {filteredTasks.length === 1 ? 'item' : 'items'}
-              {activeTab === "today" && " for today"}
-              {activeTab === "appointments" && " (appointments only)"}
-            </p>
-            <p className="text-xs text-gray-400">
-              Sorted by: {sortBy === "priority" ? "Priority (Highest first)" : sortBy === "time" ? "Time (Earliest first)" : "Patient Name (A-Z)"}
-            </p>
-          </div>
-
-          {/* TASK SCHEDULE Section - Filtered */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6">
-            <h3 className="font-semibold text-gray-900 mb-4">
-              TASK SCHEDULE
-              {activeTab === "today" && " - TODAY"}
-              {activeTab === "appointments" && " - APPOINTMENTS"}
-            </h3>
-            {filteredTasks.length > 0 ? (
-              <div className="space-y-2">
-                {filteredTasks.map(task => (
-                  <TaskScheduleCard key={task.id} task={task} />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                No tasks found for the selected filter.
-              </div>
-            )}
-          </div>
-
-          {/* Today's Summary Section */}
-          <div className="grid grid-cols-5 gap-4 mb-6">
-            <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-              <p className="text-2xl font-bold text-gray-900">{summaryStats.totalAppointments}</p>
-              <p className="text-xs text-gray-500">TOTAL APPOINTMENTS</p>
-              <p className="text-xs text-green-600 mt-1">{summaryStats.change}</p>
-            </div>
-            <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-              <p className="text-2xl font-bold text-green-600">{summaryStats.completed}</p>
-              <p className="text-xs text-gray-500">COMPLETED</p>
-            </div>
-            <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-              <p className="text-2xl font-bold text-blue-600">{summaryStats.inProgress}</p>
-              <p className="text-xs text-gray-500">IN PROGRESS</p>
-            </div>
-            <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-              <p className="text-2xl font-bold text-yellow-600">{summaryStats.remaining}</p>
-              <p className="text-xs text-gray-500">REMAINING</p>
-            </div>
-            <div className="bg-white rounded-xl border border-gray-200 p-4">
-              <p className="text-2xl font-bold text-gray-900 text-center">{summaryStats.onTimeRate}%</p>
-              <p className="text-xs text-gray-500 text-center">ON-TIME RATE</p>
-              <p className="text-xs text-green-600 text-center mt-1">Target: {summaryStats.target}</p>
-            </div>
-          </div>
-
-          {/* Live Updates Section */}
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold text-blue-800">Today's Summary</p>
-                <p className="text-xs text-blue-600">LIVE UPDATES</p>
-              </div>
-              <Activity className="w-5 h-5 text-blue-500 animate-pulse" />
-            </div>
-          </div>
-        </main>
-      </div>
-
-      <style jsx global>{`
-        @media print {
-          nav, aside, .sticky { display: none !important; }
-          main { padding: 20px !important; }
-        }
-      `}</style>
+        </div>
+      )}
     </div>
   );
 }
