@@ -178,6 +178,7 @@ export default function OrganizationDashboard() {
       </div>
     );
   };
+
   const weekDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
   const weekDates = [22, 23, 24, 25, 26, 27, 28];
 

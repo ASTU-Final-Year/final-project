@@ -30,7 +30,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 export default function RegisterUserContent() {
   const router = useRouter();
 
-  const [role, setRole] = useState("client"); // "client" or "employee"
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
@@ -40,6 +39,7 @@ export default function RegisterUserContent() {
     lastname: "",
     gender: "",
     email: "",
+    role: "client",
     phone: "",
     password: "",
   });
@@ -68,6 +68,11 @@ export default function RegisterUserContent() {
     if (!["M", "F", "U"].includes(formData.gender)) {
       newErrors.gender = "Please select a valid gender";
     }
+
+    // Match schema: "'client'|'employee'"
+    // if (!["client", "employee"].includes(formData.role)) {
+    //   newErrors.role = "Please select a valid role";
+    // }
 
     // Match schema: "string.email <= 40"
     if (!/\S+@\S+\.\S+/.test(formData.email) || formData.email.length > 40) {
@@ -131,12 +136,12 @@ export default function RegisterUserContent() {
             <button
               type="button"
               onClick={() => {
-                setRole("client");
+                setFormData((p) => ({ ...p, role: "client" }));
                 setErrors({});
               }}
               className={cn(
                 "px-8 py-2.5 rounded text-sm font-semibold transition-all duration-300",
-                role === "client"
+                formData.role === "client"
                   ? "bg-white text-primary shadow-sm"
                   : "text-slate-500 hover:text-slate-700",
               )}
@@ -146,12 +151,12 @@ export default function RegisterUserContent() {
             <button
               type="button"
               onClick={() => {
-                setRole("employee");
+                setFormData((p) => ({ ...p, role: "employee" }));
                 setErrors({});
               }}
               className={cn(
                 "px-8 py-2.5 rounded text-sm font-semibold transition-all duration-300",
-                role === "employee"
+                formData.role === "employee"
                   ? "bg-white text-primary shadow-sm"
                   : "text-slate-500 hover:text-slate-700",
               )}
@@ -362,7 +367,7 @@ export default function RegisterUserContent() {
               >
                 {isSubmitting
                   ? "Creating account..."
-                  : `Register as ${role === "client" ? "Client" : "Employee"}`}
+                  : `Register as ${formData.role === "client" ? "Client" : "Employee"}`}
                 {!isSubmitting && <ArrowRight className="ml-2 h-4 w-4" />}
               </Button>
             </div>

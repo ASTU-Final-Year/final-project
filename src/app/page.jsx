@@ -30,6 +30,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EthiopianCalendar } from "@/components/ui/ethiopian-calendar";
 import React from "react";
 import Link from "next/link";
+import HeroSection from "@/components/hero-section";
 
 const solutions = [
   {
@@ -100,121 +101,7 @@ export default function Page() {
 
       <main className="flex-1">
         {/* Hero Section */}
-        <section
-          className="relative bg-cover bg-center py-24 px-6"
-          style={{
-            backgroundImage: 'url("/images/pexels-lovetosmile-36200692.jpg")',
-            // 'url("https://images.unsplash.com/photo-1497366216548-37526070297c?ixlib=rb-4.0.3&auto=format&fit=crop&w=2069&q=100")',
-          }}
-        >
-          {/* Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/80 to-black/70 z-0" />
-
-          <div className="relative z-10 max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center justify-center">
-            {/* Left Content */}
-            <div className=" text-white">
-              {/* <div className="inline-block mb-4 px-5 py-2 rounded bg-primary text-primary-foreground font-semibold shadow-md shadow-primary/30 text-sm">
-                One of the Best Scheduling Platforms in Ethiopia
-              </div> */}
-
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold leading-tight mb-0 drop-shadow-lg">
-                Unified Scheduling for{" "}
-                <span className="text-primary drop-shadow-lg">
-                  Every Service Sector
-                </span>
-              </h1>
-
-              <p className="text-lg transform  py-2 w-auto text-primary-foreground font-bold uppercase leading-relaxed mb-4 shadow">
-                Save your time and money
-              </p>
-
-              <p className="text-lg md:text-xl text-muted/90 leading-relaxed mb-8 max-w-xl">
-                We deliver a smart and dynamic service scheduling and progress
-                tracking system across any sector.
-              </p>
-
-              <div className="flex flex-col lg:flex-row gap-4 mb-6">
-                <Link
-                  href="/register/organization"
-                  className="rounded px-8 py-2 bg-primary hover:bg-primary text-white shadow-xl shadow-primary/30 cursor-pointer"
-                >
-                  Register Organization
-                </Link>
-
-                <Link
-                  href="/services"
-                  className="rounded px-8 py-2 bg-white text-primary hover:bg-gray-100 shadow-lg cursor-pointer"
-                >
-                  Explore Services
-                </Link>
-              </div>
-            </div>
-
-            {/* Right - Calendar */}
-            <div className="flex justify-center">
-              <div className="bg-white rounded-[0.5em] p-6 w-full max-w-md shadow-[0_40px_60px_-20px_rgba(0,0,0,0.5)]">
-                <Card className="ring-ring/40">
-                  <CardContent>
-                    <Tabs defaultValue="ethiopian" className="w-full">
-                      <TabsList className="grid w-full grid-cols-2 mb-4">
-                        <TabsTrigger value="ethiopian">የኢትዮጵያ</TabsTrigger>
-                        <TabsTrigger value="gregorian">Gregorian</TabsTrigger>
-                      </TabsList>
-                      <TabsContent
-                        value="ethiopian"
-                        className="flex justify-center mt-0"
-                      >
-                        <EthiopianCalendar
-                          mode="single"
-                          selected={new Date()}
-                          // selected={dates}
-                          // onSelect={setDates}
-                          startMonth={startMonth}
-                          endMonth={endMonth}
-                          reverseYears
-                          className="px-0 py-0 w-full"
-                          captionLayout="dropdown"
-                        />
-                      </TabsContent>
-                      <TabsContent
-                        value="gregorian"
-                        className="flex justify-center mt-0"
-                      >
-                        <Calendar
-                          mode="single"
-                          selected={new Date()}
-                          // selected={dates}
-                          // onSelect={setDates}
-                          startMonth={startMonth}
-                          endMonth={endMonth}
-                          reverseYears
-                          className="px-0 py-2 w-full"
-                          captionLayout="dropdown"
-                        />
-                      </TabsContent>
-                    </Tabs>
-                  </CardContent>
-                </Card>
-
-                {/* <Calendar
-                  mode="single"
-                  className="rounded-xl border-none"
-                  captionLayout="dropdown"
-                /> */}
-
-                {/* Slot Info */}
-                <div className="mt-6 p-4 rounded bg-primary/10 border border-primary/20 flex justify-between items-center">
-                  <div>
-                    <p className="font-semibold text-slate-900 text-sm">
-                      3 slots available
-                    </p>
-                    <p className="text-xs text-slate-500">9:00 AM – 4:30 PM</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+        <HeroSection />
 
         {/* Features / Solution Section */}
         <section className="container mx-auto px-4 py-24">
@@ -231,7 +118,7 @@ export default function Page() {
             {solutions.map((solution, index) => (
               <Card
                 key={index}
-                className="hover:shadow- hover:ring transition-shadow duration-200 ring-0"
+                className="hover:shadow-sm shadow-xs transition-shadow duration-200 ring-0 border"
               >
                 <CardHeader>
                   <div className="mb-4 h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -248,7 +135,7 @@ export default function Page() {
         </section>
 
         {/* Workflow animation */}
-        <section className="container min-w-full px-4 py-16 bg-accent border-y">
+        <section className="container min-w-full px-4 py-16 bg-white/40 shadow-sm">
           <WorkflowAnimation />
         </section>
 
@@ -437,7 +324,7 @@ export default function Page() {
               with ServeSync+ today and bring real-time efficiency to your
               sector.
             </p>
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <div className="flex flex-col sm:flex-row justify-center gap-4 rounded">
               <Link
                 href="/register/organization"
                 className="bg-white p-2 text-primary hover:bg-slate-100 font-bold rounded px-8 cursor-pointer"
@@ -488,7 +375,7 @@ export default function Page() {
 
             <p className="mt-10 text-slate-600 max-w-2xl mx-auto">
               Our commitment to performance, scalability, and security ensures
-              that your institution's core processes run reliably without
+              that your institution&apos;s core processes run reliably without
               interruption.
             </p>
           </div>

@@ -1,6 +1,6 @@
 // services/organization.service.ts
 
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, or, sql } from "drizzle-orm";
 import {
   Organization,
   OrganizationCalendar,
@@ -137,7 +137,12 @@ export default class OrganizationService {
       .from(organizations)
       .leftJoin(users, eq(organizations.adminId, users.id))
       .rightJoin(pricingPlans, eq(organizations.pricingPlanId, pricingPlans.id))
-      .where(eq(organizations.id, organizationId))) as OrganizationPure[];
+      .where(
+        or(
+          eq(organizations.id, organizationId),
+          eq(organizations.slug, organizationId),
+        ),
+      )) as OrganizationPure[];
     return organization;
   }
 
@@ -149,7 +154,12 @@ export default class OrganizationService {
       .from(organizations)
       .leftJoin(users, eq(organizations.adminId, users.id))
       .rightJoin(pricingPlans, eq(organizations.pricingPlanId, pricingPlans.id))
-      .where(eq(organizations.id, organizationId))) as OrganizationPure[];
+      .where(
+        or(
+          eq(organizations.id, organizationId),
+          eq(organizations.slug, organizationId),
+        ),
+      )) as OrganizationPure[];
     return organization;
   }
 
@@ -161,7 +171,12 @@ export default class OrganizationService {
       .from(organizations)
       .leftJoin(users, eq(organizations.adminId, users.id))
       .rightJoin(pricingPlans, eq(organizations.pricingPlanId, pricingPlans.id))
-      .where(eq(organizations.id, organizationId))) as Organization[];
+      .where(
+        or(
+          eq(organizations.id, organizationId),
+          eq(organizations.slug, organizationId),
+        ),
+      )) as Organization[];
     return organization;
   }
 
@@ -173,7 +188,12 @@ export default class OrganizationService {
       .from(organizations)
       .leftJoin(users, eq(organizations.adminId, users.id))
       .rightJoin(pricingPlans, eq(organizations.pricingPlanId, pricingPlans.id))
-      .where(eq(organizations.id, organizationId))) as OrganizationWithAdmin[];
+      .where(
+        or(
+          eq(organizations.id, organizationId),
+          eq(organizations.slug, organizationId),
+        ),
+      )) as OrganizationWithAdmin[];
     return organization;
   }
 
@@ -186,7 +206,10 @@ export default class OrganizationService {
       .leftJoin(users, eq(organizations.adminId, users.id))
       .rightJoin(pricingPlans, eq(organizations.pricingPlanId, pricingPlans.id))
       .where(
-        eq(organizations.id, organizationId),
+        or(
+          eq(organizations.id, organizationId),
+          eq(organizations.slug, organizationId),
+        ),
       )) as OrganizationWithPricingPlan[];
     return organization;
   }
@@ -406,16 +429,16 @@ export default class OrganizationService {
     organizationId: string,
   ): Promise<boolean> {
     const [employee] = await db
-      .select({ userId: employees.userId })
+      .select({ id: employees.id })
       .from(organizations)
       .innerJoin(employees, eq(organizations.id, employees.organizationId))
       .where(
         and(
-          eq(employees.userId, employeeId),
+          eq(employees.id, employeeId),
           eq(employees.organizationId, organizationId),
         ),
       );
-    return employee?.userId === employeeId;
+    return employee?.id === employeeId;
   }
 
   static async sendEmployeeHireLink({

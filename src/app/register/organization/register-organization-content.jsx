@@ -115,7 +115,8 @@ export default function RegisterOrganizationContent({ searchParams }) {
       selectedPlan ||
       (pricingPlans?.length > 0 ? pricingPlans[0] : "");
     if (initialPlanId) {
-      setFormData((prev) => ({ ...prev, pricingPlanId: initialPlanId }));
+      (() =>
+        setFormData((prev) => ({ ...prev, pricingPlanId: initialPlanId })))();
     }
   }, [planQuery, selectedPlan, pricingPlans]);
 
@@ -126,7 +127,7 @@ export default function RegisterOrganizationContent({ searchParams }) {
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/(^-|-$)+/g, "")
         .substring(0, 30);
-      setFormData((prev) => ({ ...prev, slug: generatedSlug }));
+      (() => setFormData((prev) => ({ ...prev, slug: generatedSlug })))();
     }
   }, [formData.name]);
 
@@ -394,7 +395,6 @@ export default function RegisterOrganizationContent({ searchParams }) {
                         "pl-11 h-12",
                         errors.adminEmail && "border-red-500",
                       )}
-                      isSubmitting
                       type="email"
                       value={formData.adminEmail}
                       onChange={(e) =>

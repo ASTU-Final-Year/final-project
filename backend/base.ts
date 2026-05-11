@@ -1,3 +1,5 @@
+// backend/base.ts
+
 import { JWT, type JwtSymmetricAlgorithm } from "@bepalo/jwt";
 import type { CTXAddress, RouterContext } from "@bepalo/router";
 import { securityConfig } from "./config";
@@ -476,7 +478,7 @@ export type CTXEmployee = {
 
 export interface EmployeeCalendar extends CalendarBase {
   id: string;
-  employeeId: string;
+  organizationId: string;
   employee: Employee;
   createdAt: Date;
   updatedAt: Date;
@@ -493,7 +495,7 @@ export type EmployeeCalendarInit = Omit<
 export type EmployeeCalendarUpdate = Partial<
   Omit<EmployeeCalendar, "id" | "employee" | "createdAt" | "updatedAt">
 > &
-  Pick<EmployeeCalendar, "id" | "employeeId">;
+  Pick<EmployeeCalendar, "id" | "organizationId">;
 
 export interface OrganizationService {
   id: string;
@@ -596,6 +598,7 @@ export type TaskProgressInit = Omit<TaskProgress, "createdAt" | "updatedAt"> &
 
 export interface Task {
   id: string;
+  name: string;
   isDone: boolean;
   status: string;
   serviceId: string;
@@ -611,5 +614,10 @@ export interface Task {
 
 export type TaskInit = Omit<Task, "id" | "createdAt" | "updatedAt"> &
   Partial<Pick<Task, "id" | "createdAt" | "updatedAt">>;
+
+export type TaskUpdate = Partial<
+  Omit<TaskInit, "service" | "organization" | "client">
+> &
+  Pick<Task, "id">;
 
 export type CTXMain = RouterContext & CTXAddress & CTXSession;

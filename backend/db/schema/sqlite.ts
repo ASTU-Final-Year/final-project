@@ -1,3 +1,5 @@
+// backend/db/schema/sqlite.ts
+
 import { relations, sql } from "drizzle-orm";
 import {
   customType,
@@ -134,7 +136,7 @@ export const sqOrganizations = sqliteTable(
         onUpdate: "cascade",
         onDelete: "cascade",
       }),
-    pricingPlanId: cpuuid("pricing_plan_id")
+    pricingPlanId: text("pricing_plan_id", { length: 16 })
       .notNull()
       .references(() => sqPricingPlans.id, {
         onUpdate: "cascade",
@@ -167,20 +169,20 @@ export const sqOrganizationCalendars = sqliteTable("organization_calendars", {
   ...basicTimestamps(),
 });
 
-export const sqEmployeeCalendars = sqliteTable("employee_calendars", {
-  id: cpuuid("id").primaryKey().notNull().$defaultFn(randomCUUID),
-  employeeId: cpuuid("employee_id")
-    .notNull()
-    .references(() => sqUsers.id, {
-      onUpdate: "cascade",
-      onDelete: "cascade",
-    }),
-  name: text("name", { length: 54 }).notNull(),
-  description: text("description", { length: 200 }).notNull().default(""),
-  available: text("available", { mode: "json" }),
-  unavailable: text("unavailable", { mode: "json" }),
-  ...basicTimestamps(),
-});
+// export const sqEmployeeCalendars = sqliteTable("employee_calendars", {
+//   id: cpuuid("id").primaryKey().notNull().$defaultFn(randomCUUID),
+//   employeeId: cpuuid("employee_id")
+//     .notNull()
+//     .references(() => sqUsers.id, {
+//       onUpdate: "cascade",
+//       onDelete: "cascade",
+//     }),
+//   name: text("name", { length: 54 }).notNull(),
+//   description: text("description", { length: 200 }).notNull().default(""),
+//   available: text("available", { mode: "json" }),
+//   unavailable: text("unavailable", { mode: "json" }),
+//   ...basicTimestamps(),
+// });
 
 export const sqEmployees = sqliteTable(
   "employees",
@@ -198,10 +200,13 @@ export const sqEmployees = sqliteTable(
       .notNull()
       .default(""),
     isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
-    calendarId: cpuuid("calendar_id").references(() => sqEmployeeCalendars.id, {
-      onUpdate: "cascade",
-      onDelete: "cascade",
-    }),
+    calendarId: cpuuid("calendar_id").references(
+      () => sqOrganizationCalendars.id,
+      {
+        onUpdate: "cascade",
+        onDelete: "cascade",
+      },
+    ),
     ...basicTimestamps(),
   },
   (table: any) => [
@@ -265,6 +270,12 @@ export const sqTasks = sqliteTable("tasks", {
       onDelete: "cascade",
     })
     .notNull(),
+  organizationId: cpuuid("organization_id")
+    .references(() => sqOrganizations.id, {
+      onUpdate: "cascade",
+      onDelete: "cascade",
+    })
+    .notNull(),
   clientId: cpuuid("client_id")
     .references(() => sqUsers.id, {
       onUpdate: "cascade",
@@ -281,7 +292,6 @@ export const sqUsersRelations = relations(sqUsers, ({ many }) => ({
   sessions: many(sqSessions),
   employeeProfile: many(sqEmployees),
   tasks: many(sqTasks),
-  employeeCalendars: many(sqEmployeeCalendars),
 }));
 
 export const sqSessionsRelations = relations(sqSessions, ({ one }) => ({
@@ -301,26 +311,12 @@ export const sqEmployeesRelations = relations(sqEmployees, ({ one, many }) => ({
     fields: [sqEmployees.userId],
     references: [sqUsers.id],
   }),
-  calendar: one(sqEmployeeCalendars, {
+  calendar: one(sqOrganizationCalendars, {
     fields: [sqEmployees.calendarId],
-    references: [sqEmployeeCalendars.id],
+    references: [sqOrganizationCalendars.id],
   }),
   firstEmployeeOfServices: many(sqServiceFirstEmployees),
 }));
-
-export const sqEmployeeCalendarsRelations = relations(
-  sqEmployeeCalendars,
-  ({ one }) => ({
-    user: one(sqUsers, {
-      fields: [sqEmployeeCalendars.employeeId],
-      references: [sqUsers.id],
-    }),
-    employee: one(sqEmployees, {
-      fields: [sqEmployeeCalendars.employeeId],
-      references: [sqEmployees.id],
-    }),
-  }),
-);
 
 export const sqOrganizationCalendarsRelations = relations(
   sqOrganizationCalendars,
@@ -367,6 +363,10 @@ export const sqTasksRelations = relations(sqTasks, ({ one }) => ({
     fields: [sqTasks.serviceId],
     references: [sqOrganizationServices.id],
   }),
+  organization: one(sqOrganizations, {
+    fields: [sqTasks.organizationId],
+    references: [sqOrganizations.id],
+  }),
   client: one(sqUsers, {
     fields: [sqTasks.clientId],
     references: [sqUsers.id],
@@ -380,7 +380,6 @@ export const sqliteSchema = {
   pricingPlans: sqPricingPlans,
   organizations: sqOrganizations,
   organizationCalendars: sqOrganizationCalendars,
-  employeeCalendars: sqEmployeeCalendars,
   employees: sqEmployees,
   organizationServices: sqOrganizationServices,
   serviceFirstEmployees: sqServiceFirstEmployees,
@@ -390,7 +389,6 @@ export const sqliteSchema = {
   sessionsRelations: sqSessionsRelations,
   organizationsRelations: sqOrganizationsRelations,
   employeesRelations: sqEmployeesRelations,
-  employeeCalendarsRelations: sqEmployeeCalendarsRelations,
   organizationCalendarsRelations: sqOrganizationCalendarsRelations,
   organizationServicesRelations: sqOrganizationServicesRelations,
   serviceFirstEmployeesRelations: sqServiceFirstEmployeesRelations,

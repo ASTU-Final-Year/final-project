@@ -1,8 +1,9 @@
+// src/app/layout.jsx
 import { Geist, Geist_Mono, Noto_Sans } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 import { cn } from "@/lib/utils";
-import Head from "next/head";
+import { Chatbot } from "@/components/chatbot/chatbot";
 
 const notoSans = Noto_Sans({ variable: "--font-sans" });
 
@@ -24,14 +25,13 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={cn("font-sans", notoSans.variable)}>
-      <Head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-      </Head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-dots`}
       >
-        <TooltipProvider>{children}</TooltipProvider>
+        <TooltipProvider>
+          {children}
+          <Chatbot />
+        </TooltipProvider>
       </body>
     </html>
   );

@@ -1,22 +1,22 @@
 import { config, dbConfig } from "~/config";
 import { drizzle as drizzlePG } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
-import { drizzle as drizzleSQLite } from "drizzle-orm/bun-sqlite";
-import { Database } from "bun:sqlite";
+import { drizzle as drizzleSQLite } from "drizzle-orm/libsql";
 import pgSchema from "./schema/pg";
 import sqliteSchema from "./schema/sqlite";
 import PaymentService from "~/services/payment.service";
 import defaultPricingPlans from "@/data/default-pricing-plans";
+import { createClient } from "@libsql/client";
+import SessionService from "~/services/session.service";
 
 const pool = new Pool({
   connectionString: dbConfig.pgDatabaseURL,
 });
 
-const sqlite = new Database(dbConfig.sqliteDatabaseURL);
-// Use .exec() to run PRAGMA commands in Bun
-sqlite.run("PRAGMA journal_mode = WAL;");
-sqlite.run("PRAGMA synchronous = NORMAL;");
-sqlite.run("PRAGMA foreign_keys = ON;");
+const sqlite = createClient({ url: "file:" + dbConfig.sqliteDatabaseURL });
+sqlite.execute("PRAGMA journal_mode = WAL;");
+sqlite.execute("PRAGMA synchronous = NORMAL;");
+sqlite.execute("PRAGMA foreign_keys = ON;");
 export const dbPG = drizzlePG({ client: pool, schema: pgSchema });
 export const dbSQLite = drizzleSQLite(sqlite, { schema: sqliteSchema });
 // export const db = config.isProduction ? dbPG : dbSQLite;
@@ -78,6 +78,11 @@ export const initDb = async () => {
       for (const [name, pricingPlan] of Object.entries(defaultPricingPlans)) {
         await PaymentService.createPricingPlan(pricingPlan);
       }
+    }
+    // delete expired sessions and sessionBlacklists
+    {
+      await SessionService.deleteExpiredSessions();
+      await SessionService.deleteExpiredSessionsBlacklist();
     }
   }
 };

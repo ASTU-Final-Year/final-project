@@ -12,6 +12,8 @@ import {
   Loader2,
 } from "lucide-react";
 import { useSessionStore } from "@/store";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 export default function DashboardOverview() {
   const [client, setClient] = useState(null);
@@ -25,10 +27,11 @@ export default function DashboardOverview() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const orgRes = await RequestHandler.Get("/api/v1/user");
-        if (orgRes.ok) {
-          const { user } = await orgRes.json();
+        const clientRes = await RequestHandler.Get("/api/v1/user");
+        if (clientRes.ok) {
+          const { user } = await clientRes.json();
           setClient(user);
+          const clientId = user.id;
 
           // Fetch aggregate stats concurrently
           const [countRes] = await Promise.all([

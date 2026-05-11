@@ -296,6 +296,70 @@ export default class OrganizationServicesService {
     return serviceResult;
   }
 
+  static async getServiceByIdPublic(
+    serviceId: string,
+  ): Promise<OrganizationService | undefined> {
+    const [serviceResult] = (await db
+      .select(fullPublicOrganizationServiceSelect)
+      .from(organizationServices)
+      .leftJoin(
+        organizations,
+        eq(organizationServices.organizationId, organizations.id),
+      )
+      .leftJoin(
+        organizationCalendars,
+        eq(organizationServices.calendarId, organizationCalendars.id),
+      )
+      .where(eq(organizationServices.id, serviceId))
+      .limit(1)) as OrganizationService[];
+    return serviceResult;
+  }
+
+  static async getServiceByIdWithOrganization(
+    serviceId: string,
+  ): Promise<OrganizationServiceWithOrganization | undefined> {
+    const [serviceResult] = (await db
+      .select(organizationServiceWithOrganizationSelect)
+      .from(organizationServices)
+      .leftJoin(
+        organizations,
+        eq(organizationServices.organizationId, organizations.id),
+      )
+      .where(eq(organizationServices.id, serviceId))
+      .limit(1)) as OrganizationServiceWithOrganization[];
+    return serviceResult;
+  }
+
+  static async getServiceByIdWithOrganizationPublic(
+    serviceId: string,
+  ): Promise<OrganizationServiceWithOrganization | undefined> {
+    const [serviceResult] = (await db
+      .select(publicOrganizationServiceWithOrganizationSelect)
+      .from(organizationServices)
+      .leftJoin(
+        organizations,
+        eq(organizationServices.organizationId, organizations.id),
+      )
+      .where(eq(organizationServices.id, serviceId))
+      .limit(1)) as OrganizationServiceWithOrganization[];
+    return serviceResult;
+  }
+
+  static async getServiceByIdWithCalendar(
+    serviceId: string,
+  ): Promise<OrganizationServiceWithCalendar | undefined> {
+    const [serviceResult] = (await db
+      .select(organizationServiceWithCalendarSelect)
+      .from(organizationServices)
+      .leftJoin(
+        organizationCalendars,
+        eq(organizationServices.calendarId, organizationCalendars.id),
+      )
+      .where(eq(organizationServices.id, serviceId))
+      .limit(1)) as OrganizationServiceWithCalendar[];
+    return serviceResult;
+  }
+
   static async getServiceByIdPure(
     serviceId: string,
   ): Promise<OrganizationServicePure | undefined> {
@@ -306,6 +370,7 @@ export default class OrganizationServicesService {
       .limit(1);
     return serviceResult;
   }
+
   static async getServiceByIdByOrganizationIdWithCalendarByOrganizationid(
     serviceId: string,
     organizationId: string,
@@ -491,11 +556,8 @@ export default class OrganizationServicesService {
         organizationServices,
         eq(organizationServices.id, serviceFirstEmployees.serviceId),
       )
-      .leftJoin(
-        employees,
-        eq(employees.userId, serviceFirstEmployees.employeeId),
-      )
-      .leftJoin(users, eq(users.id, serviceFirstEmployees.employeeId))
+      .leftJoin(employees, eq(employees.id, serviceFirstEmployees.employeeId))
+      .leftJoin(users, eq(users.id, employees.userId))
       .where(eq(serviceFirstEmployees.serviceId, serviceId))
       .limit(limit)
       .offset(offset)) as unknown as OrganizationServiceFirstEmployee[];
@@ -519,7 +581,7 @@ export default class OrganizationServicesService {
         organizationServices,
         eq(organizationServices.id, serviceFirstEmployees.serviceId),
       )
-      .leftJoin(users, eq(users.id, serviceFirstEmployees.employeeId))
+      .leftJoin(users, eq(users.id, employees.userId))
       .where(eq(serviceFirstEmployees.serviceId, serviceId))
       .limit(limit)
       .offset(
@@ -541,10 +603,7 @@ export default class OrganizationServicesService {
     const servicesResult = (await db
       .select(organizationServiceFirstEmployeesWithFirstEmployeeSelect)
       .from(serviceFirstEmployees)
-      .leftJoin(
-        employees,
-        eq(employees.userId, serviceFirstEmployees.employeeId),
-      )
+      .leftJoin(employees, eq(employees.id, serviceFirstEmployees.employeeId))
       .leftJoin(users, eq(users.id, serviceFirstEmployees.employeeId))
       .where(eq(serviceFirstEmployees.serviceId, serviceId))
       .limit(limit)
@@ -586,10 +645,7 @@ export default class OrganizationServicesService {
         organizationServices,
         eq(organizationServices.id, serviceFirstEmployees.serviceId),
       )
-      .leftJoin(
-        employees,
-        eq(employees.userId, serviceFirstEmployees.employeeId),
-      )
+      .leftJoin(employees, eq(employees.id, serviceFirstEmployees.employeeId))
       .where(
         and(
           eq(serviceFirstEmployees.serviceId, serviceId),
@@ -628,10 +684,7 @@ export default class OrganizationServicesService {
     const [service] = (await db
       .select(organizationServiceFirstEmployeesWithFirstEmployeeSelect)
       .from(serviceFirstEmployees)
-      .leftJoin(
-        employees,
-        eq(employees.userId, serviceFirstEmployees.employeeId),
-      )
+      .leftJoin(employees, eq(employees.id, serviceFirstEmployees.employeeId))
       .where(
         and(
           eq(serviceFirstEmployees.serviceId, serviceId),

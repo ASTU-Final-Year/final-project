@@ -1,11 +1,12 @@
 import {
-  employeeCalendars,
+  organizationCalendars as employeeCalendars,
   employees,
   organizationCalendars,
   organizations,
   organizationServices,
   pricingPlans,
   serviceFirstEmployees,
+  tasks,
   users,
 } from "~/db/schema";
 
@@ -104,7 +105,7 @@ export const pureEmployeeSelect = {
 
 export const pureEmployeeCalendarSelect = {
   id: employeeCalendars.id,
-  employeeId: employeeCalendars.employeeId,
+  organizationId: employeeCalendars.organizationId,
   name: employeeCalendars.name,
   description: employeeCalendars.description,
   available: employeeCalendars.available,
@@ -118,6 +119,19 @@ export const pureOrganizationServiceFirstEmployeeSelect = {
   employeeId: serviceFirstEmployees.employeeId,
   createdAt: serviceFirstEmployees.createdAt,
   updatedAt: serviceFirstEmployees.updatedAt,
+};
+
+export const pureTaskSelect = {
+  id: tasks.id,
+  name: tasks.name,
+  isDone: tasks.isDone,
+  status: tasks.status,
+  progress: tasks.progress,
+  serviceId: tasks.serviceId,
+  organizationId: tasks.organizationId,
+  clientId: tasks.clientId,
+  createdAt: tasks.createdAt,
+  updatedAt: tasks.updatedAt,
 };
 
 export const employeeWithUserSelect = {
@@ -205,6 +219,7 @@ export const fullOrganizationServiceFirstEmployeeSelect = {
   ...pureOrganizationServiceFirstEmployeeSelect,
   service: pureOrganizationServiceSelect,
   employee: pureEmployeeSelect,
+  user: pureUserSelect,
 };
 
 export const organizationServiceFirstEmployeesWithServiceSelect = {
@@ -215,4 +230,27 @@ export const organizationServiceFirstEmployeesWithServiceSelect = {
 export const organizationServiceFirstEmployeesWithFirstEmployeeSelect = {
   ...pureOrganizationServiceFirstEmployeeSelect,
   employee: pureEmployeeSelect,
+  user: pureUserSelect,
+};
+
+export const taskWithServiceSelect = {
+  ...pureTaskSelect,
+  service: pureOrganizationServiceSelect,
+};
+
+export const taskWithClientSelect = {
+  ...pureTaskSelect,
+  client: pureUserSelect,
+};
+
+export const taskWithOrganizationSelect = {
+  ...pureTaskSelect,
+  organization: pureOrganizationSelect,
+};
+
+export const fullTaskSelect = {
+  ...pureTaskSelect,
+  service: pureOrganizationServiceSelect,
+  client: pureUserSelect,
+  organization: pureOrganizationSelect,
 };
