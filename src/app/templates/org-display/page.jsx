@@ -239,8 +239,7 @@ function OrganizationDisplayPage() {
                 </p>
               </CardContent>
             </Card>
-
-            {/* SERVICES – Attractive cards */}
+        {/* SERVICES – Attractive cards */}
             <div>
               <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
                 <Briefcase className="h-6 w-6 text-primary" />
@@ -273,7 +272,6 @@ function OrganizationDisplayPage() {
                 })}
               </div>
             </div>
-
             {/* Operating Hours */}
             <Card className="shadow-md border-0 bg-white/80 backdrop-blur-sm">
               <CardHeader>
