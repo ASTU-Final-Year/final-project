@@ -46,7 +46,7 @@
     "ethiopian-calendar-date-converter": "^2.1.6",
     "input-otp": "^1.4.2",
     "kenat": "^3.2.0",
-    "lucide-react": "^0.577.0",
+    "lucide-react": "^1.14.0",
     "next": "16.1.6",
     "next-themes": "^0.4.6",
     "pg": "^8.20.0",

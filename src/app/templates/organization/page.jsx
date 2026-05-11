@@ -1,529 +1,331 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useSessionStore } from "@/store";
+import { redirect, RedirectType, useRouter } from "next/navigation";
+import { useEffect, useState, useRef } from "react";
 import { 
-  LayoutDashboard, Users, Calendar as CalendarIcon, 
-  ClipboardList, FileText, Settings, PlusCircle, 
-  ArrowRight, Bell, Package, FileWarning, 
-  Download, Printer, CheckCircle, Clock, 
-  AlertCircle, TrendingUp, X, ChevronRight,
-  UserPlus, CalendarPlus, Activity, Star,
-  Circle, CircleCheck, CircleAlert
-} from "lucide-react";
+  Search, Bell, HelpCircle, Calendar, Download, Plus, 
+  Users, Briefcase, BarChart3, Settings, LogOut, 
+  ChevronLeft, ChevronRight, MoreVertical, AlertTriangle, 
+  CheckCircle2, Clock, FileText, UserPlus, TrendingUp, X,
+  Upload
+} from 'lucide-react';
 
 export default function OrganizationDashboard() {
-  const [currentTime, setCurrentTime] = useState(new Date());
-  const [showExportMenu, setShowExportMenu] = useState(false);
-  const [showAddServiceModal, setShowAddServiceModal] = useState(false);
-  const [showScheduleModal, setShowScheduleModal] = useState(false);
-  const [showRegisterModal, setShowRegisterModal] = useState(false);
-  const [toastMessage, setToastMessage] = useState(null);
+  const session = useSessionStore(({ session }) => session);
+  const router = useRouter();
+  const [_loaded, _setLoaded] = useState(false);
+  
+  // Ref for the hidden file input
+  const fileInputRef = useRef(null);
 
-  const [stats, setStats] = useState({
-    totals: 156,
-    activeEmployees: 12,
-    totalServices: 8,
-    totalRevenue: 12450
-  });
-
-  const [newService, setNewService] = useState({ name: "", price: "", duration: "" });
-  const [newAppointment, setNewAppointment] = useState({ service: "", customer: "", time: "" });
-  const [newEmployee, setNewEmployee] = useState({ name: "", role: "", email: "" });
+  // --- FUNCTIONAL STATES ---
+  const [showServiceForm, setShowServiceForm] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(24);
+  const [isUploading, setIsUploading] = useState(false);
+  const [notification, setNotification] = useState(null);
 
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
+    if (!_loaded) (async () => _setLoaded(true))();
+    if (_loaded && session?.user == null) {
+      return redirect("/login", RedirectType.push);
+    }
+  }, [_loaded, session?.user]);
 
-  const formatDate = (date) => {
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    });
+  // --- FILE UPLOAD HANDLERS ---
+  const handleTriggerUpload = () => {
+    fileInputRef.current?.click();
   };
 
-  const showToast = (message, type = "success") => {
-    setToastMessage({ message, type });
-    setTimeout(() => setToastMessage(null), 3000);
+  const handleFileChange = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      setIsUploading(true);
+      
+      // Simulate an upload process
+      setTimeout(() => {
+        setIsUploading(false);
+        showToast(`File "${file.name}" uploaded successfully!`);
+        // Reset the input so the same file can be uploaded again if needed
+        event.target.value = '';
+      }, 1500);
+    }
   };
 
-  // ============ EXPORT FUNCTIONS ============
-  const exportAsCSV = () => {
-    const statsData = [
-      ["Metric", "Value"],
-      ["Totals", stats.totals],
-      ["Active Employees", stats.activeEmployees],
-      ["Total Services", stats.totalServices],
-      ["Total Revenue (ETB)", stats.totalRevenue],
-    ];
-    const csvContent = statsData.map(row => row.join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `dashboard_stats_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    showToast("CSV exported successfully!");
+  const showToast = (message) => {
+    setNotification(message);
+    setTimeout(() => setNotification(null), 3000);
   };
 
-  const exportAsJSON = () => {
-    const fullData = {
-      exportDate: new Date().toISOString(),
-      metrics: stats,
-      schedule: todaySchedule,
-      topServices: topServices,
-      employeePerformance: employeePerformance,
-      recentActivity: recentActivity
-    };
-    const jsonContent = JSON.stringify(fullData, null, 2);
-    const blob = new Blob([jsonContent], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `dashboard_data_${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    showToast("JSON exported successfully!");
-  };
-
-  const exportAsPDF = () => {
-    window.print();
-    showToast("Print dialog opened - you can save as PDF");
-  };
-
-  // ============ DATA STATES ============
-  const [todaySchedule, setTodaySchedule] = useState([
-    { time: "09:00 AM", service: "Medical Checkup", provider: "Dr. Abebe", patient: "Abebe K.", status: "in-progress" },
-    { time: "10:30 AM", service: "Urgent Care", provider: "Service Bay 2", patient: "Mulugeta T.", status: "waiting" },
-    { time: "11:45 AM", service: "Dental Checkup", provider: "Dr. Genet", patient: "Sara H.", status: "confirmed" },
-  ]);
-
-  const [topServices, setTopServices] = useState([
-    { name: "General Checkup", percentage: 42 },
-    { name: "Oil Change", percentage: 28 },
-    { name: "Consultation", percentage: 15 },
-  ]);
-
-  const [employeePerformance, setEmployeePerformance] = useState([
-    { name: "Dr. Abebe", score: 98 },
-    { name: "Dr. Genet", score: 92 },
-    { name: "Mulugeta T.", score: 85 },
-  ]);
-
-  const [recentActivity, setRecentActivity] = useState([
-    { action: 'New Service "X-Ray Analysis" added', actor: "By Admin", time: "2 hours ago" },
-    { action: "Appointment #8234 completed successfully", actor: "Dr. Genet", time: "4 hours ago" },
-    { action: "Updated schedule for Dr. Abebe", actor: "HR Manager", time: "6 hours ago" },
-  ]);
-
-  // ============ ACTION HANDLERS ============
-  const handleAddService = (e) => {
-    e.preventDefault();
-    const serviceName = newService.name || "New Service";
-    setTopServices([...topServices, { name: serviceName, percentage: 10 }]);
-    setStats({ ...stats, totalServices: stats.totalServices + 1 });
-    setRecentActivity([{ action: `New Service "${serviceName}" added`, actor: "By Admin", time: "Just now" }, ...recentActivity]);
-    setShowAddServiceModal(false);
-    setNewService({ name: "", price: "", duration: "" });
-    showToast(`Service "${serviceName}" added successfully!`);
-  };
-
-  const handleScheduleAppointment = (e) => {
-    e.preventDefault();
-    const newAppt = {
-      time: newAppointment.time || "01:00 PM",
-      service: newAppointment.service || "New Appointment",
-      provider: "Dr. Assigned",
-      patient: newAppointment.customer || "New Patient",
-      status: "confirmed"
-    };
-    setTodaySchedule([...todaySchedule, newAppt]);
-    setRecentActivity([{ action: `Appointment scheduled for ${newAppt.patient}`, actor: "By Admin", time: "Just now" }, ...recentActivity]);
-    setShowScheduleModal(false);
-    setNewAppointment({ service: "", customer: "", time: "" });
-    showToast("Appointment scheduled successfully!");
-  };
-
-  const handleRegisterEmployee = (e) => {
-    e.preventDefault();
-    const empName = newEmployee.name || "New Employee";
-    setEmployeePerformance([...employeePerformance, { name: empName, score: 75 }]);
-    setStats({ ...stats, activeEmployees: stats.activeEmployees + 1, totals: stats.totals + 1 });
-    setRecentActivity([{ action: `New employee "${empName}" registered`, actor: "By Admin", time: "Just now" }, ...recentActivity]);
-    setShowRegisterModal(false);
-    setNewEmployee({ name: "", role: "", email: "" });
-    showToast(`Employee "${empName}" registered successfully!`);
-  };
-
-  const handleGenerateReport = () => {
-    exportAsPDF();
-    setRecentActivity([{ action: "Monthly report generated", actor: "By Admin", time: "Just now" }, ...recentActivity]);
-    showToast("Report generated!");
-  };
-
-  const Modal = ({ isOpen, onClose, title, children }) => {
-    if (!isOpen) return null;
-    return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-          <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex justify-between items-center">
-            <h2 className="text-xl font-bold">{title}</h2>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
-          </div>
-          <div className="p-5">{children}</div>
-        </div>
-      </div>
-    );
-  };
-
-  const weekDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-  const weekDates = [22, 23, 24, 25, 26, 27, 28];
-
-  const getStatusIcon = (status) => {
-    if (status === 'in-progress') return <CircleAlert className="w-3 h-3 text-yellow-500" />;
-    if (status === 'waiting') return <Circle className="w-3 h-3 text-blue-500" />;
-    return <CircleCheck className="w-3 h-3 text-green-500" />;
-  };
-
-  const getStatusText = (status) => {
-    if (status === 'in-progress') return "IN PROGRESS";
-    if (status === 'waiting') return "WAITING";
-    return "CONFIRMED";
-  };
+  if (!_loaded || session?.user == null) {
+    return <div className="flex h-screen items-center justify-center font-bold text-slate-400">Loading ServeSync+...</div>;
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-right">
-          <div className={`px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 ${toastMessage.type === "success" ? "bg-green-500 text-white" : "bg-red-500 text-white"}`}>
-            <CheckCircle className="w-4 h-4" />
-            {toastMessage.message}
+    <div className="flex min-h-screen bg-[#F8FAFC] text-slate-700 font-sans">
+      
+      {/* Hidden File Input */}
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        onChange={handleFileChange} 
+        className="hidden" 
+        accept=".csv,.xlsx,.pdf,.json"
+      />
+
+      {/* MODAL: ADD NEW SERVICE */}
+      {showServiceForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl p-8 relative animate-in zoom-in-95 duration-200">
+            <button onClick={() => setShowServiceForm(false)} className="absolute top-4 right-4 p-2 text-slate-400 hover:bg-slate-100 rounded-full transition-colors">
+              <X size={20} />
+            </button>
+            <h3 className="text-xl font-bold text-slate-900 mb-2">Add New Service</h3>
+            <p className="text-sm text-slate-500 mb-6">Enter details to register a new service in the system.</p>
+            
+            <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); setShowServiceForm(false); showToast("Service Created!"); }}>
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase mb-1 tracking-widest">Service Name</label>
+                <input type="text" placeholder="General Consultation" className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-100" required />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-1 tracking-widest">Price (ETB)</label>
+                  <input type="number" placeholder="400" className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-lg text-sm outline-none" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-1 tracking-widest">Duration (Min)</label>
+                  <input type="number" placeholder="30" className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-lg text-sm outline-none" />
+                </div>
+              </div>
+              <button type="submit" className="w-full py-3 bg-[#2B5A9A] text-white font-bold rounded-xl shadow-lg hover:bg-[#1e447a] transition-all transform active:scale-[0.98]">Create Service</button>
+            </form>
           </div>
         </div>
       )}
 
-      {/* Top Navigation Bar */}
-      <nav className="bg-white border-b border-gray-200 sticky top-0 z-20">
-        <div className="px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">SS</span>
-            </div>
-            <h1 className="text-xl font-bold text-gray-900">ServeSync+</h1>
-            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">ADMIN CONSOLE</span>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            {/* Export Stats Button - BLUE BACKGROUND as requested */}
-            <div className="relative">
-              <button 
-                onClick={() => setShowExportMenu(!showExportMenu)}
-                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                <Download className="w-4 h-4" />
-                Export Stats
-                <ChevronRight className={`w-3 h-3 transition-transform ${showExportMenu ? "rotate-90" : ""}`} />
-              </button>
-              
-              {showExportMenu && (
-                <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
-                  <button onClick={exportAsCSV} className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2">
-                    <Download className="w-3 h-3" /> CSV File
-                  </button>
-                  <button onClick={exportAsJSON} className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2">
-                    <Download className="w-3 h-3" /> JSON File
-                  </button>
-                  <button onClick={exportAsPDF} className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2">
-                    <Printer className="w-3 h-3" /> PDF / Print
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <button className="relative p-2 text-gray-400 hover:text-gray-600">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-            </button>
-            <div className="flex items-center gap-2 ml-4 pl-4 border-l border-gray-200">
-              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                <span className="text-blue-600 font-semibold text-sm">AM</span>
-              </div>
-              <span className="text-sm font-medium text-gray-700">Mr. Abebe</span>
-            </div>
-          </div>
+      {/* TOAST NOTIFICATION */}
+      {notification && (
+        <div className="fixed top-6 right-6 z-50 bg-slate-900 text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-top-4 duration-300">
+          <CheckCircle2 size={18} className="text-emerald-400" />
+          <span className="text-sm font-bold">{notification}</span>
         </div>
-      </nav>
+      )}
 
-      {/* Sidebar + Main Content */}
-      <div className="flex">
-        {/* Sidebar Navigation - PRESERVED EXACT STYLE */}
-        <aside className="w-64 bg-white border-r border-gray-200 min-h-[calc(100vh-57px)] sticky top-[57px]">
-          <div className="p-4">
-            <div className="mb-6">
-              <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Dashboard</h2>
-              <nav className="space-y-1">
-                <button className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg bg-blue-50 text-blue-600 font-medium">
-                  <LayoutDashboard className="w-4 h-4" />
-                  Dashboard
-                </button>
-                <button className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
-                  <ClipboardList className="w-4 h-4" />
-                  Services
-                </button>
-                <button className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
-                  <Users className="w-4 h-4" />
-                  Employees
-                </button>
-                <button className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
-                  <CalendarIcon className="w-4 h-4" />
-                  Appointments
-                </button>
-                <button className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
-                  <CalendarIcon className="w-4 h-4" />
-                  Calendar
-                </button>
-                <button className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
-                  <FileText className="w-4 h-4" />
-                  Reports
-                </button>
-                <button className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
-                  <Settings className="w-4 h-4" />
-                  Settings
-                </button>
-              </nav>
-            </div>
+      {/* SIDEBAR */}
+      <aside className="w-64 bg-white border-r border-slate-100 flex flex-col fixed h-full z-20">
+        <div className="p-8">
+          <h1 className="text-[#2B5A9A] font-black text-2xl tracking-tight">ServeSync+</h1>
+          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest -mt-1">Admin Console</p>
+        </div>
+        <nav className="flex-1 px-4 space-y-1">
+          <SidebarItem icon={<LayoutDashboard size={18}/>} label="Dashboard" active />
+          <SidebarItem icon={<Briefcase size={18}/>} label="Services" />
+          <SidebarItem icon={<Users size={18}/>} label="Employees" />
+          <SidebarItem icon={<Calendar size={18}/>} label="Calendar" />
+          <SidebarItem icon={<BarChart3 size={18}/>} label="Reports" />
+          <SidebarItem icon={<Settings size={18}/>} label="Settings" />
+        </nav>
+        <div className="p-6 border-t border-slate-50">
+          <button className="flex items-center gap-2 text-slate-400 hover:text-red-500 text-sm font-bold transition-colors w-full">
+            <LogOut size={18} /> Logout
+          </button>
+        </div>
+      </aside>
+
+      <main className="flex-1 ml-64 flex flex-col min-h-screen">
+        {/* TOP NAVBAR */}
+        <header className="h-16 bg-white border-b border-slate-100 px-8 flex items-center justify-between sticky top-0 z-10">
+          <div className="relative w-96">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+            <input type="text" placeholder="Search operations..." className="w-full pl-10 pr-4 py-2 bg-[#F1F5F9] border-none rounded-lg text-sm outline-none" />
           </div>
-        </aside>
-
-        {/* Main Content - EXACT MATCH TO IMAGE */}
-        <main className="flex-1 p-6 overflow-auto">
-          {/* Welcome Section */}
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">Good Morning Mr. Abebe</h1>
-            <p className="text-gray-500 text-sm">Today is Tuesday, October 24th, 2023. Here's what's happening today.</p>
-          </div>
-
-          {/* Top Stats Row - EXACT MATCH TO IMAGE */}
-          <div className="grid grid-cols-4 gap-4 mb-6">
-            {/* 12% circle */}
-            <div className="bg-white rounded-xl border border-gray-200 p-4 flex flex-col items-center">
-              <div className="relative w-20 h-20 mb-2">
-                <svg className="w-full h-full transform -rotate-90">
-                  <circle cx="40" cy="40" r="32" fill="none" stroke="#e5e7eb" strokeWidth="6"/>
-                  <circle cx="40" cy="40" r="32" fill="none" stroke="#3b82f6" strokeWidth="6" strokeDasharray="201" strokeDashoffset="177"/>
-                </svg>
-                <span className="absolute inset-0 flex items-center justify-center text-xl font-bold text-gray-900">12%</span>
+          <div className="flex items-center gap-6">
+            <Bell size={18} className="text-slate-400 cursor-pointer" />
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <p className="text-xs font-bold text-slate-800">Organization Admin</p>
+                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Hospital Branch</p>
               </div>
-              <p className="text-xs text-gray-500">10 online</p>
-              <p className="text-xs font-medium text-gray-700">+2 new</p>
-              <p className="text-xs text-gray-500">~8%</p>
+              <div className="w-9 h-9 rounded-lg bg-slate-800 overflow-hidden ring-2 ring-slate-50">
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Abebe" alt="Admin" />
+              </div>
             </div>
-            
-            {/* TOTALS & ACTIVE EMPLOYEES */}
-            <div className="bg-white rounded-xl border border-gray-200 p-4">
-              <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">TOTALS</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.totals}</p>
-              <p className="text-xs text-gray-500 uppercase tracking-wider mt-3 mb-1">ACTIVE EMPLOYEES</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.activeEmployees}</p>
-            </div>
-            
-            {/* TOTAL SERVICES & TOTAL REVENUE */}
-            <div className="bg-white rounded-xl border border-gray-200 p-4">
-              <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">TOTAL SERVICES</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalServices}</p>
-              <p className="text-xs text-gray-500 uppercase tracking-wider mt-3 mb-1">TOTAL REVENUE (ETB)</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalRevenue.toLocaleString()}</p>
-            </div>
-            
-            {/* Empty spacer to match image layout */}
-            <div></div>
           </div>
+        </header>
 
-          {/* QUICK MANAGEMENT ACTIONS - 4 BUTTONS */}
-          <div className="mb-8">
-            <h2 className="text-sm font-semibold text-gray-900 mb-3">QUICK MANAGEMENT ACTIONS</h2>
-            <div className="grid grid-cols-4 gap-3">
-              <button onClick={() => setShowAddServiceModal(true)} className="flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-all">
-                <PlusCircle className="w-4 h-4" /> Add New Service
+        <div className="p-8 space-y-8">
+          {/* HEADER SECTION */}
+          <div className="flex justify-between items-end">
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Good Morning Mr. Abebe</h2>
+              <p className="text-sm text-slate-400">Today is Tuesday, Oct {selectedDate}, 2023.</p>
+            </div>
+            <div className="flex gap-3">
+              <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold shadow-sm">
+                <Calendar size={14} className="text-slate-400"/> Oct {selectedDate}, 2023
               </button>
-              <button onClick={() => setShowScheduleModal(true)} className="flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-all">
-                <CalendarPlus className="w-4 h-4" /> Schedule Appointment
-              </button>
-              <button onClick={() => setShowRegisterModal(true)} className="flex items-center justify-center gap-2 px-4 py-2.5 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-all">
-                <UserPlus className="w-4 h-4" /> Register Employee
-              </button>
-              <button onClick={handleGenerateReport} className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-600 text-white rounded-lg text-sm font-medium hover:bg-gray-700 transition-all">
-                <FileText className="w-4 h-4" /> Generate Report
+              <button 
+                onClick={handleTriggerUpload} 
+                className="flex items-center gap-2 px-6 py-2 bg-[#2B5A9A] text-white rounded-lg text-xs font-bold shadow-md hover:shadow-lg transition-all active:scale-95"
+                disabled={isUploading}
+              >
+                {isUploading ? <Clock size={14} className="animate-spin" /> : <Upload size={14}/>}
+                {isUploading ? "exporting..." : "Export stats"}
               </button>
             </div>
           </div>
 
-          {/* Two Column Layout */}
-          <div className="grid grid-cols-2 gap-6">
-            {/* LEFT COLUMN */}
+          {/* QUICK ACTIONS */}
+          <section>
+            <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-4">Quick Management Actions</p>
+            <div className="grid grid-cols-4 gap-4">
+              <ActionButton onClick={() => setShowServiceForm(true)} icon={<Plus size={18}/>} label="Add New Service" />
+              <ActionButton onClick={() => showToast("Scheduler opened")} icon={<Calendar size={18}/>} label="Schedule Appointment" />
+              <ActionButton onClick={() => showToast("Employee Registration")} icon={<UserPlus size={18}/>} label="Register Employee" />
+              <ActionButton onClick={() => showToast("Generating Report...")} icon={<FileText size={18}/>} label="Generate Report" />
+            </div>
+          </section>
+
+          {/* MIDDLE GRID: SCHEDULE & UTILIZATION */}
+          <div className="grid grid-cols-3 gap-8">
+            <div className="col-span-2 bg-white rounded-xl border border-slate-100 p-6 shadow-sm">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="font-bold text-slate-800">Today's Schedule</h3>
+                <button onClick={() => showToast("Viewing full calendar")} className="text-xs font-bold text-blue-600 hover:underline">View Calendar</button>
+              </div>
+              <div className="space-y-4">
+                <ScheduleItem time="09:00" ampm="AM" title="Medical Checkup - Dr. Abebe" sub="Patient: Abebe K." status="IN PROGRESS" statusColor="bg-blue-50 text-blue-600" dotColor="bg-blue-500" />
+                <ScheduleItem time="10:30" ampm="AM" title="Urgent Care - Bay 2" sub="Customer: Mulugeta T." status="WAITING" statusColor="bg-orange-50 text-orange-600" dotColor="bg-orange-500" />
+              </div>
+            </div>
+
             <div className="space-y-6">
-              {/* Today's Schedule */}
-              <div className="bg-white rounded-xl border border-gray-200 p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-gray-900">Today's Schedule</h3>
-                  <button className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1">View Calendar <ArrowRight className="w-3 h-3" /></button>
-                </div>
-                <div className="space-y-4">
-                  {todaySchedule.map((item, idx) => (
-                    <div key={idx} className="pb-4 border-b border-gray-100 last:border-0">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="text-sm font-semibold text-gray-900">{item.time}</p>
-                          <p className="font-medium text-gray-900 mt-1">{item.service} - {item.provider}</p>
-                          <p className="text-sm text-gray-500">Patient: {item.patient}</p>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          {getStatusIcon(item.status)}
-                          <span className={`text-xs font-medium ${
-                            item.status === 'in-progress' ? 'text-yellow-600' :
-                            item.status === 'waiting' ? 'text-blue-600' : 'text-green-600'
-                          }`}>{getStatusText(item.status)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Capacity Utilization */}
-              <div className="bg-white rounded-xl border border-gray-200 p-4">
-                <h3 className="font-semibold text-gray-900 mb-3">Capacity Utilization</h3>
-                <div className="flex items-center justify-between">
-                  {weekDays.map((day, idx) => (
-                    <div key={idx} className="text-center flex-1">
-                      <div className="text-sm font-medium text-gray-600 mb-2">{day}</div>
-                      <div className="h-20 flex items-end justify-center">
-                        <div className={`w-8 rounded-t ${idx === 2 ? 'bg-blue-500 h-[85%]' : idx === 3 ? 'bg-blue-400 h-[78%]' : idx === 4 ? 'bg-blue-300 h-[62%]' : idx === 0 ? 'bg-gray-300 h-[68%]' : idx === 1 ? 'bg-gray-300 h-[72%]' : idx === 5 ? 'bg-gray-300 h-[45%]' : 'bg-gray-300 h-[38%]'}`}></div>
-                      </div>
-                      <div className="text-xs text-gray-500 mt-2">{weekDates[idx]}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Employee Performance */}
-              <div className="bg-white rounded-xl border border-gray-200 p-4">
-                <h3 className="font-semibold text-gray-900 mb-4">Employee Performance</h3>
-                <div className="space-y-4">
-                  {employeePerformance.map((emp, idx) => (
-                    <div key={idx}>
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="font-medium text-gray-800">{emp.name}</span>
-                        <span className="text-sm font-bold text-gray-900">{emp.score}% Score</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2.5">
-                        <div className={`h-2.5 rounded-full ${emp.score >= 90 ? 'bg-green-500' : emp.score >= 80 ? 'bg-blue-500' : 'bg-yellow-500'}`} style={{ width: `${emp.score}%` }}></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* RIGHT COLUMN */}
-            <div className="space-y-6">
-              {/* Top Services */}
-              <div className="bg-white rounded-xl border border-gray-200 p-4">
-                <h3 className="font-semibold text-gray-900 mb-4">Top Services</h3>
-                <div className="space-y-4">
-                  {topServices.map((service, idx) => (
-                    <div key={idx} className="flex justify-between items-center">
-                      <span className="text-gray-800 font-medium">{service.name}</span>
-                      <div className="flex items-center gap-3">
-                        <div className="w-32 bg-gray-200 rounded-full h-2"><div className="bg-blue-500 h-2 rounded-full" style={{ width: `${service.percentage}%` }}></div></div>
-                        <span className="text-sm font-semibold text-gray-900 w-10">{service.percentage}%</span>
-                      </div>
-                    </div>
-                  ))}
-                  <div className="text-right pt-2"><span className="text-xs text-gray-400">This Month</span></div>
-                </div>
-              </div>
-
-              {/* Recent Activity */}
-              <div className="bg-white rounded-xl border border-gray-200 p-4">
-                <h3 className="font-semibold text-gray-900 mb-4">Recent Activity</h3>
-                <div className="space-y-4">
-                  {recentActivity.map((activity, idx) => (
-                    <div key={idx} className="flex items-start gap-3 pb-3 border-b border-gray-100 last:border-0">
-                      <div className="w-2 h-2 rounded-full bg-blue-500 mt-2"></div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-800">{activity.action}</p>
-                        <p className="text-xs text-gray-400 mt-1">{activity.actor} - {activity.time}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Critical Alerts */}
-              <div className="bg-white rounded-xl border border-gray-200 p-4">
-                <h3 className="font-semibold text-gray-900 mb-3">Critical Alerts</h3>
-                <div className="p-3 bg-red-50 rounded-lg border border-red-100 mb-3">
-                  <div className="flex items-start gap-3">
-                    <Package className="w-5 h-5 text-red-600 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900">Inventory Low: Surgical Gloves</p>
-                      <p className="text-xs text-gray-600 mt-1">Stock level below 15%. Reorder immediately to avoid service disruption.</p>
-                      <button className="mt-2 text-xs font-medium text-red-600 hover:text-red-700">Order Now →</button>
-                    </div>
+              {/* MINI CALENDAR */}
+              <div className="bg-white rounded-xl border border-slate-100 p-6 shadow-sm">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-sm font-bold">October 2023</h3>
+                  <div className="flex gap-2 text-slate-400">
+                    <ChevronLeft size={16} className="cursor-pointer hover:text-slate-600" onClick={() => setSelectedDate(d => d-1)}/>
+                    <ChevronRight size={16} className="cursor-pointer hover:text-slate-600" onClick={() => setSelectedDate(d => d+1)}/>
                   </div>
                 </div>
-                <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-100">
-                  <div className="flex items-start gap-3">
-                    <FileWarning className="w-5 h-5 text-yellow-600 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900">License Renewal Due</p>
-                      <p className="text-xs text-gray-600 mt-1">Facility operating license expires in 12 days. Submit documentation.</p>
-                      <button className="mt-2 text-xs font-medium text-yellow-600 hover:text-yellow-700">Renew Now →</button>
+                <div className="grid grid-cols-7 gap-1 text-center">
+                  {['M','T','W','T','F','S','S'].map((d, i) => <span key={i} className="text-[10px] font-bold text-slate-300 py-2">{d}</span>)}
+                  {[22,23,24,25,26,27,28].map((d) => (
+                    <span key={d} onClick={() => setSelectedDate(d)} className={`text-xs py-2 rounded-lg font-bold cursor-pointer transition-all ${d === selectedDate ? 'bg-[#2B5A9A] text-white' : 'hover:bg-slate-50'}`}>{d}</span>
+                  ))}
+                </div>
+              </div>
+
+              {/* CAPACITY UTILIZATION */}
+              <div className="bg-white rounded-xl border border-slate-100 p-6 shadow-sm">
+                <h3 className="text-sm font-bold mb-6">Capacity Utilization</h3>
+                <div className="h-32 flex items-end justify-between px-2">
+                  {[40, 65, 45, 85, 55].map((val, i) => (
+                    <div key={i} className="flex flex-col items-center gap-2 group cursor-pointer">
+                      <div className="w-8 bg-slate-50 rounded-t-sm relative h-24 overflow-hidden border border-slate-50">
+                        <div style={{ height: `${val}%` }} className="absolute bottom-0 w-full bg-blue-100 group-hover:bg-blue-200 transition-all duration-500"></div>
+                      </div>
+                      <span className="text-[10px] font-bold text-slate-300 group-hover:text-slate-500">{['M','T','W','T','F'][i]}</span>
                     </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* BOTTOM SECTION */}
+          <div className="grid grid-cols-3 gap-8">
+            <div className="bg-white rounded-xl border border-slate-100 p-6 shadow-sm">
+              <h3 className="font-bold text-slate-800 mb-6">Top Services</h3>
+              <div className="space-y-5">
+                <ProgressBar label="General Checkup" percent="42%" color="bg-[#2B5A9A]" />
+                <ProgressBar label="Oil Change" percent="28%" color="bg-blue-300" />
+                <ProgressBar label="Consultation" percent="15%" color="bg-slate-200" />
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl border border-slate-100 p-6 shadow-sm">
+              <h3 className="font-bold text-slate-800 mb-6">Employee Performance</h3>
+              <div className="space-y-4">
+                <PerformanceRow name="Dr. Abebe" score="98%" />
+                <PerformanceRow name="Dr. Genet" score="92%" />
+                <PerformanceRow name="Mulugeta T." score="85%" />
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl border border-slate-100 p-6 shadow-sm">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="font-bold text-slate-800">Critical Alerts</h3>
+                <span className="bg-red-50 text-red-600 text-[8px] font-black px-2 py-1 rounded">ACTION REQUIRED</span>
+              </div>
+              <div className="p-4 bg-red-50 rounded-xl border border-red-100">
+                <div className="flex gap-3">
+                  <AlertTriangle size={16} className="text-red-500 shrink-0" />
+                  <div className="text-xs">
+                    <p className="font-bold text-slate-900">Inventory Low: Gloves</p>
+                    <p className="text-slate-500 mt-1">Stock level below 15%.</p>
+                    <button onClick={() => showToast("Order Placed!")} className="font-black text-red-600 uppercase mt-2 underline block">Order Now</button>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </main>
-      </div>
 
-      {/* Modals */}
-      <Modal isOpen={showAddServiceModal} onClose={() => setShowAddServiceModal(false)} title="Add New Service">
-        <form onSubmit={handleAddService} className="space-y-4">
-          <div><label className="block text-sm font-medium text-gray-700 mb-1">Service Name</label><input type="text" value={newService.name} onChange={(e) => setNewService({...newService, name: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg" required /></div>
-          <div><label className="block text-sm font-medium text-gray-700 mb-1">Price (ETB)</label><input type="number" value={newService.price} onChange={(e) => setNewService({...newService, price: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg" /></div>
-          <div><label className="block text-sm font-medium text-gray-700 mb-1">Duration (minutes)</label><input type="number" value={newService.duration} onChange={(e) => setNewService({...newService, duration: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg" /></div>
-          <button type="submit" className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Add Service</button>
-        </form>
-      </Modal>
-
-      <Modal isOpen={showScheduleModal} onClose={() => setShowScheduleModal(false)} title="Schedule Appointment">
-        <form onSubmit={handleScheduleAppointment} className="space-y-4">
-          <div><label className="block text-sm font-medium text-gray-700 mb-1">Customer Name</label><input type="text" value={newAppointment.customer} onChange={(e) => setNewAppointment({...newAppointment, customer: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg" required /></div>
-          <div><label className="block text-sm font-medium text-gray-700 mb-1">Service</label><select value={newAppointment.service} onChange={(e) => setNewAppointment({...newAppointment, service: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg"><option value="">Select Service</option>{topServices.map((s, i) => <option key={i} value={s.name}>{s.name}</option>)}</select></div>
-          <div><label className="block text-sm font-medium text-gray-700 mb-1">Time</label><input type="time" value={newAppointment.time} onChange={(e) => setNewAppointment({...newAppointment, time: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg" /></div>
-          <button type="submit" className="w-full py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Schedule Appointment</button>
-        </form>
-      </Modal>
-
-      <Modal isOpen={showRegisterModal} onClose={() => setShowRegisterModal(false)} title="Register Employee">
-        <form onSubmit={handleRegisterEmployee} className="space-y-4">
-          <div><label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label><input type="text" value={newEmployee.name} onChange={(e) => setNewEmployee({...newEmployee, name: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg" required /></div>
-          <div><label className="block text-sm font-medium text-gray-700 mb-1">Role</label><select value={newEmployee.role} onChange={(e) => setNewEmployee({...newEmployee, role: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg"><option value="">Select Role</option><option value="Doctor">Doctor</option><option value="Nurse">Nurse</option><option value="Technician">Technician</option></select></div>
-          <div><label className="block text-sm font-medium text-gray-700 mb-1">Email</label><input type="email" value={newEmployee.email} onChange={(e) => setNewEmployee({...newEmployee, email: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg" /></div>
-          <button type="submit" className="w-full py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">Register Employee</button>
-        </form>
-      </Modal>
-
-      <style jsx global>{`
-        @media print { nav, aside, .sticky, button:not(.print\\:block) { display: none !important; } main { padding: 20px !important; } }
-      `}</style>
+        </div>
+      </main>
     </div>
   );
 }
+
+// --- SHARED COMPONENTS ---
+const SidebarItem = ({ icon, label, active = false }) => (
+  <div className={`flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer transition-all ${active ? 'bg-[#EEF2F8] text-[#2B5A9A] font-bold' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}>
+    {icon} <span className="text-sm">{label}</span>
+  </div>
+);
+
+const ActionButton = ({ icon, label, onClick }) => (
+  <button onClick={onClick} className="flex items-center gap-3 p-4 bg-white border border-slate-100 rounded-xl hover:shadow-md transition-all group w-full text-left">
+    <div className="p-2 bg-slate-50 rounded-lg group-hover:text-blue-500 group-hover:bg-blue-50 transition-colors">{icon}</div>
+    <span className="text-xs font-bold text-slate-700">{label}</span>
+  </button>
+);
+
+const ScheduleItem = ({ time, ampm, title, sub, status, statusColor, dotColor }) => (
+  <div className="flex gap-4 items-start py-2 group">
+    <div className="w-12 text-center pt-2">
+      <p className="text-xs font-bold text-slate-900">{time}</p>
+      <p className="text-[8px] font-bold text-slate-400 uppercase">{ampm}</p>
+    </div>
+    <div className={`w-2.5 h-2.5 rounded-full ${dotColor} mt-2 ring-4 ring-white`}></div>
+    <div className="flex-1 bg-white border border-slate-100 rounded-[12px] p-4 flex items-center justify-between shadow-sm group-hover:border-blue-100 group-hover:shadow-md transition-all cursor-pointer">
+      <div><p className="text-sm font-bold text-slate-800">{title}</p><p className="text-[10px] text-slate-400">{sub}</p></div>
+      <span className={`text-[8px] font-black px-3 py-1.5 rounded-full ${statusColor}`}>{status}</span>
+    </div>
+  </div>
+);
+
+const ProgressBar = ({ label, percent, color }) => (
+  <div className="space-y-2">
+    <div className="flex justify-between text-[11px] font-bold"><span>{label}</span><span className="text-slate-400">{percent}</span></div>
+    <div className="h-2 bg-slate-50 rounded-full overflow-hidden"><div style={{width: percent}} className={`h-full ${color} rounded-full transition-all duration-1000`}></div></div>
+  </div>
+);
+
+const PerformanceRow = ({ name, score }) => (
+  <div className="flex items-center gap-3">
+    <div className="w-8 h-8 rounded-full bg-slate-100 shrink-0" />
+    <div className="flex-1">
+      <div className="flex justify-between text-[11px] font-bold mb-1"><span>{name}</span><span className="text-slate-400">{score}</span></div>
+      <div className="h-1.5 bg-slate-50 rounded-full"><div style={{width: score}} className="h-full bg-emerald-500 rounded-full"></div></div>
+    </div>
+  </div>
+);
+
+const LayoutDashboard = ({ size }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="7" height="9" /><rect x="14" y="3" width="7" height="5" /><rect x="14" y="12" width="7" height="9" /><rect x="3" y="16" width="7" height="5" />
+  </svg>
+);
