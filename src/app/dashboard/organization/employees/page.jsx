@@ -31,6 +31,7 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -72,6 +73,8 @@ export default function EmployeesPage() {
   const setOrganization = useOrganizationStore(
     ({ setOrganization }) => setOrganization,
   );
+  const calendars = useOrganizationStore(({ calendars }) => calendars);
+  const setCalendars = useOrganizationStore(({ setCalendars }) => setCalendars);
   const employees = useOrganizationStore(({ employees }) => employees);
   const setEmployees = useOrganizationStore(({ setEmployees }) => setEmployees);
   const employeeCount = useOrganizationStore(
@@ -82,6 +85,7 @@ export default function EmployeesPage() {
   );
   // const [employees, setEmployees] = useState([]);
   const [selectedEmployees, setSelectedEmployees] = useState({});
+  const [filteredEmployees, setFilteredEmployees] = useState(employees);
   // const [employeeCount, setEmployeeCount] = useState(0);
   // const [organizationId, setOrganizationId] = useState(null);
   const [isLoading, setIsLoading] = useState(employees == null);
@@ -134,13 +138,14 @@ export default function EmployeesPage() {
       icalendar: 1,
     });
 
-    const [countRes, dataRes] = await Promise.all([
+    const [countRes, dataRes, calRes] = await Promise.all([
       RequestHandler.Get(
         `/api/v1/organization/${organizationId}/employees/count`,
       ),
       RequestHandler.Get(
         `/api/v1/organization/${organizationId}/employees?${params.toString()}`,
       ),
+      RequestHandler.Get(`/api/v1/organization/${organizationId}/calendars`),
     ]);
 
     if (countRes.ok) {
@@ -152,36 +157,43 @@ export default function EmployeesPage() {
       const data = await dataRes.json();
       let results = data.employees || [];
 
-      if (statusFilter !== "all") {
-        results = results.filter(
-          (s) => s.isActive === (statusFilter === "active"),
-        );
-      }
-      if (searchQuery) {
-        results = results.filter(
-          (e) =>
-            e.user.firstname
-              .toLowerCase()
-              .includes(searchQuery.toLowerCase()) ||
-            e.user.lastname.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            e.user.jobTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            e.user.jobDescription
-              .toLowerCase()
-              .includes(searchQuery.toLowerCase()),
-        );
-      }
       setEmployees(results);
+    }
+
+    if (calRes.ok) {
+      const { calendars } = await calRes.json();
+      setCalendars(calendars);
     }
     (async () => setIsLoading(false))();
   }, [
+    setCalendars,
     setEmployees,
     setEmployeeCount,
     organizationId,
     page,
     limit,
-    statusFilter,
-    searchQuery,
+    // statusFilter,
+    // searchQuery,
   ]);
+
+  useEffect(() => {
+    let results = employees;
+    if (statusFilter !== "all") {
+      results = results.filter(
+        (s) => s.isActive === (statusFilter === "active"),
+      );
+    }
+    if (searchQuery) {
+      results = results.filter(
+        (e) =>
+          e.user.firstname.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          e.user.lastname.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          e.jobTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          e.jobDescription.toLowerCase().includes(searchQuery.toLowerCase()),
+      );
+    }
+    (() => setFilteredEmployees(results))();
+  }, [employees, searchQuery, setEmployees, statusFilter]);
 
   useEffect(() => {
     fetchEmployees();
@@ -196,7 +208,13 @@ export default function EmployeesPage() {
     );
     if (res.ok) {
       setIsAddOpen(false);
-      setFormData({ email: "", name: "", description: "", isActive: true });
+      setFormData({
+        email: "",
+        name: "",
+        description: "",
+        isActive: true,
+        calendarId: null,
+      });
       fetchEmployees();
     }
     setIsSubmitting(false);
@@ -204,8 +222,9 @@ export default function EmployeesPage() {
 
   const handleEditEmployee = async () => {
     setIsSubmitting(true);
+    console.log(formData);
     const res = await RequestHandler.Patch(
-      `/api/v1/organization/${organizationId}/employee/${selectedEmployee.userId}`,
+      `/api/v1/organization/${organizationId}/employee/${selectedEmployee.id}`,
       { body: formData },
     );
     if (res.ok) {
@@ -219,7 +238,7 @@ export default function EmployeesPage() {
   const handleDeleteEmployee = async () => {
     setIsSubmitting(true);
     const res = await RequestHandler.Delete(
-      `/api/v1/organization/${organizationId}/employee/${selectedEmployee.userId}`,
+      `/api/v1/organization/${organizationId}/employee/${selectedEmployee.id}`,
     );
     if (res.ok) {
       setIsDeleteOpen(false);
@@ -236,7 +255,7 @@ export default function EmployeesPage() {
       jobTitle: employee.jobTitle,
       jobDescription: employee.jobDescription,
       isActive: employee.isActive,
-      calendarId: null,
+      calendarId: employee.calendarId,
     });
     setIsEditOpen(true);
   };
@@ -263,7 +282,7 @@ export default function EmployeesPage() {
       </div>
 
       {/* Toolbar */}
-      <Card className="p-3 bg-muted/20 border-none shadow-none bg-background">
+      <Card className="p-3 bg-muted/20 border-none shadow-none">
         <div className="flex flex-col md:flex-row gap-4 justify-between">
           <div className="flex flex-1 items-center gap-3">
             <div className="relative w-full max-w-sm">
@@ -315,19 +334,19 @@ export default function EmployeesPage() {
                 <TableHead className="font-bold">Fullname</TableHead>
                 <TableHead className="font-bold">Job</TableHead>
                 <TableHead className="font-bold">Gender</TableHead>
-                {/* <TableHead className="font-bold text-center">
+                <TableHead className="font-bold text-center">
                   Calendar
-                </TableHead> */}
+                </TableHead>
                 <TableHead className="font-bold text-center">Status</TableHead>
                 <TableHead className="text-right font-bold">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {employees.map((employee) => (
-                <TableRow key={employee.userId}>
+              {filteredEmployees.map((employee) => (
+                <TableRow key={employee.id}>
                   <TableCell className="w-8">
                     <Checkbox
-                      checked={selectedEmployees[employee.userId]}
+                      checked={selectedEmployees[employee.id]}
                       onCheckedChange={(checked) =>
                         setSelectedEmployees((prev) =>
                           Object.fromEntries(
@@ -342,7 +361,7 @@ export default function EmployeesPage() {
                   </TableCell>
                   {/* <TableCell>
                     <div className="text-xs font-mono">
-                      {employee.userId.slice(0, 8)}
+                      {employee.id.slice(0, 8)}
                     </div>
                   </TableCell> */}
                   <TableCell>
@@ -371,22 +390,19 @@ export default function EmployeesPage() {
                       {employee.user?.gender}
                     </div>
                   </TableCell>
-                  {/* <TableCell>
+                  <TableCell>
                     <div className="text-xs text-muted-foreground truncate max-w-[400px] overflow-auto">
-                      {employee.calendar?.name}
+                      {employee.calendar?.name || "-"}
                     </div>
-                  </TableCell> */}
+                  </TableCell>
                   <TableCell className="text-center">
                     <AcriveBadge isActive={employee.isActive} />
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="icon">
-                      <CalendarCogIcon />
-                    </Button>
                     {employee.calendarId != null ? (
                       <Button variant="ghost" size="icon" asChild>
                         <Link
-                          href={`/dashboard/organization/employee/${employee.userId}/calendar/${
+                          href={`/dashboard/organization/employee/${employee.id}/calendar/${
                             employee.calendarId
                           }`}
                         >
@@ -422,9 +438,9 @@ export default function EmployeesPage() {
       ) : (
         /* IMPROVED GRID VIEW */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {employees.map((employee) => (
+          {filteredEmployees.map((employee) => (
             <Card
-              key={employee.userId}
+              key={employee.id}
               className="bg-background  group flex flex-col relative overflow-hidden transition-all hover:ring-2 hover:ring-primary/20"
             >
               <CardHeader className="pb-3 border-b bg-muted/5 flex flex-row items-center justify-between space-y-0">
@@ -473,7 +489,7 @@ export default function EmployeesPage() {
               <CardFooter className="pt-4 border-t flex justify-between items-center bg-muted/5">
                 <AcriveBadge isActive={employee.isActive} />
                 <span className="text-[10px] font-mono text-muted-foreground">
-                  ID: {employee.userId.slice(0, 8)}
+                  ID: {employee.id.slice(0, 8)}
                 </span>
               </CardFooter>
             </Card>
@@ -589,6 +605,29 @@ export default function EmployeesPage() {
                 }
               />
             </div>
+
+            <div className="space-y-2">
+              <Label>Calendar</Label>
+              <Select
+                value={formData.calendarId ?? undefined}
+                onValueChange={(calendarId) =>
+                  setFormData((p) => ({ ...p, calendarId }))
+                }
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a calendar" />
+                </SelectTrigger>
+                <SelectContent position={"item-aligned"}>
+                  <SelectGroup>
+                    {calendars?.map((calendar, idx) => (
+                      <SelectItem key={idx} value={calendar.id.toString()}>
+                        {calendar.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
             <div className="flex items-center gap-2">
               <input
                 type="checkbox"
@@ -633,8 +672,8 @@ export default function EmployeesPage() {
           <DialogHeader>
             <DialogTitle>Are you sure?</DialogTitle>
             <DialogDescription>
-              This will permanently delete "{selectedEmployee?.name}". This
-              action cannot be undone.
+              This will permanently delete &quot;{selectedEmployee?.name}&quot;.
+              This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

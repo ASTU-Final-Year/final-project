@@ -71,14 +71,14 @@ export default function HeroSection() {
           <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
             <Link
               href="/register/organization"
-              className="inline-flex justify-center items-center rounded-lg px-8 py-3.5 bg-blue-600 text-white font-medium shadow-[0_0_20px_rgba(37,99,235,0.3)] hover:bg-blue-500 hover:shadow-[0_0_25px_rgba(37,99,235,0.5)] transition-all duration-300 border border-blue-500/50"
+              className="inline-flex justify-center items-center rounded-[25px] px-8 py-3.5 bg-blue-600 text-white font-medium shadow-[0_0_20px_rgba(37,99,235,0.3)] hover:bg-blue-500 hover:shadow-[0_0_25px_rgba(37,99,235,0.5)] transition-all duration-300 border border-blue-500/50"
             >
               Register Organization
             </Link>
 
             <Link
               href="/services"
-              className="inline-flex justify-center items-center rounded-lg px-8 py-3.5 bg-white/5 text-white font-medium border border-white/20 backdrop-blur-sm hover:bg-white/10 transition-all duration-300"
+              className="inline-flex justify-center items-center rounded-[25px] px-8 py-3.5 bg-white/5 text-white font-medium border border-white/20 backdrop-blur-sm hover:bg-white/10 transition-all duration-300"
             >
               Explore Services
             </Link>

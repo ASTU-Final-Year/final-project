@@ -118,7 +118,7 @@ export default function Page() {
             {solutions.map((solution, index) => (
               <Card
                 key={index}
-                className="hover:shadow- hover:ring transition-shadow duration-200 ring-0"
+                className="hover:shadow-sm shadow-xs transition-shadow duration-200 ring-0 border"
               >
                 <CardHeader>
                   <div className="mb-4 h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -135,7 +135,7 @@ export default function Page() {
         </section>
 
         {/* Workflow animation */}
-        <section className="container min-w-full px-4 py-16 bg-accent border-y">
+        <section className="container min-w-full px-4 py-16 bg-white/40 shadow-sm">
           <WorkflowAnimation />
         </section>
 
@@ -324,7 +324,7 @@ export default function Page() {
               with ServeSync+ today and bring real-time efficiency to your
               sector.
             </p>
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <div className="flex flex-col sm:flex-row justify-center gap-4 rounded">
               <Link
                 href="/register/organization"
                 className="bg-white p-2 text-primary hover:bg-slate-100 font-bold rounded px-8 cursor-pointer"
@@ -375,7 +375,7 @@ export default function Page() {
 
             <p className="mt-10 text-slate-600 max-w-2xl mx-auto">
               Our commitment to performance, scalability, and security ensures
-              that your institution's core processes run reliably without
+              that your institution&apos;s core processes run reliably without
               interruption.
             </p>
           </div>

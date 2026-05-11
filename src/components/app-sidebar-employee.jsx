@@ -48,7 +48,7 @@ const navData = [
   },
   {
     title: "Employments",
-    url: "/dashboard/employments",
+    url: "/dashboard/employee/employments",
     icon: User,
   },
   // {

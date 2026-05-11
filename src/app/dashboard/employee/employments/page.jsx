@@ -111,10 +111,6 @@ export default function EmploymentsPage() {
         if (empRes.ok) {
           const { employee: employments } = await empRes.json();
           setEmployments(employments);
-          setStats((p) => ({
-            ...p,
-            employments: employments?.length || 0,
-          }));
         }
       } catch (error) {
         console.error("Failed to load overview data", error);

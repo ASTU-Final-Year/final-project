@@ -19,8 +19,8 @@ import OrganizationService from "~/services/organization.service";
 import OrganizationServicesService from "~/services/organization.services.service";
 
 const TAddFirstEmployee = type({
-  // serviceId: "string.uuid",
-  employeeId: "string.uuid",
+  // serviceId: "string",
+  employeeId: "5 < string <= 30",
 });
 
 type AddFirstEmployee = typeof TAddFirstEmployee.infer;

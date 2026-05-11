@@ -25,7 +25,7 @@ const TServiceRegistration = type({
   name: "string <= 54",
   description: "string <= 200",
   "isActive?": "boolean|null",
-  "calendarId?": "string.uuid|null",
+  "calendarId?": "string|null",
 });
 
 type ServiceRegistration = typeof TServiceRegistration.infer;

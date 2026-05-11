@@ -7,6 +7,7 @@ import sqliteSchema from "./schema/sqlite";
 import PaymentService from "~/services/payment.service";
 import defaultPricingPlans from "@/data/default-pricing-plans";
 import { createClient } from "@libsql/client";
+import SessionService from "~/services/session.service";
 
 const pool = new Pool({
   connectionString: dbConfig.pgDatabaseURL,
@@ -77,6 +78,11 @@ export const initDb = async () => {
       for (const [name, pricingPlan] of Object.entries(defaultPricingPlans)) {
         await PaymentService.createPricingPlan(pricingPlan);
       }
+    }
+    // delete expired sessions and sessionBlacklists
+    {
+      await SessionService.deleteExpiredSessions();
+      await SessionService.deleteExpiredSessionsBlacklist();
     }
   }
 };

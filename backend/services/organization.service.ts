@@ -429,16 +429,16 @@ export default class OrganizationService {
     organizationId: string,
   ): Promise<boolean> {
     const [employee] = await db
-      .select({ userId: employees.userId })
+      .select({ id: employees.id })
       .from(organizations)
       .innerJoin(employees, eq(organizations.id, employees.organizationId))
       .where(
         and(
-          eq(employees.userId, employeeId),
+          eq(employees.id, employeeId),
           eq(employees.organizationId, organizationId),
         ),
       );
-    return employee?.userId === employeeId;
+    return employee?.id === employeeId;
   }
 
   static async sendEmployeeHireLink({
