@@ -11,8 +11,6 @@ import {
   Building2,
   Loader2,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useOrganizationStore } from "@/store";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -33,28 +31,39 @@ export default function DashboardOverview() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const orgRes = await RequestHandler.Get("/api/v1/organization");
+        const orgRes = await RequestHandler.Get("/query/v1/organization");
         if (orgRes.ok) {
-          const { organization } = await orgRes.json();
+          const {
+            organizations: [organization],
+          } = await orgRes.json();
           setOrganization(organization);
 
           // Fetch aggregate stats concurrently
-          const [empRes, srvRes, calRes] = await Promise.all([
+          const [empRes, srvRes, acSrvRes, calRes] = await Promise.all([
+            RequestHandler.Get(`/query/v1/employee?countOnly`),
+            RequestHandler.Get(`/query/v1/organizationService?countOnly`),
             RequestHandler.Get(
-              `/api/v1/organization/${organization.id}/employees/count`,
+              `/query/v1/organizationService?countOnly&~isActive=true`,
             ),
-            RequestHandler.Get(
-              `/api/v1/organization/${organization.id}/services/count`,
-            ),
-            RequestHandler.Get(
-              `/api/v1/organization/${organization.id}/calendars/count`,
-            ),
+            RequestHandler.Get(`/query/v1/organizationCalendar?countOnly`),
           ]);
-
+          const { count: empCount } = empRes.ok
+            ? (await empRes.json()) || 0
+            : 0;
+          const { count: srvCount } = srvRes.ok
+            ? (await srvRes.json()) || 0
+            : 0;
+          const { count: activeServicesCount } = acSrvRes.ok
+            ? (await acSrvRes.json()) || 0
+            : 0;
+          const { count: calCount } = calRes.ok
+            ? (await calRes.json()) || 0
+            : 0;
           setStats({
-            employees: empRes.ok ? (await empRes.json()).count || 0 : 0,
-            services: srvRes.ok ? (await srvRes.json()).count || 0 : 0,
-            calendars: calRes.ok ? (await calRes.json()).count || 0 : 0,
+            employees: empCount,
+            services: srvCount,
+            activeServices: activeServicesCount,
+            calendars: calCount,
           });
         }
       } catch (error) {
@@ -63,9 +72,8 @@ export default function DashboardOverview() {
         setIsLoading(false);
       }
     };
-
     fetchDashboardData();
-  }, []);
+  }, [setOrganization, setStats]);
 
   if (isLoading)
     return (
@@ -118,7 +126,7 @@ export default function DashboardOverview() {
         </CardContent>
       </Card>
 
-      <div>
+      {/* <div>
         <h2 className="text-2xl font-bold tracking-tight">
           Welcome back,{" "}
           {organization.admin.firstname + " " + organization.admin.lastname}
@@ -126,8 +134,9 @@ export default function DashboardOverview() {
         <p className="text-muted-foreground">
           Here is an overview of your workspace today.
         </p>
-      </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      </div> */}
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <StatCard
           title="Total Employees"
           value={stats.employees}
@@ -136,6 +145,12 @@ export default function DashboardOverview() {
         />
         <StatCard
           title="Active Services"
+          value={stats.activeServices}
+          href={`/dashboard/organization/services`}
+          icon={Briefcase}
+        />
+        <StatCard
+          title="Totla Services"
           value={stats.services}
           href={`/dashboard/organization/services`}
           icon={Briefcase}

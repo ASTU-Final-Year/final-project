@@ -1,0 +1,33 @@
+{
+  "name": "backend",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "db:generate": "NODE_ENV=production PROD_DATABASE=1 drizzle-kit generate --config=drizzle.config.ts",
+    "db:migrate": "NODE_ENV=production PROD_DATABASE=1 drizzle-kit migrate --config=drizzle.config.ts",
+    "db:push": "NODE_ENV=production PROD_DATABASE=1 drizzle-kit push --config=drizzle.config.ts",
+    "db:push:sqlite": "drizzle-kit push --config=drizzle.config.sqlite.ts",
+    "db:studio": "NODE_ENV=production PROD_DATABASE=1 drizzle-kit studio --config=drizzle.config.ts",
+    "db:studio:sqlite": "drizzle-kit studio --config=drizzle.config.sqlite.ts",
+    "dev": "bun db:push:sqlite && bun --watch ./index.ts",
+    "dev:prod": "PROD_DATABASE=1 bun db:push:sqlite && bun --watch ./index.ts",
+    "start": "NODE_ENV=production bun db:push && bun ./index.ts",
+    "postinstall": "bun ./postinstall.js"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.13"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@bepalo/cache": "^1.0.3",
+    "@bepalo/jwt": "^2.0.9",
+    "@bepalo/router": "^2.14.38",
+    "@bepalo/time": "^1.2.11",
+    "@types/pg": "^8.20.0",
+    "arktype": "^2.2.0",
+    "pg": "^8.20.0"
+  }
+}

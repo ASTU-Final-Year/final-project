@@ -6,19 +6,36 @@ import { useEffect, useState } from "react";
 
 export default function PortalDashboard() {
   const session = useSessionStore(({ session }) => session);
-  const [_loaded, _setLoaded] = useState(false);
+  // const [_loaded, _setLoaded] = useState(false);
 
-  useEffect(() => {
-    if (!_loaded) (async () => _setLoaded(true))();
-    if (_loaded && session?.user == null) {
-      return redirect("/login", RedirectType.push);
-    }
-  }, [_loaded, session?.user]);
+  // useEffect(() => {
+  //   if (!_loaded) {
+  //     (async () => {
+  //       // if (_loaded && session?.user == null) {
+  //       //   return router.push("/login");
+  //       // }
+  //       Auth.isLoggedIn().then((isLoggedIn) => {
+  //         if (!isLoggedIn) {
+  //           router.push("/login");
+  //         }
+  //       });
+  //       _setLoaded(true);
+  //     })();
+  //   }
+  // }, [router, _loaded, session?.user]);
 
-  if (!_loaded || session?.user == null) {
+  // useEffect(() => {
+  //   if (!_loaded) (async () => _setLoaded(true))();
+
+  //   console.log(session);
+  //   // if (_loaded && session?.user == null) {
+  //   //   return redirect("/login", RedirectType.push);
+  //   // }
+  // }, [_loaded, session?.user]);
+
+  if (session?.user == null) {
     return <div>Loading...</div>;
   }
-
   if (session.user?.role === "employee") {
     return redirect("/dashboard/employee", RedirectType.push);
   } else if (session.user?.role === "organization_admin") {

@@ -11,12 +11,9 @@ export const jwts = {
   ),
 };
 
-export interface CTXSession {
-  session: Session;
-}
-
 export type Gender = "M" | "F" | "U";
 export type Role = "super_admin" | "organization_admin" | "employee" | "client";
+
 export interface CTXSession {
   session: Session;
 }
@@ -313,6 +310,8 @@ export interface Session {
   createdAt: Date;
   updatedAt: Date;
   user: User;
+  organization?: Organization;
+  employments: Employee[];
 }
 
 export type SessionInit = Omit<
@@ -343,7 +342,7 @@ export interface PricingPlan {
   name: string;
   price: number;
   monthlyDiscount: number;
-  annualDiscount: number;
+  yearlyDiscount: number;
   maxServices: number;
   maxEmployees: number;
   features: string[];
@@ -355,7 +354,7 @@ export interface PricingPlan {
 export type PricingPlanInit = Omit<PricingPlan, "createdAt" | "updatedAt"> &
   Partial<Pick<PricingPlan, "createdAt" | "updatedAt">>;
 
-export type OrganizationBillingPeriod = "monthly" | "annually";
+export type OrganizationBillingPeriod = "monthly" | "yearly";
 
 export interface Organization {
   id: string;

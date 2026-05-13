@@ -22,6 +22,7 @@ import {
   Eye,
   EyeOff,
   ArrowRight,
+  HomeIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Auth from "@/lib/auth";
@@ -115,19 +116,19 @@ export default function RegisterUserContent() {
   };
 
   return (
-    <div className="min-h-screen bg-accent flex flex-col py-16 px-4">
+    <div className="min-h-screen flex flex-col py-16 px-4">
       <div className="max-w-3xl mx-auto w-full">
         {/* Header section */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center h-16 w-16 rounded bg-primary/10 mb-4">
+          {/* <div className="inline-flex items-center justify-center h-16 w-16 rounded bg-primary/10 mb-4">
             <UserPlus className="h-8 w-8 text-primary" />
-          </div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+          </div> */}
+          <h1 className="text-3xl font-extrabold text-slate-100 tracking-tight">
             Create an Account
           </h1>
-          <p className="text-slate-500 mt-2">
+          {/* <p className="text-slate-500 mt-2">
             Join the platform as a client or an employee.
-          </p>
+          </p> */}
         </div>
 
         {/* Role Toggle Switcher */}
@@ -143,7 +144,7 @@ export default function RegisterUserContent() {
                 "px-8 py-2.5 rounded text-sm font-semibold transition-all duration-300",
                 formData.role === "client"
                   ? "bg-white text-primary shadow-sm"
-                  : "text-slate-500 hover:text-slate-700",
+                  : "text-slate-700 hover:text-slate-700",
               )}
             >
               Client
@@ -158,7 +159,7 @@ export default function RegisterUserContent() {
                 "px-8 py-2.5 rounded text-sm font-semibold transition-all duration-300",
                 formData.role === "employee"
                   ? "bg-white text-primary shadow-sm"
-                  : "text-slate-500 hover:text-slate-700",
+                  : "text-slate-700 hover:text-slate-700",
               )}
             >
               Employee
@@ -375,14 +376,22 @@ export default function RegisterUserContent() {
 
           {/* Footer */}
           <div className="flex flex-col border-t p-6 bg-slate-50/50">
-            <p className="text-sm text-slate-500 text-center">
-              Already have an account?{" "}
+            <p className="text-sm text-slate-500 text-center flex justify-center gap-2">
               <Link
-                href="/login"
-                className="font-semibold text-primary hover:underline"
+                href="/"
+                className="font-semibold text-primary hover:underline flex"
               >
-                Sign in
+                <HomeIcon size={18} />
               </Link>
+              <span>
+                <span> Already have an account? </span>
+                <Link
+                  href="/login"
+                  className="font-semibold text-primary hover:underline"
+                >
+                  Sign in
+                </Link>
+              </span>
             </p>
           </div>
         </div>

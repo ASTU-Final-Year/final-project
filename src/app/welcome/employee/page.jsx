@@ -177,7 +177,13 @@ function WelcomeContent() {
 
 export default function EmployeeWelcomePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-orange-50/30 flex justify-center items-start py-12 px-4">
+    <div
+      className="min-h-screen bg-cover flex justify-center items-start py-12 px-4"
+      style={{
+        backgroundImage:
+          'url("/images/pexels-lovetosmile-36200692-blurred-dim.jpg")',
+      }}
+    >
       <Suspense
         fallback={
           <div className="flex flex-col items-center justify-center p-8">

@@ -83,7 +83,7 @@ export default function EmploymentsPage() {
 
   // View & Filter States
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(5);
+  const [limit, setLimit] = useState(10);
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [view, setView] = useState("table");
@@ -107,9 +107,9 @@ export default function EmploymentsPage() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const empRes = await RequestHandler.Get("/api/v1/employee");
+        const empRes = await RequestHandler.Get("/query/v1/employee");
         if (empRes.ok) {
-          const { employee: employments } = await empRes.json();
+          const { employees: employments } = await empRes.json();
           setEmployments(employments);
         }
       } catch (error) {
@@ -128,8 +128,8 @@ export default function EmploymentsPage() {
 
   //   const offset = (page - 1) * limit;
   //   const params = new URLSearchParams({
-  //     o: offset.toString(),
-  //     l: limit.toString(),
+  //     offset: offset.toFixed(),
+  //     limit: limit.toFixed(),
   //     iemployee: 1,
   //   });
 
@@ -364,6 +364,7 @@ export default function EmploymentsPage() {
                 <TableHead className="px-2"></TableHead>
                 <TableHead className="font-bold">Employment</TableHead>
                 <TableHead className="font-bold">Organization</TableHead>
+                <TableHead className="font-bold">Status</TableHead>
                 <TableHead className="text-right font-bold">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -407,6 +408,9 @@ export default function EmploymentsPage() {
                         </h2>
                       )}
                     </div>
+                  </TableCell>
+                  <TableCell className="">
+                    <AcriveBadge isActive={employment.isActive} />
                   </TableCell>
                   <TableCell className="text-right">
                     {/* <Button
@@ -466,7 +470,16 @@ export default function EmploymentsPage() {
                 <CardTitle className="font-bold text-primary truncate pr-4 flex justify-between gap-1 w-full">
                   <Link href={"/dashboard/employee/" + employment.id}>
                     {employment.jobTitle}
-                  </Link>
+                  </Link>{" "}
+                  {employment.organization?.id && (
+                    <h2 className="text-md hover:underline">
+                      <Link
+                        href={`/organization/${employment.organization.id}`}
+                      >
+                        {employment.organization.name || ""}
+                      </Link>
+                    </h2>
+                  )}
                   {/* <Badge
                     variant={
                       activeEmploymentId === employment.id
@@ -535,14 +548,7 @@ export default function EmploymentsPage() {
                 </p>
               </CardContent>
               <CardFooter className="pt-4 border-t flex justify-between items-center bg-muted/5">
-                {/* <AcriveBadge isActive={employment.isActive} /> */}
-                {employment.organization?.id && (
-                  <h2 className="text-md">
-                    <Link href={`/organization/${employment.organization.id}`}>
-                      @{employment.organization.name || ""}
-                    </Link>
-                  </h2>
-                )}
+                <AcriveBadge isActive={employment.isActive} />
                 <span className="text-[10px] font-mono text-muted-foreground">
                   ID: {employment.id}
                 </span>
@@ -566,7 +572,7 @@ export default function EmploymentsPage() {
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Rows:</span>
             <Select
-              value={limit.toString()}
+              value={limit.toFixed()}
               onValueChange={(v) => {
                 setLimit(Number(v));
                 setPage(2); // Reset to page 1 on limit change

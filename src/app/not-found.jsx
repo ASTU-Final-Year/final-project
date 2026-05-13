@@ -27,9 +27,15 @@ import { ArrowLeft, Home } from "lucide-react";
 
 export default function GlobalNotFound() {
   return (
-    // <html lang="en" className={inter.className}>
-    //   <body>
-    <NotFound />
+    <main
+      className="bg-cover"
+      style={{
+        backgroundImage:
+          'url("/images/pexels-lovetosmile-36200692-blurred-dim.jpg")',
+      }}
+    >
+      <NotFound />
+    </main>
     //   </body>
     // </html>
   );
@@ -39,9 +45,9 @@ function NotFound() {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-orange-50/30 flex flex-col py-12 px-4">
+    <div className="min-h-screen flex flex-col py-12 px-4">
       <div className="container mx-auto max-w-[500px]">
-        <Card className="border-2 shadow-xl shadow-slate-200/50 overflow-hidden text-center">
+        <Card className="border-2 overflow-hidden text-center">
           <CardHeader className="pb-6 pt-10 border-b border-slate-100 bg-white">
             <div className="text-6xl font-black text-primary mb-2 tracking-tighter">
               404

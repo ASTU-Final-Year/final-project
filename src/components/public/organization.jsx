@@ -10,79 +10,97 @@ import {
   CalendarDays,
   ArrowRight,
   ExternalLink,
+  Check,
 } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import Link from "next/link";
 
 export default function PublicOrganization({ organization, services }) {
-  const displayRating = organization.rating
-    ? organization.rating.toFixed(1)
-    : "New";
+  const rating = organization.rating || 0;
 
   return (
     <div className="min-h-screen bg-accent text-foreground font-sans selection:bg-primary/20 selection:text-primary relative flex flex-col">
       {/* Hero Banner Area */}
-      <div className="h-80 w-full bg-muted/30 border-b relative z-0 flex items-center justify-center overflow-hidden">
+      <div
+        className="h-60 w-full bg-muted/30 border-b relative z-0 flex items-center justify-center overflow-hidden"
+        style={{
+          backgroundRepeat: "no-repeat",
+          backgroundPositionY: "center",
+          backgroundSize: "cover",
+          backgroundImage: 'url("/images/pexels-lovetosmile-36200692.jpg")',
+        }}
+      >
+        <div className="w-full h-full bg-slate-900/50"></div>
         {/* Subtle glowing orbs using the primary theme color */}
-        <div className="w-full h-full bg-pattern-1 blur-[2px]"></div>
-        <div className="absolute left-0 right-0 top-0 bottom-0 bg-linear-to-tr from-indigo-700 from-30% via-primary/90 via-70% to-transparent"></div>
+        {/* <div className="w-full h-full bg-pattern-1 blur-[2px]"></div> */}
+        {/* <div className="absolute left-0 right-0 top-0 bottom-0 bg-linear-to-tr from-indigo-700 from-30% via-primary/90 via-70% to-transparent"></div> */}
         {/* <div className="absolute bottom-0 right-1/4 translate-y-1/3 w-72 h-72 bg-primary/50 rounded-full blur-[80px]"></div> */}
       </div>
 
       {/* Main Content - Pulled up to overlap the hero */}
-      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 -mt-40 relative z-10 pb-20">
+      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 -mt-28 relative z-10 pb-20">
         {/* Profile Header Card (Matches Shadcn Card Style) */}
         <div className="bg-card text-card-foreground rounded border shadow-sm p-6 sm:p-8 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
             {/* Title & Badges */}
             <div className="space-y-4 flex-1">
-              <div className="flex flex-wrap items-center gap-3 mb-2">
-                {organization.isGovernment && (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-semibold border border-emerald-500/20">
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    Government
-                  </span>
-                )}
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium border border-primary/10">
-                  <Briefcase className="w-3.5 h-3.5" />
-                  {organization.sector}
-                </span>
-              </div>
-
               <h1 className="text-3xl text-foreground/80 sm:text-4xl md:text-5xl font-bold tracking-tight">
                 {organization.name}
               </h1>
-
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <div className="flex items-center gap-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2 py-1 rounded border border-amber-500/20">
-                  <Star className="w-4 h-4 fill-amber-500/20" />
-                  <span>{displayRating}</span>
+              <div className="flex flex-col gap-1">
+                <div className="flex flex-wrap items-center gap-3 mb-2">
+                  <span
+                    title="is active"
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-semibold border border-emerald-500/20"
+                  >
+                    {organization.isActive && <Check className="w-4 h-4" />}
+                    {organization.name}
+                  </span>
+                  {organization.isGovernment && (
+                    <span
+                      title="is governemnt"
+                      className="inline-flex items-center px-1 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-semibold border border-emerald-500/20"
+                    >
+                      <ShieldCheck className="w-4 h-4" />
+                    </span>
+                  )}
+                  <span
+                    title="sector"
+                    className="inline-flex items-center px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium border border-primary/10"
+                  >
+                    {organization.sector}
+                  </span>
+                  {organization.price != null && (
+                    <span
+                      title="price"
+                      className="inline-flex items-center px-3 py-1 rounded-full bg-yellow-500/10 text-yellow-900 text-xs font-medium border border-yellow-900/20"
+                    >
+                      {organization.price === 0
+                        ? "free"
+                        : `${organization.price} Birr`}
+                    </span>
+                  )}
                 </div>
-                <span className="text-muted-foreground hidden sm:inline-block">
-                  Public Rating
-                </span>
-              </div>
-            </div>
+                <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400 py-1 rounded-full">
+                  {Array(rating)
+                    .fill(null)
+                    .map((_, index) => (
+                      <Star key={index} className="w-4 h-4 fill-amber-500/20" />
+                    ))}
 
-            {/* Quick Contact Actions (Matches Shadcn Button styles) */}
-            <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-              <a
-                href={`mailto:${organization.email}`}
-                className="inline-flex items-center justify-center whitespace-nowrap rounded text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring bg-primary text-primary-foreground shadow hover:bg-primary/90 h-10 px-6 py-2 gap-2"
-              >
-                <Mail className="w-4 h-4" />
-                Contact Us
-              </a>
-              {organization.phone && (
-                <a
-                  href={`tel:${organization.phone}`}
-                  className="inline-flex items-center justify-center whitespace-nowrap rounded text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-10 px-6 py-2 gap-2"
-                >
-                  <Phone className="w-4 h-4" />
-                  Call
-                </a>
-              )}
+                  {Array(5 - rating)
+                    .fill(null)
+                    .map((_, index) => (
+                      <Star
+                        key={index}
+                        className="w-4 h-4 text-gray-400/80 fill-gray-400/20"
+                      />
+                    ))}
+                  {/* {<Star className="w-4 h-4 fill-amber-500/20" />} */}
+                  {/* <span>No</span> */}
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -93,7 +111,7 @@ export default function PublicOrganization({ organization, services }) {
             {/* About Card */}
             <div className="bg-card text-card-foreground rounded border shadow-sm p-6 animate-in fade-in slide-in-from-bottom-6 duration-700">
               <h2 className="text-lg text-foreground/80 font-semibold mb-4 flex items-center gap-2">
-                <Building2 className="w-5 h-5 text-primary" />
+                {/* <Building2 className="w-5 h-5 text-primary" /> */}
                 About
               </h2>
               <p className="text-muted-foreground text-sm leading-relaxed">
@@ -180,19 +198,30 @@ export default function PublicOrganization({ organization, services }) {
                         {/* <div className="w-10 h-10 bg-muted text-muted-foreground rounded border border-border flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-colors duration-300">
                           <CalendarDays className="w-5 h-5" />
                         </div> */}
+                        <div className="flex gap-2 justify-between">
+                          <h3 className="text-base font-semibold mb-2 group-hover:text-primary transition-colors duration-300 line-clamp-1">
+                            {service.name}
+                          </h3>
 
-                        <h3 className="text-base font-semibold mb-2 group-hover:text-primary transition-colors duration-300 line-clamp-1">
-                          {service.name}
-                        </h3>
+                          <Button
+                            variant="link"
+                            className="flex items-center gap-1.5 text-primary text-sm font-medium hover:underline underline-offset-4"
+                            asChild
+                          >
+                            <Link href={`/service/${service.id}`}>
+                              view
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            </Link>
+                          </Button>
+                        </div>
 
                         <p className="text-muted-foreground text-sm leading-relaxed mb-6 line-clamp-2">
                           {service.description}
                         </p>
                       </div>
 
-                      <div className="relative z-10 mt-auto pt-4 border-t border-border/50 flex items-center justify-between">
+                      {/* <div className="relative z-10 mt-auto pt-2 border-t border-border/50 flex items-center justify-between">
                         <span className="text-xs font-medium text-muted-foreground">
-                          Public Service
                         </span>
                         <Button
                           variant="link"
@@ -200,11 +229,11 @@ export default function PublicOrganization({ organization, services }) {
                           asChild
                         >
                           <Link href={`/service/${service.id}`}>
-                            Details
-                            <ExternalLink className="w-3.5 h-3.5" />
+                            view
+                            <ArrowRight className="w-3.5 h-3.5" />
                           </Link>
                         </Button>
-                      </div>
+                      </div> */}
                     </div>
                   ),
               )}

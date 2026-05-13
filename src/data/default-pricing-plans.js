@@ -7,7 +7,7 @@ export const defaultPricingPlans = [
     maxServices: 1,
     maxEmployees: 10,
     monthlyDiscount: 0,
-    annualDiscount: 0,
+    yearlyDiscount: 0,
     features: [
       "1 service included",
       "Up to 10 employees",
@@ -21,7 +21,7 @@ export const defaultPricingPlans = [
     name: "Small Business",
     price: 1000,
     monthlyDiscount: 0.999,
-    annualDiscount: 0.83325,
+    yearlyDiscount: 0.83325,
     maxServices: 3,
     maxEmployees: 30,
     features: [
@@ -38,7 +38,7 @@ export const defaultPricingPlans = [
     name: "Medium Business",
     price: 3000,
     monthlyDiscount: 0.9998,
-    annualDiscount: 0.8333,
+    yearlyDiscount: 0.8333,
     maxServices: 20,
     maxEmployees: 200,
     features: [
@@ -56,7 +56,7 @@ export const defaultPricingPlans = [
     name: "Large Business",
     price: 10000,
     monthlyDiscount: 0.9999,
-    annualDiscount: 0.833327,
+    yearlyDiscount: 0.833327,
     maxServices: 100,
     maxEmployees: 1000,
     features: [

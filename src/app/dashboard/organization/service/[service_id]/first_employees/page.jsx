@@ -88,7 +88,7 @@ export default function ServiceFirstEmployeesPage() {
 
   // View & Filter States
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(5);
+  const [limit, setLimit] = useState(10);
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [view, setView] = useState("table");
@@ -120,8 +120,8 @@ export default function ServiceFirstEmployeesPage() {
 
     const offset = (page - 1) * limit;
     const params = new URLSearchParams({
-      o: offset.toString(),
-      l: limit.toString(),
+      offset: offset.toFixed(),
+      limit: limit.toFixed(),
       iuser: 1,
       icalendar: 1,
     });
@@ -177,8 +177,8 @@ export default function ServiceFirstEmployeesPage() {
 
     const offset = (page - 1) * limit;
     const params = new URLSearchParams({
-      o: offset.toString(),
-      l: limit.toString(),
+      offset: offset.toFixed(),
+      limit: limit.toFixed(),
       iemployee: 1,
       iservice: 1,
     });
@@ -534,7 +534,7 @@ export default function ServiceFirstEmployeesPage() {
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Rows:</span>
             <Select
-              value={limit.toString()}
+              value={limit.toFixed()}
               onValueChange={(v) => {
                 setLimit(Number(v));
                 setPage(2); // Reset to page 1 on limit change

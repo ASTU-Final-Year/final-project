@@ -39,7 +39,7 @@ const TOrganizationRegistration = type({
   phone: /^\+\d{2,3}\s?\d{9,10}$/,
   "rating?": "number|null",
   pricingPlanId: "string",
-  "billingPeriod?": "'monthly'|'annually'",
+  "billingPeriod?": "'monthly'|'yearly'",
   // "billingStart?": "Date|null",
   // "billingEnd?": "Date|null",
 });
@@ -57,7 +57,7 @@ const TOrganizationUpdate = type({
   "phone?": /^\+\d{2,3}\s?\d{9,10}$/,
   "rating?": "number|null",
   // "pricingPlanId?": "string",
-  // "billingPeriod?": "'monthly'|'annually'",
+  // "billingPeriod?": "'monthly'|'yearly'",
   // "billingStart?": "number.integer < 30",
   // "billingEnd?": "number.integer < 30",
 });
@@ -137,7 +137,7 @@ export default {
               plan.price > 0
                 ? new Date(
                     Time.after(
-                      body.billingPeriod === "annually" ? 365.25 : 30,
+                      body.billingPeriod === "yearly" ? 365.25 : 30,
                     ).days.fromNow()._ms,
                   )
                 : null,

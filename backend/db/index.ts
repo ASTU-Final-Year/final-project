@@ -8,22 +8,28 @@ import PaymentService from "~/services/payment.service";
 import defaultPricingPlans from "@/data/default-pricing-plans";
 import { createClient } from "@libsql/client";
 import SessionService from "~/services/session.service";
+import { sampleData } from "../../sample.data";
+import { tables } from "./schema";
+import { router } from "..";
+
+const prodDatabase = config.prodDatabase as false;
 
 const pool = new Pool({
   connectionString: dbConfig.pgDatabaseURL,
 });
 
 const sqlite = createClient({ url: "file:" + dbConfig.sqliteDatabaseURL });
-sqlite.execute("PRAGMA journal_mode = WAL;");
-sqlite.execute("PRAGMA synchronous = NORMAL;");
-sqlite.execute("PRAGMA foreign_keys = ON;");
+if (!prodDatabase) {
+  sqlite.execute("PRAGMA journal_mode = WAL;");
+  sqlite.execute("PRAGMA synchronous = NORMAL;");
+  sqlite.execute("PRAGMA foreign_keys = ON;");
+}
 export const dbPG = drizzlePG({ client: pool, schema: pgSchema });
 export const dbSQLite = drizzleSQLite(sqlite, { schema: sqliteSchema });
-// export const db = config.isProduction ? dbPG : dbSQLite;
-export const db = dbSQLite;
+export const db = (prodDatabase ? dbPG : dbSQLite) as typeof dbSQLite;
 
 export const checkDBConnection = async () => {
-  if (config.isProduction) {
+  if (prodDatabase) {
     try {
       const client = await pool.connect();
       try {
@@ -77,6 +83,32 @@ export const initDb = async () => {
     ) {
       for (const [name, pricingPlan] of Object.entries(defaultPricingPlans)) {
         await PaymentService.createPricingPlan(pricingPlan);
+      }
+    }
+    if (!config.isProduction) {
+      for (const [name, entries] of Object.entries(sampleData)) {
+        // const res = await router.respond(
+        //   new Request(`/query/v1/${name}`, {
+        //     method: "POST",
+        //     body: JSON.stringify(entries),
+        //   }),
+        // );
+        // entries.map(entry)
+        for (const entry of entries) {
+          try {
+            await db.insert(tables[name]).values(entry);
+          } catch (error) {
+            // console.log(error);
+            if (
+              !(error.cause && error.cause.toString().includes("duplicate"))
+            ) {
+              console.log(name, entry);
+              console.error(
+                error.cause ? error.cause.toString() : error.toString(),
+              );
+            }
+          }
+        }
       }
     }
     // delete expired sessions and sessionBlacklists

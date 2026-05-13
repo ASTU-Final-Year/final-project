@@ -3,7 +3,13 @@ import RegisterOrganizationContent from "./register-organization-content";
 
 export default function RegisterOrganizationPage({ searchParams }) {
   return (
-    <div className="min-h-screen bg-accent flex flex-col py-16 px-4">
+    <div
+      className="min-h-screen bg-accent flex flex-col py-16 px-4 bg-cover"
+      style={{
+        backgroundImage:
+          'url("/images/pexels-lovetosmile-36200692-blurred-dim.jpg")',
+      }}
+    >
       <Suspense fallback={null}>
         <RegisterOrganizationContent searchParams={searchParams} />
       </Suspense>

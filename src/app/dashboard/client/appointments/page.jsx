@@ -24,6 +24,7 @@ import {
   List,
   MoreVertical,
   Loader2,
+  CalendarClock,
 } from "lucide-react";
 import {
   Select,
@@ -60,73 +61,72 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import AcriveBadge from "@/components/ui/active-badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import SearchComponent from "@/components/public/search";
+import { useClientStore } from "@/store";
 
 export default function AppointmentsPage() {
-  const [appointments, setAppointments] = useState([]);
+  const client = useClientStore(({ client }) => client);
+  const setClient = useClientStore(({ setClient }) => setClient);
+  const appointments = useClientStore(({ appointments }) => appointments);
+  const setAppointments = useClientStore(
+    ({ setAppointments }) => setAppointments,
+  );
+  // const [appointments, setAppointments] = useState([]);
   const [selectedAppointments, setSelectedAppointments] = useState({});
   const [totalCount, setTotalCount] = useState(0);
-  const [clientId, setClientId] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // const [clientId, setClientId] = useState(null);
+  const [isLoading, setIsLoading] = useState(appointments == null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // View & Filter States
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(5);
+  const [limit, setLimit] = useState(10);
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [view, setView] = useState("table");
 
   // Dialog States
   const [isAddOpen, setIsAddOpen] = useState(false);
-  const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
 
-  // Form States
-  const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    isActive: true,
-    calendarId: null,
-  });
-
+  const clientId = client?.id;
   // --- Data Fetching ---
   useEffect(() => {
-    RequestHandler.Get("/api/v1/user").then(async (res) => {
-      if (res.ok) {
-        const { user } = await res.json();
-        setClientId(user.id);
+    (async () => {
+      const clientRes = await RequestHandler.Get(
+        "/query/v1/user?mine&~role=client",
+      );
+      if (clientRes.ok) {
+        const {
+          users: [client],
+        } = await clientRes.json();
+        setClient(client);
+        const clientId = client.id;
       }
-    });
-  }, []);
+    })();
+  }, [setClient]);
 
   const fetchAppointments = useCallback(async () => {
     if (!clientId) return;
-    (async () => setIsLoading(true))();
+    // (async () => setIsLoading(true))();
 
     const offset = (page - 1) * limit;
     const params = new URLSearchParams({
-      o: offset.toString(),
-      l: limit.toString(),
-      iuser: 1,
-      icalendar: 1,
+      offset: offset.toFixed(),
+      limit: limit.toFixed(),
+      order: `["startTime.asc"]`,
     });
 
-    const [countRes, dataRes] = await Promise.all([
-      RequestHandler.Get(`/api/v1/client/${clientId}/tasks/count`),
-      RequestHandler.Get(
-        `/api/v1/client/${clientId}/tasks?${params.toString()}`,
-      ),
+    const [dataRes] = await Promise.all([
+      // RequestHandler.Get(`/query/v1/appointment?countOnly`),
+      RequestHandler.Get(`/query/v1/appointment?mine&${params.toString()}`),
     ]);
 
-    if (countRes.ok) {
-      const { count } = await countRes.json();
-      (async () => setTotalCount(count))();
-    }
-
     if (dataRes.ok) {
-      const data = await dataRes.json();
-      let results = data.appointments || [];
+      const { count, appointments } = await dataRes.json();
+      (async () => setTotalCount(count))();
+      let results = appointments || [];
 
       if (statusFilter !== "all") {
         results = results.filter(
@@ -143,50 +143,17 @@ export default function AppointmentsPage() {
       (async () => setAppointments(results))();
     }
     (async () => setIsLoading(false))();
-  }, [clientId, page, limit, statusFilter, searchQuery]);
+  }, [setAppointments, clientId, page, limit, statusFilter, searchQuery]);
 
   useEffect(() => {
     fetchAppointments();
   }, [fetchAppointments]);
 
   // --- CRUD Handlers ---
-  const handleAddAppointment = async () => {
-    setIsSubmitting(true);
-    const res = await RequestHandler.Post(
-      `/api/v1/organization/${organizationId}/task`,
-      { body: formData },
-    );
-    if (res.ok) {
-      setIsAddOpen(false);
-      setFormData({
-        name: "",
-        description: "",
-        isActive: true,
-        calendarId: null,
-      });
-      fetchAppointments();
-    }
-    setIsSubmitting(false);
-  };
-
-  const handleEditAppointment = async () => {
-    setIsSubmitting(true);
-    const res = await RequestHandler.Patch(
-      `/api/v1/organization/${organizationId}/task/${selectedAppointment.id}`,
-      { body: formData },
-    );
-    if (res.ok) {
-      setIsEditOpen(false);
-      setSelectedAppointment(null);
-      fetchAppointments();
-    }
-    setIsSubmitting(false);
-  };
-
   const handleDeleteAppointment = async () => {
     setIsSubmitting(true);
     const res = await RequestHandler.Delete(
-      `/api/v1/organization/${organizationId}/task/${selectedAppointment.id}`,
+      `/query/v1/appointment?~id='${selectedAppointment.id}'`,
     );
     if (res.ok) {
       setIsDeleteOpen(false);
@@ -194,17 +161,6 @@ export default function AppointmentsPage() {
       fetchAppointments();
     }
     setIsSubmitting(false);
-  };
-
-  const openEdit = (appointment) => {
-    setSelectedAppointment(appointment);
-    setFormData({
-      name: appointment.name,
-      description: appointment.description,
-      isActive: appointment.isActive,
-      calendarId: appointment.calendarId,
-    });
-    setIsEditOpen(true);
   };
 
   const openDelete = (appointment) => {
@@ -223,9 +179,7 @@ export default function AppointmentsPage() {
             Manage your appointments.
           </p>
         </div>
-        <Button onClick={() => setIsAddOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" /> Add Appointment
-        </Button>
+        <Button onClick={() => setIsAddOpen(true)}>Book an Appointment</Button>
       </div>
 
       {/* Toolbar */}
@@ -278,7 +232,8 @@ export default function AppointmentsPage() {
               <TableRow>
                 <TableHead className="px-2"></TableHead>
                 <TableHead className="font-bold">Appointment</TableHead>
-                <TableHead className="font-bold text-center">Status</TableHead>
+                <TableHead className="font-bold">Date</TableHead>
+                <TableHead className="font-bold">Status</TableHead>
                 <TableHead className="text-right font-bold">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -302,13 +257,16 @@ export default function AppointmentsPage() {
                   </TableCell>
                   <TableCell>
                     <div className="font-semibold text-primary">
-                      {appointment.name}
+                      {appointment.service.name}
                     </div>
                     <div className="text-xs text-muted-foreground truncate max-w-[400px]">
-                      {appointment.description}
+                      {appointment.service.description}
                     </div>
                   </TableCell>
-                  <TableCell className="text-center">
+                  <TableCell className="">
+                    {new Date(appointment.startTime).toUTCString()}
+                  </TableCell>
+                  <TableCell>
                     <AcriveBadge isActive={appointment.isActive} />
                   </TableCell>
                   <TableCell className="text-right">
@@ -319,13 +277,6 @@ export default function AppointmentsPage() {
                     >
                       <CalendarClock className="h-4 w-4" />
                     </Button> */}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => openEdit(appointment)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
                     <Button
                       variant="ghost"
                       size="icon"
@@ -350,7 +301,7 @@ export default function AppointmentsPage() {
             >
               <CardHeader className="pb-3 border-b bg-muted/5 flex flex-row items-center justify-between space-y-0">
                 <CardTitle className="font-bold text-primary truncate pr-4">
-                  {appointment.name}
+                  {appointment.service.name}
                 </CardTitle>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -361,9 +312,6 @@ export default function AppointmentsPage() {
                   <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => openEdit(appointment)}>
-                      <Pencil className="mr-2 h-4 w-4" /> Edit Details
-                    </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => openDelete(appointment)}
                       className="text-destructive"
@@ -375,7 +323,7 @@ export default function AppointmentsPage() {
               </CardHeader>
               <CardContent className="flex-grow">
                 <p className="text-muted-foreground line-clamp-3 min-h-[60px]">
-                  {appointment.description ||
+                  {appointment.service.description ||
                     "No description provided for this appointment."}
                 </p>
               </CardContent>
@@ -404,7 +352,7 @@ export default function AppointmentsPage() {
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Rows:</span>
             <Select
-              value={limit.toString()}
+              value={limit.toFixed()}
               onValueChange={(v) => {
                 setLimit(Number(v));
                 setPage(2); // Reset to page 1 on limit change
@@ -450,81 +398,33 @@ export default function AppointmentsPage() {
 
       {/* --- Modals (Keep Existing) --- */}
       <Dialog
-        open={isAddOpen || isEditOpen}
+        open={isAddOpen}
         onOpenChange={(val) => {
           if (!val) {
             setIsAddOpen(false);
-            setIsEditOpen(false);
           }
         }}
+        className="min-w-lg"
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {isEditOpen ? "Edit Appointment" : "Add New Appointment"}
-            </DialogTitle>
+            <DialogTitle>Find a service to book an appointment</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Appointment Name</Label>
-              <Input
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Description</Label>
-              <Textarea
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-              />
-            </div>
-            {/* <div className="space-y-2">
-              <Label>Calendar</Label>
-              <input
-                value={formData.calendarId}
-                onChange={(e) =>
-                  setFormData({ ...formData, calendarId: e.target.value })
-                }
-              />
-            </div> */}
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={formData.isActive}
-                onChange={(e) =>
-                  setFormData({ ...formData, isActive: e.target.checked })
-                }
-                id="active-check"
-                className="h-4 w-4 rounded border-gray-300 accent-primary"
-              />
-              <Label htmlFor="active-check">Set as Active</Label>
-            </div>
+          <div className="py-4 overflow-y-auto">
+            <SearchComponent
+              searchBarOnly={true}
+              resultsClassName="max-h-100 p-2"
+              resultClassName="shadow-none hover:shadow-none"
+            />
           </div>
           <DialogFooter>
             <Button
               variant="outline"
               onClick={() => {
                 setIsAddOpen(false);
-                setIsEditOpen(false);
               }}
             >
               Cancel
-            </Button>
-            <Button
-              onClick={
-                isEditOpen ? handleEditAppointment : handleAddAppointment
-              }
-              disabled={isSubmitting}
-            >
-              {isSubmitting && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
-              {isEditOpen ? "Save Changes" : "Create Appointment"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -535,8 +435,8 @@ export default function AppointmentsPage() {
           <DialogHeader>
             <DialogTitle>Are you sure?</DialogTitle>
             <DialogDescription>
-              This will permanently delete "{selectedAppointment?.name}". This
-              action cannot be undone.
+              This will permanently delete &quot;{selectedAppointment?.id}
+              &quot;. This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

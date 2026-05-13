@@ -27,7 +27,7 @@ export const purePricingPlanSelect = {
   name: pricingPlans.name,
   price: pricingPlans.price,
   monthlyDiscount: pricingPlans.monthlyDiscount,
-  annualDiscount: pricingPlans.annualDiscount,
+  yearlyDiscount: pricingPlans.yearlyDiscount,
   maxServices: pricingPlans.maxServices,
   maxEmployees: pricingPlans.maxEmployees,
   features: pricingPlans.features,

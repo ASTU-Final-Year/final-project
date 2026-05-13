@@ -1,9 +1,4 @@
-import {
-  blob,
-  RouterFramework,
-  status,
-  type SocketAddress,
-} from "@bepalo/router";
+import { json, RouterFramework, type SocketAddress } from "@bepalo/router";
 import type { CTXMain } from "./base";
 import { config } from "./config";
 import { initDb } from "./db";
@@ -11,10 +6,13 @@ import fs from "fs";
 import path, { resolve } from "path";
 import { LOGE, LOGI } from "./lib";
 import { join } from "path";
+import { getBepaloQueryRouter } from "./lib/bepalo-query";
+import queryAuth from "~/acl/v1";
+import { tables } from "./db/schema";
 
 console.log("-".repeat(80));
 console.log(`💫 Launching...`);
-const router = new RouterFramework<CTXMain>({
+export const router = new RouterFramework<CTXMain>({
   rootPath: "./routes",
   normalizeTrailingSlash: true,
   defaultHeaders: [["x-powered-by", "@bepalo/router"]],
@@ -26,7 +24,14 @@ const router = new RouterFramework<CTXMain>({
         } else {
           LOGE(req.url, error);
         }
-        return status(500);
+        return json(
+          {
+            error: error.message || "Internal server error",
+          },
+          {
+            status: error.status || 500,
+          },
+        );
       },
   enable: {
     hooks: false,
@@ -37,19 +42,23 @@ const router = new RouterFramework<CTXMain>({
   },
 });
 
+router.append(
+  "/query/v1/*",
+  getBepaloQueryRouter<typeof tables, { data?: Record<string, unknown> }>({
+    tables,
+    queryAuth,
+    pathPrefix: "/query/v1/",
+    isProduction: config.isProduction,
+  }),
+);
+
 await (async () => {
-  if (!fs.existsSync(config.localPath)) {
-    fs.mkdirSync(config.localPath);
-  }
-  if (!fs.existsSync(config.logsPath)) {
-    fs.mkdirSync(config.logsPath);
-  }
   config.errorFd = fs.openSync(path.join(config.logsPath, "error.log"), "a+");
   config.infoFd = fs.openSync(path.join(config.logsPath, "info.log"), "a+");
 })()
-  .then(() => console.log("✅ Folders created"))
+  .then(() => console.log("✅ Logs files opened"))
   .catch((error) => {
-    console.error("❌ Failed to create folders", error);
+    console.error("❌ Failed to open log files", error);
   });
 
 await router
@@ -88,7 +97,7 @@ const server = Bun.serve({
     const elapsed = performance.now() - start;
     const urlLog = `${req.method} ${elapsed.toFixed(2).padStart(6)}ms | ${resp.status} ${resp.statusText} | ${req.url.substring(0, 180)}`;
     // if (config.isProduction) {
-    //   LOGI(urlLog);
+    // LOGI(urlLog);
     // } else {
     console.log(urlLog);
     // }

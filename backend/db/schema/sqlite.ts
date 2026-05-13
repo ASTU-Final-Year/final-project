@@ -35,8 +35,16 @@ const randomCUUID = (): string => {
 };
 
 export const genderEnum = ["M", "F", "U"] as const;
+export const appointmentStatusEnum = [
+  "scheduled",
+  "assigned",
+  "in-progress",
+  "completed",
+  "canceled",
+  "archived",
+] as const;
 
-export const billingPeriodEnum = ["monthly", "annually"] as const;
+export const billingPeriodEnum = ["monthly", "yearly"] as const;
 
 export const rolesEnum = [
   "super_admin",
@@ -45,14 +53,15 @@ export const rolesEnum = [
   "client",
 ] as const;
 
-const basicTimestamps = () => ({
+const timestamps = {
   createdAt: integer("created_at", { mode: "timestamp" })
-    .notNull()
-    .$defaultFn(() => new Date()),
-  updatedAt: integer("updated_at", { mode: "timestamp" })
-    .notNull()
-    .$defaultFn(() => new Date()),
-});
+    .default(sql`(unixepoch())`)
+    .notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).$onUpdate(
+    () => new Date(),
+  ),
+  // deletedAt: int("deleted_at", { mode: "timestamp" }),
+};
 
 export const sqUsers = sqliteTable(
   "users",
@@ -65,7 +74,7 @@ export const sqUsers = sqliteTable(
     email: text("email", { length: 40 }).notNull().unique(),
     phone: text("phone", { length: 16 }).notNull(),
     password: text("password", { length: 128 }).notNull(),
-    ...basicTimestamps(),
+    ...timestamps,
   },
   (table: any) => [
     index("user_email_idx").on(table.email), // Manual index
@@ -82,7 +91,7 @@ export const sqSessions = sqliteTable("sessions", {
     }),
   data: text("data", { mode: "json" }).notNull().default("{}"),
   expiresAt: integer("expires_at", { mode: "timestamp" }),
-  ...basicTimestamps(),
+  ...timestamps,
 });
 
 export const sqSessionsBlacklist = sqliteTable("sessions_blacklist", {
@@ -94,24 +103,24 @@ export const sqSessionsBlacklist = sqliteTable("sessions_blacklist", {
       onDelete: "cascade",
     }),
   expiresAt: integer("expires_at", { mode: "timestamp" }),
-  ...basicTimestamps(),
+  ...timestamps,
 });
 
 export const sqPricingPlans = sqliteTable("pricing_plans", {
   id: text("id", { length: 16 }).primaryKey().notNull(),
   name: text("name", { length: 54 }).notNull(),
-  price: numeric("price", { mode: "number" }).notNull().default(1.0),
+  price: numeric("price", { mode: "number" }).notNull().default(0.0),
   monthlyDiscount: numeric("monthly_discount", { mode: "number" })
     .notNull()
     .default(1.0),
-  annualDiscount: numeric("annual_discount", { mode: "number" })
+  yearlyDiscount: numeric("yearly_discount", { mode: "number" })
     .notNull()
     .default(1.0),
   maxServices: integer("max_services").notNull().default(1),
   maxEmployees: integer("max_employees").notNull().default(10),
   features: text("features", { mode: "json" }).notNull(),
   popular: integer("popular", { mode: "boolean" }).notNull().default(false),
-  ...basicTimestamps(),
+  ...timestamps,
 });
 
 export const sqOrganizations = sqliteTable(
@@ -147,7 +156,7 @@ export const sqOrganizations = sqliteTable(
       () => new Date(),
     ),
     billingEnd: integer("billing_end", { mode: "timestamp" }),
-    ...basicTimestamps(),
+    ...timestamps,
   },
   (table: any) => [
     index("organization_email_idx").on(table.email), // Manual index
@@ -166,23 +175,8 @@ export const sqOrganizationCalendars = sqliteTable("organization_calendars", {
   description: text("description", { length: 200 }).notNull().default(""),
   available: text("available", { mode: "json" }),
   unavailable: text("unavailable", { mode: "json" }),
-  ...basicTimestamps(),
+  ...timestamps,
 });
-
-// export const sqEmployeeCalendars = sqliteTable("employee_calendars", {
-//   id: cpuuid("id").primaryKey().notNull().$defaultFn(randomCUUID),
-//   employeeId: cpuuid("employee_id")
-//     .notNull()
-//     .references(() => sqUsers.id, {
-//       onUpdate: "cascade",
-//       onDelete: "cascade",
-//     }),
-//   name: text("name", { length: 54 }).notNull(),
-//   description: text("description", { length: 200 }).notNull().default(""),
-//   available: text("available", { mode: "json" }),
-//   unavailable: text("unavailable", { mode: "json" }),
-//   ...basicTimestamps(),
-// });
 
 export const sqEmployees = sqliteTable(
   "employees",
@@ -203,11 +197,11 @@ export const sqEmployees = sqliteTable(
     calendarId: cpuuid("calendar_id").references(
       () => sqOrganizationCalendars.id,
       {
-        onUpdate: "cascade",
-        onDelete: "cascade",
+        onUpdate: "set null",
+        onDelete: "set null",
       },
     ),
-    ...basicTimestamps(),
+    ...timestamps,
   },
   (table: any) => [
     uniqueIndex("service_first_employees_uk").on(
@@ -222,11 +216,12 @@ export const sqOrganizationServices = sqliteTable("organization_services", {
   name: text("name", { length: 54 }).notNull(),
   description: text("description", { length: 200 }).notNull().default(""),
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  price: numeric("price", { mode: "number" }).notNull().default(0.0),
   calendarId: cpuuid("calendar_id").references(
     () => sqOrganizationCalendars.id,
     {
-      onUpdate: "cascade",
-      onDelete: "cascade",
+      onUpdate: "set null",
+      onDelete: "set null",
     },
   ),
   organizationId: cpuuid("organization_id")
@@ -235,7 +230,7 @@ export const sqOrganizationServices = sqliteTable("organization_services", {
       onUpdate: "cascade",
       onDelete: "cascade",
     }),
-  ...basicTimestamps(),
+  ...timestamps,
 });
 
 export const sqServiceFirstEmployees = sqliteTable(
@@ -253,7 +248,7 @@ export const sqServiceFirstEmployees = sqliteTable(
         onUpdate: "cascade",
         onDelete: "cascade",
       }),
-    ...basicTimestamps(),
+    ...timestamps,
   },
   (table) => [primaryKey({ columns: [table.serviceId, table.employeeId] })],
 );
@@ -282,7 +277,40 @@ export const sqTasks = sqliteTable("tasks", {
       onDelete: "cascade",
     })
     .notNull(),
-  ...basicTimestamps(),
+  ...timestamps,
+});
+
+export const sqAppointments = sqliteTable("appointments", {
+  id: cpuuid("id").primaryKey().notNull().$defaultFn(randomCUUID),
+  organizationId: cpuuid("organization_id")
+    .notNull()
+    .references(() => sqOrganizations.id, {
+      onUpdate: "cascade",
+      onDelete: "cascade",
+    }),
+  serviceId: cpuuid("service_id")
+    .notNull()
+    .references(() => sqOrganizationServices.id, {
+      onUpdate: "cascade",
+      onDelete: "cascade",
+    }),
+  clientId: cpuuid("client_id")
+    .notNull()
+    .references(() => sqUsers.id, { onUpdate: "cascade", onDelete: "cascade" }),
+  // employeeId: cpuuid("employee_id").references(() => sqliteEmployees.id, {
+  //   onDelete: "set null",
+  // }),
+  startTime: integer("start_time", { mode: "timestamp" }).notNull(),
+  endTime: integer("end_time", { mode: "timestamp" }).notNull(),
+  status: text("status", {
+    enum: appointmentStatusEnum,
+  })
+    .notNull()
+    .default("scheduled"),
+  notes: text("notes", { length: 255 }),
+  metadata: text("metadata", { mode: "json" }).default("{}"),
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  ...timestamps,
 });
 
 ////////////////////////////////////////////////
@@ -301,7 +329,10 @@ export const sqSessionsRelations = relations(sqSessions, ({ one }) => ({
 export const sqOrganizationsRelations = relations(
   sqOrganizations,
   ({ many, one }) => ({
-    pricingPlans: one(sqPricingPlans),
+    pricingPlans: one(sqPricingPlans, {
+      fields: [sqOrganizations.pricingPlanId],
+      references: [sqPricingPlans.id],
+    }),
     services: many(sqOrganizationServices),
   }),
 );
@@ -373,18 +404,40 @@ export const sqTasksRelations = relations(sqTasks, ({ one }) => ({
   }),
 }));
 
-export const sqliteSchema = {
-  users: sqUsers,
-  sessions: sqSessions,
-  sessionsBlacklist: sqSessionsBlacklist,
-  pricingPlans: sqPricingPlans,
-  organizations: sqOrganizations,
-  organizationCalendars: sqOrganizationCalendars,
-  employees: sqEmployees,
-  organizationServices: sqOrganizationServices,
-  serviceFirstEmployees: sqServiceFirstEmployees,
-  tasks: sqTasks,
+export const sqAppointmentsRelations = relations(sqAppointments, ({ one }) => ({
+  organization: one(sqOrganizations, {
+    fields: [sqAppointments.organizationId],
+    references: [sqOrganizations.id],
+  }),
+  service: one(sqOrganizationServices, {
+    fields: [sqAppointments.serviceId],
+    references: [sqOrganizationServices.id],
+  }),
+  client: one(sqUsers, {
+    fields: [sqAppointments.clientId],
+    references: [sqUsers.id],
+  }),
+  // employee: one(sqEmployees, {
+  //   fields: [sqAppointments.employeeId],
+  //   references: [sqEmployees.id],
+  // }),
+}));
 
+export const sqTables = {
+  user: sqUsers,
+  session: sqSessions,
+  sessionBlacklist: sqSessionsBlacklist,
+  pricingPlan: sqPricingPlans,
+  organization: sqOrganizations,
+  organizationCalendar: sqOrganizationCalendars,
+  employee: sqEmployees,
+  organizationService: sqOrganizationServices,
+  serviceFirstEmployee: sqServiceFirstEmployees,
+  task: sqTasks,
+  appointment: sqAppointments,
+};
+
+export const sqRelations = {
   usersRelations: sqUsersRelations,
   sessionsRelations: sqSessionsRelations,
   organizationsRelations: sqOrganizationsRelations,
@@ -393,6 +446,12 @@ export const sqliteSchema = {
   organizationServicesRelations: sqOrganizationServicesRelations,
   serviceFirstEmployeesRelations: sqServiceFirstEmployeesRelations,
   tasksRelations: sqTasksRelations,
+  appointmentRelations: sqAppointmentsRelations,
 };
 
-export default sqliteSchema;
+export const sqSchema = {
+  ...sqTables,
+  ...sqRelations,
+};
+
+export default sqSchema;

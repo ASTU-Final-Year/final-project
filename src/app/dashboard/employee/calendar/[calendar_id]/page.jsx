@@ -124,33 +124,28 @@ export default function SmartCalendarGrid() {
   const [employeeId, setEmployeeId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // --- Data Fetching ---
-  // useEffect(() => {
-  //   RequestHandler.Get("/api/v1/employee").then(async (res) => {
-  //     if (res.ok) {
-  //       const { employee } = await res.json();
-  //       setEmployeeId(employee.userId);
-  //     }
-  //   });
-  // }, []);
-
   const fetchCalendars = useCallback(async () => {
-    if (!employeeId) return;
-    (async () => setIsLoading(true))();
+    // if (!employeeId) return;
+    // (async () => setIsLoading(true))();
 
     const params = new URLSearchParams({
-      iemployee: 1,
+      select: '{"":true,"employee":true}',
+      // "employee.id": employeeId,
     });
 
     const [dataRes] = await Promise.all([
-      RequestHandler.Get(
-        `/api/v1/employee/${employeeId}/calendar/${calendar_id}?${params.toString()}`,
-      ),
+      RequestHandler.Get(`/query/v1/organizationCalendar?${params.toString()}`),
+      // RequestHandler.Get(
+      //   `/api/v1/employee/${employeeId}/calendar/${calendar_id}?${params.toString()}`,
+      // ),
     ]);
 
     if (dataRes.ok) {
-      const data = await dataRes.json();
-      let result = data.calendar;
+      const {
+        organizationCalendars: [organizationCalendar],
+      } = await dataRes.json();
+      setEmployeeId(organizationCalendar.employee.id);
+      let result = organizationCalendar;
 
       result = {
         ...result,
@@ -186,7 +181,7 @@ export default function SmartCalendarGrid() {
       (async () => setCalendar(result))();
     }
     (async () => setIsLoading(false))();
-  }, [employeeId, calendar_id]);
+  }, []);
 
   useEffect(() => {
     fetchCalendars();

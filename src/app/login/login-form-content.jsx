@@ -2,7 +2,15 @@
 
 import { use, useEffect, useState } from "react";
 import { redirect, RedirectType, useRouter } from "next/navigation";
-import { Mail, Lock, Eye, EyeOff, ShieldCheck, LogIn } from "lucide-react";
+import {
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  ShieldCheck,
+  LogIn,
+  HomeIcon,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -12,6 +20,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { useSessionStore } from "@/store";
 import Auth from "@/lib/auth";
+import Link from "next/link";
 
 export default function LoginFormContent({ searchParams }) {
   const router = useRouter();
@@ -27,19 +36,19 @@ export default function LoginFormContent({ searchParams }) {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!_loaded) (async () => _setLoaded(true))();
-    if (_loaded && session?.user != null) {
-      return redirect(redirectUrl || "/dashboard", RedirectType.push);
-    }
-  }, [_loaded, session?.user, redirectUrl]);
-
-  // useEffect(() => {
-  //   Auth.isLoggedIn().then((isLoggedIn) => {
-  //     if (isLoggedIn) {
-  //       router.push(redirectUrl || "/dashboard");
-  //     }
-  //   });
-  // }, [router, redirectUrl]);
+    if (!_loaded)
+      (async () => {
+        // if (_loaded && session?.user != null) {
+        //   router.push(redirectUrl || "/dashboard");
+        // }
+        Auth.isLoggedIn().then((isLoggedIn) => {
+          if (isLoggedIn) {
+            router.push(redirectUrl || "/dashboard");
+          }
+        });
+        _setLoaded(true);
+      })();
+  }, [router, _loaded, session?.user, redirectUrl]);
 
   if (!_loaded) {
     return <div>Loading...</div>;
@@ -64,13 +73,13 @@ export default function LoginFormContent({ searchParams }) {
   };
 
   return (
-    <div className="min-h-screen bg-accent flex flex-col py-16 px-4">
-      <div className="container mx-auto max-w-[450px]">
+    <div className="min-h-screen flex flex-col py-16 px-4">
+      <div className="container mx-auto w-full max-w-[450px]">
         <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-primary/10 mb-4">
+          {/* <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-primary/10 mb-4">
             <ShieldCheck className="h-8 w-8 text-primary" />
-          </div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+          </div> */}
+          <h1 className="text-3xl font-extrabold text-slate-100 tracking-tight">
             Sign in to get started
           </h1>
         </div>
@@ -171,15 +180,23 @@ export default function LoginFormContent({ searchParams }) {
 
           {/* Footer - Matches the Register page style with a light background */}
           <CardFooter className="flex flex-col border-t p-6 bg-slate-50/50">
-            <p className="text-sm text-muted-foreground text-center">
-              Don&apos;t have an account yet?{" "}
-              <Button
-                variant="link"
-                onClick={() => router.push("/register")}
-                className="p-0 h-auto text-sm font-semibold text-primary hover:underline"
+            {/* Footer */}
+            <p className="text-sm text-slate-500 text-center flex justify-center gap-3">
+              <Link
+                href="/"
+                className="font-semibold text-primary hover:underline flex"
               >
-                Create one
-              </Button>
+                <HomeIcon size={18} />
+              </Link>
+              <span>
+                <span> Don&apos;t have an account yet? </span>
+                <Link
+                  href="/register"
+                  className="font-semibold text-primary hover:underline"
+                >
+                  Create One
+                </Link>
+              </span>
             </p>
           </CardFooter>
         </Card>

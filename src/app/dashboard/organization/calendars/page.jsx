@@ -136,7 +136,7 @@ export default function CalendarsPage() {
 
   // View & Filter States
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(5);
+  const [limit, setLimit] = useState(10);
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [view, setView] = useState("table");
@@ -174,19 +174,13 @@ export default function CalendarsPage() {
 
     const offset = (page - 1) * limit;
     const params = new URLSearchParams({
-      o: offset.toString(),
-      l: limit.toString(),
-      iorganization: 1,
-      icalendar: 1,
+      offset: offset.toFixed(),
+      limit: limit.toFixed(),
     });
 
     const [countRes, dataRes] = await Promise.all([
-      RequestHandler.Get(
-        `/api/v1/organization/${organizationId}/calendars/count`,
-      ),
-      RequestHandler.Get(
-        `/api/v1/organization/${organizationId}/calendars?${params.toString()}`,
-      ),
+      RequestHandler.Get(`/query/v1/organizationCalendar?countOnly`),
+      RequestHandler.Get(`/query/v1/organizationCalendar?${params.toString()}`),
     ]);
 
     if (countRes.ok) {
@@ -195,8 +189,8 @@ export default function CalendarsPage() {
     }
 
     if (dataRes.ok) {
-      const data = await dataRes.json();
-      let results = data.calendars || [];
+      const { organizationCalendars } = await dataRes.json();
+      let results = organizationCalendars || [];
 
       if (statusFilter !== "all") {
         results = results.filter(
@@ -609,7 +603,7 @@ export default function CalendarsPage() {
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Rows:</span>
             <Select
-              value={limit.toString()}
+              value={limit.toFixed()}
               onValueChange={(v) => {
                 setLimit(Number(v));
                 setPage(2); // Reset to page 1 on limit change

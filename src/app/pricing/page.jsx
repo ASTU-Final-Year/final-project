@@ -51,9 +51,9 @@ function CompactDiscountBadge({ value }) {
 }
 
 // Savings Calculator Badge
-function SavingsBadge({ monthlyPrice, annualPrice }) {
+function SavingsBadge({ monthlyPrice, yearPrice }) {
   const monthlyCost = monthlyPrice * 12;
-  const savings = monthlyCost - annualPrice;
+  const savings = monthlyCost - yearPrice;
 
   if (savings <= 0) return null;
 
@@ -143,18 +143,18 @@ export function PricingPlanView({ className, ...props }) {
 
   useEffect(() => {
     if (!pricingPlans || pricingPlans.length === 0) {
-      RequestHandler.Get("/api/v1/pricing-plans").then(async (res) => {
+      RequestHandler.Get("/query/v1/pricingPlan?guest").then(async (res) => {
         if (res.ok) {
-          const data = await res.json();
-          if (data.pricingPlans.length > 0) {
+          const { pricingPlans } = await res.json();
+          if (pricingPlans.length > 0) {
             const plans = {};
-            for (const plan of data.pricingPlans) {
+            for (const plan of pricingPlans) {
               plans[plan.id] = plan;
             }
             setPricingPlans(plans);
             if (!selectedPlan) {
-              const popular = data.pricingPlans.find((plan) => plan.popular);
-              setSelectedPlan(popular ? popular.id : data.pricingPlans[0].id);
+              const popular = pricingPlans.find((plan) => plan.popular);
+              setSelectedPlan(popular ? popular.id : pricingPlans[0].id);
             }
           }
         }
@@ -163,8 +163,8 @@ export function PricingPlanView({ className, ...props }) {
   }, [selectedPlan, setPricingPlans, setSelectedPlan, pricingPlans]);
 
   const plan = pricingPlans[selectedPlan];
-  if (!hasHydrated || !plan) {
-    return <div>Loading...</div>;
+  if (!plan) {
+    return null;
   }
 
   const formatPrice = (price) => {
@@ -177,18 +177,18 @@ export function PricingPlanView({ className, ...props }) {
   };
 
   const monthlyDiscount = plan.monthlyDiscount ?? 1.0;
-  const annualDiscount = plan.annualDiscount ?? 1.0;
+  const yearlyDiscount = plan.yearlyDiscount ?? 1.0;
 
   const monthlyPrice = plan.price * monthlyDiscount;
-  const annualPrice = plan.price * annualDiscount * 12;
+  const yearPrice = plan.price * yearlyDiscount * 12;
 
   return (
     <div className="w-full max-w-xl">
       <div className="text-center mb-10">
-        <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-primary/10 mb-4">
+        {/* <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-primary/10 mb-4">
           <DollarSign className="h-8 w-8 text-primary" />
-        </div>
-        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+        </div> */}
+        <h1 className="text-3xl font-extrabold text-slate-100 tracking-tight">
           Choose the right plan for your business
         </h1>
       </div>
@@ -199,9 +199,9 @@ export function PricingPlanView({ className, ...props }) {
         )}
         {...props}
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
-        <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary/15 blur-3xl group-hover:scale-150 transition-transform duration-1000 pointer-events-none" />
-        <div className="absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-primary/20 blur-3xl group-hover:scale-150 transition-transform duration-1000 pointer-events-none" />
+        <div className="absolute inset-0 bg-linear-to-br from-primary/20 via-transparent to-transparent pointer-events-none" />
+        <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary/15 blur-3xl  pointer-events-none" />
+        <div className="absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
 
         <CardHeader className="relative pb-0 space-y-6">
           <CardTitle className="space-y-4">
@@ -230,21 +230,21 @@ export function PricingPlanView({ className, ...props }) {
               </div>
               {plan.price > 0 && (
                 <div className="flex flex-col items-center gap-2 mt-2">
-                  {annualPrice > 0 && annualDiscount <= 0.99 && (
-                    <CompactDiscountBadge value={annualDiscount} />
+                  {yearPrice > 0 && yearlyDiscount <= 0.99 && (
+                    <CompactDiscountBadge value={yearlyDiscount} />
                   )}
                   <p className="text-lg text-muted-foreground">
                     <span className="font-semibold">
-                      {formatPrice(annualPrice)}
+                      {formatPrice(yearPrice)}
                     </span>{" "}
                     <span className="text-sm text-muted-foreground">
-                      / annually
+                      / yearly
                     </span>
                   </p>
 
                   <SavingsBadge
                     monthlyPrice={monthlyPrice}
-                    annualPrice={annualPrice}
+                    yearPrice={yearPrice}
                   />
                 </div>
               )}
@@ -339,10 +339,10 @@ export function PricingComparisonTable() {
   return (
     <div className="w-full max-w-6xl mx-auto mt-24">
       <div className="text-center mb-10">
-        <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+        <h2 className="text-3xl font-extrabold text-slate-100 tracking-tight">
           Compare all features
         </h2>
-        <p className="text-slate-500 mt-2">
+        <p className="text-slate-200 mt-2">
           Find the perfect fit for your team&apos;s size and needs.
         </p>
       </div>
@@ -457,7 +457,13 @@ export default function PricingPlansPage() {
   return (
     <div>
       <SiteHeader />
-      <div className="min-h-screen py-16 px-4 md:px-8 flex flex-col items-center bg-background">
+      <div
+        className="min-h-screen py-16 px-4 md:px-8 flex flex-col items-center bg-accent bg-cover"
+        style={{
+          backgroundImage:
+            'url("/images/pexels-lovetosmile-36200692-blurred-dim.jpg")',
+        }}
+      >
         <PricingPlanView />
         <PricingComparisonTable />
       </div>

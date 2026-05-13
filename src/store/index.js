@@ -50,6 +50,7 @@ export const useOrganizationStore = create(
       organizationStats: {
         employees: 0,
         services: 0,
+        activeServices: 0,
         calendars: 0,
       },
       services: null,
@@ -80,7 +81,33 @@ export const useOrganizationStore = create(
   ),
 );
 
+export const useClientStore = create(
+  persist(
+    (set) => ({
+      client: null,
+      clientStats: {
+        appointments: 0,
+      },
+      appointments: null,
+      hasHydrated: false,
+
+      setClient: (client) => set({ client }),
+      setClientStats: (clientStats) => set({ clientStats }),
+      setAppointments: (appointments) => set({ appointments }),
+      setHasHydrated: (state) => set({ hasHydrated: state }),
+    }),
+    {
+      name: "client",
+      storage: createJSONStorage(() => sessionStorage),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
+    },
+  ),
+);
+
 export const resetStores = () => {
   useSessionStore.setState(useSessionStore.getInitialState(), true);
   useOrganizationStore.setState(useOrganizationStore.getInitialState(), true);
+  useClientStore.setState(useClientStore.getInitialState(), true);
 }

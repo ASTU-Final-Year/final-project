@@ -21,8 +21,10 @@ function EthiopianCalendar({
   buttonVariant = "ghost",
   formatters,
   components,
-  startMonth = new Date(Date.now() - 40 * 365.25 * 24 * 60 * 60 * 1000),
-  endMonth = new Date(Date.now() + 10 * 365.25 * 24 * 60 * 60 * 1000),
+  startMonth = new Date(
+    new Date().getTime() - 40 * 365.25 * 24 * 60 * 60 * 1000,
+  ),
+  endMonth = new Date(new Date().getTime() + 10 * 365.25 * 24 * 60 * 60 * 1000),
   ...props
 }) {
   const defaultClassNames = getDefaultClassNames();
@@ -32,6 +34,7 @@ function EthiopianCalendar({
       numerals="latn"
       startMonth={startMonth}
       endMonth={endMonth}
+      weekStartsOn={0}
       showOutsideDays={showOutsideDays}
       className={cn(
         "bg-background group/calendar p-3 [--cell-size:--spacing(8)] [[data-slot=card-content]_&]:bg-transparent [[data-slot=popover-content]_&]:bg-transparent",
@@ -78,7 +81,7 @@ function EthiopianCalendar({
           defaultClassNames.dropdowns,
         ),
         dropdown_root: cn(
-          "relative has-focus:border-ring border border-input shadow-xs has-focus:ring-ring/50 has-focus:ring-[3px] rounded-md",
+          "relative has-focus:border-ring border-none border-input shadow-xs has-focus:ring-ring/50 has-focus:ring-[3px] rounded-md",
           defaultClassNames.dropdown_root,
         ),
         dropdown: cn(

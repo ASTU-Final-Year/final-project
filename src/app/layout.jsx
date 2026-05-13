@@ -26,7 +26,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={cn("font-sans", notoSans.variable)}>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-dots`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-accent`}
       >
         <TooltipProvider>
           {children}
