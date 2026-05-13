@@ -18,6 +18,9 @@ export default function AppointmentsPage() {
   const [selectedDate, setSelectedDate] = useState("");
   const [toastMessage, setToastMessage] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [activeSection, setActiveSection] = useState(null);
   const [newAppointment, setNewAppointment] = useState({
     patient: "",
@@ -260,6 +263,42 @@ export default function AppointmentsPage() {
     });
   };
 
+  // Edit Appointment Handlers
+  const handleEdit = (appointment) => {
+    setSelectedAppointment({ ...appointment });
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = (e) => {
+    e.preventDefault();
+    
+    // Find which section the appointment belongs to and update it
+    const updatedAppointments = { ...appointments };
+    let found = false;
+    
+    Object.keys(updatedAppointments).forEach(section => {
+      if (found) return;
+      const index = updatedAppointments[section].findIndex(apt => apt.id === selectedAppointment.id);
+      if (index !== -1) {
+        updatedAppointments[section][index] = { 
+          ...selectedAppointment, 
+          amount: parseFloat(selectedAppointment.amount) 
+        };
+        found = true;
+      }
+    });
+    
+    setAppointments(updatedAppointments);
+    setShowEditModal(false);
+    showToast(`Appointment for "${selectedAppointment.patient}" updated successfully!`, "success");
+  };
+
+  // View Appointment Handler
+  const handleView = (appointment) => {
+    setSelectedAppointment({ ...appointment });
+    setShowViewModal(true);
+  };
+
   // Get filtered appointments for each section
   const getFilteredAppointments = (section) => {
     return filterAppointments(appointments[section] || []);
@@ -287,7 +326,7 @@ export default function AppointmentsPage() {
     "Dr. Genet Mekonnen"
   ];
 
-  // Appointment Card Component
+  // Appointment Card Component with Edit and View buttons functional
   const AppointmentCard = ({ appointment }) => (
     <div className="border border-gray-200 rounded-lg p-3 mb-3 bg-white hover:shadow-md transition-all">
       {appointment.type && (
@@ -323,11 +362,17 @@ export default function AppointmentsPage() {
       </div>
       
       <div className="flex gap-2 mt-3 pt-2 border-t border-gray-100">
-        <button className="flex-1 px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 rounded hover:bg-blue-100 transition-colors">
-          Edit
+        <button 
+          onClick={() => handleEdit(appointment)}
+          className="flex-1 px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 rounded hover:bg-blue-100 transition-colors flex items-center justify-center gap-1"
+        >
+          <Edit className="w-3 h-3" /> Edit
         </button>
-        <button className="flex-1 px-2 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded hover:bg-gray-200 transition-colors">
-          View
+        <button 
+          onClick={() => handleView(appointment)}
+          className="flex-1 px-2 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded hover:bg-gray-200 transition-colors flex items-center justify-center gap-1"
+        >
+          <Eye className="w-3 h-3" /> View
         </button>
       </div>
     </div>
@@ -580,7 +625,6 @@ export default function AppointmentsPage() {
               </button>
             </div>
             <form onSubmit={handleNewAppointment} className="p-5 space-y-4">
-              {/* Patient Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Patient Name *</label>
                 <input 
@@ -593,7 +637,6 @@ export default function AppointmentsPage() {
                 />
               </div>
               
-              {/* Service Selection */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Service *</label>
                 <select 
@@ -609,7 +652,6 @@ export default function AppointmentsPage() {
                 </select>
               </div>
               
-              {/* Doctor Selection */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Doctor *</label>
                 <select 
@@ -625,7 +667,6 @@ export default function AppointmentsPage() {
                 </select>
               </div>
               
-              {/* Date and Time - Easy Selection */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
@@ -652,7 +693,6 @@ export default function AppointmentsPage() {
                 </div>
               </div>
               
-              {/* Amount and Duration */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Amount ($) *</label>
@@ -685,6 +725,174 @@ export default function AppointmentsPage() {
                 Schedule Appointment
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT APPOINTMENT MODAL */}
+      {showEditModal && selectedAppointment && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl animate-in zoom-in duration-200">
+            <div className="p-6 border-b flex justify-between items-center">
+              <h2 className="text-xl font-bold text-gray-800">Edit Appointment</h2>
+              <button 
+                onClick={() => setShowEditModal(false)} 
+                className="text-gray-400 hover:bg-gray-100 p-2 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveEdit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Patient Name</label>
+                <input 
+                  type="text" 
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all" 
+                  required
+                  value={selectedAppointment.patient} 
+                  onChange={(e) => setSelectedAppointment({...selectedAppointment, patient: e.target.value})}
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Service</label>
+                <select 
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all cursor-pointer"
+                  value={selectedAppointment.service}
+                  onChange={(e) => setSelectedAppointment({...selectedAppointment, service: e.target.value})}
+                >
+                  {serviceOptions.map(service => (
+                    <option key={service} value={service}>{service}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Doctor</label>
+                  <select 
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all cursor-pointer"
+                    value={selectedAppointment.doctor} 
+                    onChange={(e) => setSelectedAppointment({...selectedAppointment, doctor: e.target.value})}
+                  >
+                    {doctorOptions.map(doctor => (
+                      <option key={doctor} value={doctor}>{doctor}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Amount ($)</label>
+                  <input 
+                    type="number" 
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all" 
+                    required
+                    value={selectedAppointment.amount} 
+                    onChange={(e) => setSelectedAppointment({...selectedAppointment, amount: e.target.value})}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Time</label>
+                  <select 
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all cursor-pointer"
+                    value={selectedAppointment.time} 
+                    onChange={(e) => setSelectedAppointment({...selectedAppointment, time: e.target.value})}
+                  >
+                    {timeSlots.map(slot => (
+                      <option key={slot} value={slot}>{slot}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Duration</label>
+                  <select 
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all cursor-pointer"
+                    value={selectedAppointment.duration} 
+                    onChange={(e) => setSelectedAppointment({...selectedAppointment, duration: e.target.value})}
+                  >
+                    <option value="15 min">15 min</option>
+                    <option value="30 min">30 min</option>
+                    <option value="45 min">45 min</option>
+                    <option value="60 min">60 min</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex gap-3 mt-6">
+                <button 
+                  type="button" 
+                  onClick={() => setShowEditModal(false)} 
+                  className="flex-1 py-3 text-gray-600 font-bold rounded-xl hover:bg-gray-100 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg transition-all"
+                >
+                  Update Appointment
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* VIEW APPOINTMENT MODAL */}
+      {showViewModal && selectedAppointment && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in duration-200">
+            <div className="bg-blue-600 p-6 text-white relative">
+              <button 
+                onClick={() => setShowViewModal(false)} 
+                className="absolute top-4 right-4 hover:bg-white/20 p-1 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <h2 className="text-2xl font-bold">{selectedAppointment.patient}</h2>
+              <p className="text-blue-100 text-sm mt-1">{selectedAppointment.service}</p>
+              {selectedAppointment.type && (
+                <span className="inline-block mt-2 text-xs bg-white/20 px-2 py-1 rounded-full">
+                  {selectedAppointment.type}
+                </span>
+              )}
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase flex items-center gap-1">
+                    <User className="w-3 h-3" /> Doctor
+                  </p>
+                  <p className="font-semibold text-gray-900">{selectedAppointment.doctor || "Not assigned"}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase flex items-center gap-1">
+                    <DollarSign className="w-3 h-3" /> Amount
+                  </p>
+                  <p className="font-semibold text-gray-900">${Number(selectedAppointment.amount).toFixed(2)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase flex items-center gap-1">
+                    <Clock className="w-3 h-3" /> Time
+                  </p>
+                  <p className="font-semibold text-gray-900">{selectedAppointment.time}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase flex items-center gap-1">
+                    <Calendar className="w-3 h-3" /> Duration
+                  </p>
+                  <p className="font-semibold text-gray-900">{selectedAppointment.duration || "30 min"}</p>
+                </div>
+                <div className="col-span-2">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase">Category</p>
+                  <p className="font-semibold text-gray-900">{selectedAppointment.category || "General"}</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowViewModal(false)} 
+                className="w-full bg-gray-900 text-white py-3 rounded-xl font-bold hover:bg-gray-800 transition-colors mt-4"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

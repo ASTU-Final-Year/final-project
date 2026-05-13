@@ -11,7 +11,7 @@ import {
   Mail, Share2, Eye, FileJson, DollarSign,
   Briefcase, Smile, Activity, Clock, Target,
   UserCheck, Award, BarChart, PieChart as PieChartIcon,
-  MoreVertical
+  MoreVertical, ChevronDown
 } from "lucide-react";
 
 export default function CalendarAnalyticsPage() {
@@ -26,7 +26,41 @@ export default function CalendarAnalyticsPage() {
   const [showAutomateModal, setShowAutomateModal] = useState(false);
   const [reportType, setReportType] = useState("Weekly Performance Summary");
   const [frequency, setFrequency] = useState("Weekly");
+  const [dropdownOpen, setDropdownOpen] = useState(null);
   const itemsPerPage = 4;
+
+  // Service Type options
+  const serviceTypeOptions = [
+    "All Services",
+    "General Consultation",
+    "Dental X-Ray",
+    "Blood Analysis",
+    "Vaccinations",
+    "Physical Therapy",
+    "Cardiology Checkup",
+    "Pediatric Care"
+  ];
+
+  // Employee options
+  const employeeOptions = [
+    "All Staff",
+    "Dr. Azizul Talibulla",
+    "Dr. Salim Kures",
+    "Dr. Hossain BBS",
+    "Dr. Sarah Johnson",
+    "Dr. Michael Chen",
+    "Nurse Emily Wilson"
+  ];
+
+  // Status options
+  const statusOptions = [
+    "Complete",
+    "Pending",
+    "Confirmed",
+    "In Progress",
+    "Cancelled",
+    "Rescheduled"
+  ];
 
   // Stats data
   const stats = {
@@ -38,17 +72,21 @@ export default function CalendarAnalyticsPage() {
 
   // Top Services by Revenue
   const topServices = [
-    { name: "General Consultation", amount: 46000, percentage: 38 },
-    { name: "Dental X-Ray", amount: 32500, percentage: 27 },
-    { name: "Blood Analysis", amount: 25000, percentage: 21 },
-    { name: "Vaccinations", amount: 16000, percentage: 14 },
+    { name: "General Consultation", amount: 46000, percentage: 38, category: "Consultation", status: "Complete" },
+    { name: "Dental X-Ray", amount: 32500, percentage: 27, category: "Dental", status: "Complete" },
+    { name: "Blood Analysis", amount: 25000, percentage: 21, category: "Lab", status: "Complete" },
+    { name: "Vaccinations", amount: 16000, percentage: 14, category: "Preventive", status: "Complete" },
+    { name: "Physical Therapy", amount: 12000, percentage: 10, category: "Therapy", status: "Pending" },
+    { name: "Cardiology Checkup", amount: 18000, percentage: 15, category: "Cardiology", status: "In Progress" }
   ];
 
   // Top Employees by Completion
   const topEmployees = [
-    { name: "Dr. Azizul Talibulla", score: 90, color: "bg-green-500" },
-    { name: "Dr. Salim Kures", score: 94, color: "bg-blue-500" },
-    { name: "Dr. Hossain BBS", score: 91, color: "bg-yellow-500" },
+    { name: "Dr. Azizul Talibulla", score: 90, color: "bg-green-500", department: "Cardiology", status: "active" },
+    { name: "Dr. Salim Kures", score: 94, color: "bg-blue-500", department: "Dental", status: "active" },
+    { name: "Dr. Hossain BBS", score: 91, color: "bg-yellow-500", department: "General", status: "active" },
+    { name: "Dr. Sarah Johnson", score: 88, color: "bg-purple-500", department: "Pediatrics", status: "active" },
+    { name: "Dr. Michael Chen", score: 85, color: "bg-orange-500", department: "Orthopedics", status: "onLeave" }
   ];
 
   // Year-over-Year Comparison Data
@@ -72,9 +110,60 @@ export default function CalendarAnalyticsPage() {
 
   const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 
+  // Filtered data based on selected filters
+  const getFilteredTopServices = () => {
+    return topServices.filter(service => {
+      const matchesServiceType = selectedServiceType === "All Services" || service.name === selectedServiceType;
+      const matchesStatus = selectedStatus === "Complete" ? service.status === "Complete" : 
+                           selectedStatus === "Pending" ? service.status === "Pending" :
+                           selectedStatus === "In Progress" ? service.status === "In Progress" : true;
+      return matchesServiceType && matchesStatus;
+    });
+  };
+
+  const getFilteredTopEmployees = () => {
+    return topEmployees.filter(employee => {
+      const matchesEmployee = selectedEmployee === "All Staff" || employee.name === selectedEmployee;
+      return matchesEmployee;
+    });
+  };
+
+  const getFilteredYearlyComparison = () => {
+    return yearlyComparison;
+  };
+
+  const filteredTopServices = getFilteredTopServices();
+  const filteredTopEmployees = getFilteredTopEmployees();
+  
+  // Pagination
+  const totalPages = Math.ceil(filteredTopServices.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedServices = filteredTopServices.slice(startIndex, startIndex + itemsPerPage);
+
   const showToast = (message, type = "success") => {
     setToastMessage({ message, type });
     setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  // Apply Filters Function
+  const handleApplyFilters = () => {
+    setCurrentPage(1);
+    showToast(`Filters applied: Service Type: ${selectedServiceType}, Employee: ${selectedEmployee}, Status: ${selectedStatus}`, "success");
+  };
+
+  // Reset Filters
+  const handleResetFilters = () => {
+    setSelectedServiceType("All Services");
+    setSelectedEmployee("All Staff");
+    setSelectedStatus("Complete");
+    setDateRange({ from: "2022-10-01", to: "2022-10-31" });
+    setCurrentPage(1);
+    showToast("All filters reset", "info");
+  };
+
+  // Dropdown toggle function
+  const toggleDropdown = (dropdownName) => {
+    setDropdownOpen(dropdownOpen === dropdownName ? null : dropdownName);
   };
 
   // Export Functions
@@ -93,11 +182,11 @@ export default function CalendarAnalyticsPage() {
       [],
       ["Top Services by Revenue"],
       ["Service Type", "Amount (ETB)"],
-      ...topServices.map(s => [s.name, `${s.amount.toLocaleString()} ETB`]),
+      ...filteredTopServices.map(s => [s.name, `${s.amount.toLocaleString()} ETB`]),
       [],
       ["Top Employees by Completion"],
       ["Employee Name", "Completion Score"],
-      ...topEmployees.map(e => [e.name, `${e.score}%`])
+      ...filteredTopEmployees.map(e => [e.name, `${e.score}%`])
     ];
     
     const csvContent = excelData.map(row => row.join(",")).join("\n");
@@ -116,10 +205,43 @@ export default function CalendarAnalyticsPage() {
     setShowAutomateModal(false);
   };
 
-  // Pagination
-  const totalPages = Math.ceil(topServices.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedServices = topServices.slice(startIndex, startIndex + itemsPerPage);
+  // Custom Dropdown Component
+  const CustomDropdown = ({ label, value, options, onSelect, icon: Icon }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    
+    return (
+      <div className="relative">
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="flex items-center gap-2 px-3 py-1.5 text-sm border rounded-lg bg-white hover:bg-gray-50 transition-colors"
+        >
+          {Icon && <Icon className="w-4 h-4 text-gray-400" />}
+          <span className="text-gray-700">{label}:</span>
+          <span className="font-medium text-gray-900">{value}</span>
+          <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        </button>
+        
+        {isOpen && (
+          <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
+            {options.map((option) => (
+              <button
+                key={option}
+                onClick={() => {
+                  onSelect(option);
+                  setIsOpen(false);
+                }}
+                className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${
+                  value === option ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                }`}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   // Stat Card Component
   const StatCard = ({ label, value, icon: Icon, color }) => (
@@ -202,7 +324,7 @@ export default function CalendarAnalyticsPage() {
 
       {/* Sidebar + Main Content */}
       <div className="flex">
-        {/* Sidebar Navigation - CHANGED: Reports is now active instead of Calendar */}
+        {/* Sidebar Navigation */}
         <aside className="w-64 bg-white border-r border-gray-200 min-h-[calc(100vh-57px)] sticky top-[57px]">
           <div className="p-4">
             <div className="mb-6">
@@ -295,35 +417,52 @@ export default function CalendarAnalyticsPage() {
             </div>
           </div>
 
-          {/* Filters Bar */}
+          {/* Filters Bar with Custom Dropdowns */}
           <div className="mb-6">
             <div className="flex flex-wrap items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500">Service Type:</span>
-                <select value={selectedServiceType} onChange={(e) => setSelectedServiceType(e.target.value)} className="px-3 py-1.5 text-sm border rounded-lg">
-                  <option>All Services</option>
-                </select>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500">Employee:</span>
-                <select value={selectedEmployee} onChange={(e) => setSelectedEmployee(e.target.value)} className="px-3 py-1.5 text-sm border rounded-lg">
-                  <option>All Staff</option>
-                </select>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500">Status:</span>
-                <select value={selectedStatus} onChange={(e) => setSelectedStatus(e.target.value)} className="px-3 py-1.5 text-sm border rounded-lg">
-                  <option>Complete</option>
-                </select>
-              </div>
+              {/* Service Type Dropdown */}
+              <CustomDropdown
+                label="Service Type"
+                value={selectedServiceType}
+                options={serviceTypeOptions}
+                onSelect={setSelectedServiceType}
+                icon={Briefcase}
+              />
+              
+              {/* Employee Dropdown */}
+              <CustomDropdown
+                label="Employee"
+                value={selectedEmployee}
+                options={employeeOptions}
+                onSelect={setSelectedEmployee}
+                icon={Users}
+              />
+              
+              {/* Status Dropdown */}
+              <CustomDropdown
+                label="Status"
+                value={selectedStatus}
+                options={statusOptions}
+                onSelect={setSelectedStatus}
+                icon={Activity}
+              />
+              
+              {/* Date Range */}
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-gray-400" />
                 <input type="date" value={dateRange.from} onChange={(e) => setDateRange({...dateRange, from: e.target.value})} className="px-2 py-1.5 text-sm border rounded-lg" />
                 <span>-</span>
                 <input type="date" value={dateRange.to} onChange={(e) => setDateRange({...dateRange, to: e.target.value})} className="px-2 py-1.5 text-sm border rounded-lg" />
               </div>
-              <button onClick={() => showToast("Filters applied!", "success")} className="px-4 py-1.5 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800">
+              
+              {/* Apply Filters Button */}
+              <button onClick={handleApplyFilters} className="px-4 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
                 Apply Filters
+              </button>
+              
+              {/* Reset Filters Button */}
+              <button onClick={handleResetFilters} className="px-4 py-1.5 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+                Reset
               </button>
             </div>
           </div>
@@ -386,25 +525,33 @@ export default function CalendarAnalyticsPage() {
                 </div>
               </div>
 
-              {/* Top Services by Revenue with Pagination */}
+              {/* Top Services by Revenue with Pagination - FILTERED */}
               <div className="bg-white rounded-xl border border-gray-200 p-4">
                 <h3 className="font-semibold text-gray-900 mb-4">Top Services by Revenue</h3>
                 <div className="space-y-3">
-                  {paginatedServices.map((service, idx) => (
-                    <div key={idx} className="flex justify-between items-center">
-                      <span className="text-sm text-gray-700">{service.name}</span>
-                      <span className="text-sm font-semibold text-gray-900">{service.amount.toLocaleString()} ETB</span>
+                  {paginatedServices.length > 0 ? (
+                    paginatedServices.map((service, idx) => (
+                      <div key={idx} className="flex justify-between items-center">
+                        <span className="text-sm text-gray-700">{service.name}</span>
+                        <span className="text-sm font-semibold text-gray-900">{service.amount.toLocaleString()} ETB</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      No services match the selected filters
                     </div>
-                  ))}
+                  )}
                 </div>
-                <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
-                  <p className="text-xs text-gray-500">Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, topServices.length)} of {topServices.length}</p>
-                  <div className="flex gap-2">
-                    <button onClick={() => setCurrentPage(p => Math.max(1, p-1))} disabled={currentPage === 1} className="px-2 py-1 text-xs border rounded disabled:opacity-50">Previous</button>
-                    <span className="text-xs text-gray-500">Page {currentPage} of {totalPages}</span>
-                    <button onClick={() => setCurrentPage(p => Math.min(totalPages, p+1))} disabled={currentPage === totalPages} className="px-2 py-1 text-xs border rounded disabled:opacity-50">Next</button>
+                {filteredTopServices.length > 0 && (
+                  <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
+                    <p className="text-xs text-gray-500">Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredTopServices.length)} of {filteredTopServices.length}</p>
+                    <div className="flex gap-2">
+                      <button onClick={() => setCurrentPage(p => Math.max(1, p-1))} disabled={currentPage === 1} className="px-2 py-1 text-xs border rounded disabled:opacity-50">Previous</button>
+                      <span className="text-xs text-gray-500">Page {currentPage} of {totalPages}</span>
+                      <button onClick={() => setCurrentPage(p => Math.min(totalPages, p+1))} disabled={currentPage === totalPages} className="px-2 py-1 text-xs border rounded disabled:opacity-50">Next</button>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
 
@@ -432,22 +579,28 @@ export default function CalendarAnalyticsPage() {
                 </div>
               </div>
 
-              {/* Top Employees by Completion */}
+              {/* Top Employees by Completion - FILTERED */}
               <div className="bg-white rounded-xl border border-gray-200 p-4">
                 <h3 className="font-semibold text-gray-900 mb-4">Top Employees by Completion</h3>
                 <div className="space-y-4">
-                  {topEmployees.map((emp, idx) => (
-                    <div key={idx}>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className="font-medium text-gray-800">{emp.name}</span>
-                        <span className="text-sm font-semibold text-gray-900">{emp.score}%</span>
+                  {filteredTopEmployees.length > 0 ? (
+                    filteredTopEmployees.map((emp, idx) => (
+                      <div key={idx}>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="font-medium text-gray-800">{emp.name}</span>
+                          <span className="text-sm font-semibold text-gray-900">{emp.score}%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div className={`${emp.color} h-2 rounded-full`} style={{ width: `${emp.score}%` }}></div>
+                        </div>
+                        <p className="text-xs text-gray-400 mt-1">Completed: {emp.score}%</p>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className={`${emp.color} h-2 rounded-full`} style={{ width: `${emp.score}%` }}></div>
-                      </div>
-                      <p className="text-xs text-gray-400 mt-1">Completed: {emp.score}%</p>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      No employees match the selected filters
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
             </div>
@@ -465,10 +618,10 @@ export default function CalendarAnalyticsPage() {
                     <th className="text-right py-2 font-medium text-gray-500">Revenue 2024</th>
                     <th className="text-right py-2 font-medium text-gray-500">YoY Growth</th>
                     <th className="text-center py-2 font-medium text-gray-500">Trend</th>
-                   </tr>
+                  </tr>
                 </thead>
                 <tbody>
-                  {yearlyComparison.map((item, idx) => (
+                  {getFilteredYearlyComparison().map((item, idx) => (
                     <tr key={idx} className="border-b border-gray-100">
                       <td className="py-2 font-medium text-gray-700">{item.month}</td>
                       <td className="py-2 text-right text-gray-600">{item.revenue2023.toLocaleString()} ETB</td>
