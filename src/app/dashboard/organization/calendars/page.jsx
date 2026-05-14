@@ -179,8 +179,10 @@ export default function CalendarsPage() {
     });
 
     const [countRes, dataRes] = await Promise.all([
-      RequestHandler.Get(`/query/v1/organizationCalendar?countOnly`),
-      RequestHandler.Get(`/query/v1/organizationCalendar?${params.toString()}`),
+      RequestHandler.Get(`/query/v1/organizationCalendar?mine&countOnly`),
+      RequestHandler.Get(
+        `/query/v1/organizationCalendar?mine&${params.toString()}`,
+      ),
     ]);
 
     if (countRes.ok) {
@@ -265,7 +267,8 @@ export default function CalendarsPage() {
   const handleAddCalendar = async () => {
     setIsSubmitting(true);
     const res = await RequestHandler.Post(
-      `/api/v1/organization/${organizationId}/calendar`,
+      // `/api/v1/organization/${organizationId}/calendar`,
+      `/query/v1/organizationCalendar?mine'`,
       {
         body: {
           name: formData.name,
@@ -291,7 +294,7 @@ export default function CalendarsPage() {
   const handleEditCalendar = async () => {
     setIsSubmitting(true);
     const res = await RequestHandler.Patch(
-      `/api/v1/organization/${organizationId}/calendar/${selectedCalendar.id}`,
+      `/query/v1/organizationCalendar?mine&~id='${selectedCalendar.id}'`,
       {
         body: {
           name: formData.name,
@@ -312,7 +315,8 @@ export default function CalendarsPage() {
   const handleDeleteCalendar = async () => {
     setIsSubmitting(true);
     const res = await RequestHandler.Delete(
-      `/api/v1/organization/${organizationId}/calendar/${selectedCalendar.id}`,
+      // `/api/v1/organization/${organizationId}/calendar/${selectedCalendar.id}`,
+      `/query/v1/organizationCalendar?mine&~id='${selectedCalendar.id}'`,
     );
     if (res.ok) {
       setIsDeleteOpen(false);
@@ -426,7 +430,7 @@ export default function CalendarsPage() {
               />
             </div>
             {/* <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[150px] bg-background">
+              <SelectTrigger className="w-[160px] bg-background">
                 <Filter className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -606,10 +610,10 @@ export default function CalendarsPage() {
               value={limit.toFixed()}
               onValueChange={(v) => {
                 setLimit(Number(v));
-                setPage(2); // Reset to page 1 on limit change
+                setPage(1); // Reset to page 1 on limit change
               }}
             >
-              <SelectTrigger className="h-8 w-[70px]">
+              <SelectTrigger className="h-8 w-[80px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
