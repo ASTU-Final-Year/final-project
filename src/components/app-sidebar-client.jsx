@@ -14,6 +14,7 @@ import {
   UserPlus,
   Plus,
   Activity,
+  User,
 } from "lucide-react";
 
 import {
@@ -54,7 +55,12 @@ const navData = [
   //   title: "Analytics",
   //   url: "/dashboard/employee/analytics",
   //   icon: PieChart,
-  // },
+  // },},
+  {
+    title: "Profile",
+    url: "/dashboard/client/profile",
+    icon: User,
+  },
 ];
 
 export function AppSidebarClient() {
