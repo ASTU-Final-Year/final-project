@@ -14,6 +14,7 @@ import {
   UserPlus,
   Plus,
   Activity,
+  User,
 } from "lucide-react";
 
 import {
@@ -59,6 +60,11 @@ const navData = [
     title: "Calendars",
     url: "/dashboard/organization/calendars",
     icon: CalendarDays,
+  },
+  {
+    title: "Profile",
+    url: "/dashboard/organization/profile",
+    icon: User,
   },
   // {
   //   title: "Analytics",
