@@ -16,18 +16,8 @@ import {
   Clock,
   Send,
   CheckCircle,
-  AlertCircle,
-  Facebook,
-  Twitter,
-  Linkedin,
-  Instagram,
-  Globe,
-  MessageSquare,
   Bot,
   Headphones,
-  Building2,
-  Users,
-  CalendarDays,
 } from "lucide-react";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
@@ -57,12 +47,9 @@ export default function ContactPage() {
     // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 1500));
 
-    // Success response
     setSubmitStatus("success");
     setFormData({ name: "", email: "", subject: "", message: "" });
     setIsSubmitting(false);
-
-    // Auto-hide success message after 5 seconds
     setTimeout(() => setSubmitStatus(null), 5000);
   };
 
@@ -80,7 +67,6 @@ export default function ContactPage() {
           <h1 className="text-4xl font-bold text-indigo-950 mb-3">Get in Touch</h1>
           <p className="text-indigo-600 max-w-2xl mx-auto">
             Have questions about ServeSync+? Our team (and AI agents) are ready to help you transform service delivery.
-            We're here to answer your questions and help you get started.
           </p>
         </div>
 
@@ -133,7 +119,6 @@ export default function ContactPage() {
                   <div>
                     <h3 className="font-semibold text-indigo-900">Business Hours</h3>
                     <p className="text-sm text-indigo-600">Monday – Friday: 8:00 – 17:00 (EAT)</p>
-                    <p className="text-sm text-indigo-500">Saturday – Sunday: Closed</p>
                   </div>
                 </div>
               </CardContent>
@@ -153,27 +138,6 @@ export default function ContactPage() {
                   <Bot className="h-4 w-4 mr-2" />
                   Chat with SyncBot
                 </Button>
-              </CardContent>
-            </Card>
-
-            {/* Social Media Links */}
-            <Card className="border-indigo-100">
-              <CardContent className="p-6">
-                <h3 className="font-semibold text-indigo-900 mb-4 text-center">Follow Us</h3>
-                <div className="flex justify-center gap-4">
-                  <Button variant="outline" size="icon" className="rounded-full border-indigo-200 text-indigo-600 hover:bg-indigo-50">
-                    <Facebook className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="icon" className="rounded-full border-indigo-200 text-indigo-600 hover:bg-indigo-50">
-                    <Twitter className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="icon" className="rounded-full border-indigo-200 text-indigo-600 hover:bg-indigo-50">
-                    <Linkedin className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="icon" className="rounded-full border-indigo-200 text-indigo-600 hover:bg-indigo-50">
-                    <Instagram className="h-4 w-4" />
-                  </Button>
-                </div>
               </CardContent>
             </Card>
           </div>
@@ -296,10 +260,7 @@ export default function ContactPage() {
                 <CardTitle className="text-lg text-indigo-900">How quickly will I get a response?</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-indigo-600">
-                  We aim to respond to all inquiries within 24 hours during business days. For urgent matters, 
-                  please call our support line directly.
-                </p>
+                <p className="text-indigo-600">We aim to respond within 24 hours during business days.</p>
               </CardContent>
             </Card>
             <Card className="border-indigo-100">
@@ -307,32 +268,23 @@ export default function ContactPage() {
                 <CardTitle className="text-lg text-indigo-900">Can I schedule a demo?</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-indigo-600">
-                  Absolutely! Fill out the contact form with "Demo Request" as the subject, and our team will 
-                  reach out to schedule a personalized demo at your convenience.
-                </p>
+                <p className="text-indigo-600">Yes! Fill out the form with "Demo Request" as the subject.</p>
               </CardContent>
             </Card>
             <Card className="border-indigo-100">
               <CardHeader>
-                <CardTitle className="text-lg text-indigo-900">Is there a phone number I can call?</CardTitle>
+                <CardTitle className="text-lg text-indigo-900">Is there a phone number?</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-indigo-600">
-                  Yes! You can reach us at <strong>+251-11-554-3322</strong> during business hours 
-                  (Monday–Friday, 8:00 AM – 5:00 PM EAT).
-                </p>
+                <p className="text-indigo-600">Call us at <strong>+251-11-554-3322</strong> (Mon-Fri, 8 AM – 5 PM EAT).</p>
               </CardContent>
             </Card>
             <Card className="border-indigo-100">
               <CardHeader>
-                <CardTitle className="text-lg text-indigo-900">Do you have a live chat option?</CardTitle>
+                <CardTitle className="text-lg text-indigo-900">Live chat option?</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-indigo-600">
-                  Yes! Look for the blue chat bubble in the bottom-right corner of your screen. Our AI assistant 
-                  SyncBot is available 24/7 to help with common questions.
-                </p>
+                <p className="text-indigo-600">Yes! Click the blue chat bubble at the bottom‑right corner.</p>
               </CardContent>
             </Card>
           </div>
@@ -357,7 +309,6 @@ export default function ContactPage() {
             </CardContent>
           </Card>
         </div>
-        {/* <Chatbot /> */}
       </main>
       <SiteFooter />
     </div>
