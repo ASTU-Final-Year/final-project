@@ -1,6 +1,6 @@
 import { Time } from "@bepalo/time";
 import path from "path";
-import { JWT, JwtPayload, type JwtSymmetricAlgorithm } from "@bepalo/jwt";
+import { JWT, type JwtPayload, type JwtSymmetricAlgorithm } from "@bepalo/jwt";
 import { config as dotenvConfig } from "dotenv";
 dotenvConfig({ path: "../.env" });
 
@@ -9,10 +9,7 @@ export const config = {
   frontendPort: parseInt(process.env.PORT || "") || 3000,
   url: process.env.URL || "http://localhost",
   isProduction: process.env.NODE_ENV === "production",
-  prodDatabase:
-    (process.env.PROD_DATABASE !== "false" &&
-      process.env.PROD_DATABASE !== "0") ||
-    false,
+  prodDatabase: !!process.env.PROD_DATABASE,
   emailDomain: process.env.EMAIL_DOMAIN || "servesyncplus.et",
   errorFd: 0,
   infoFd: 0,

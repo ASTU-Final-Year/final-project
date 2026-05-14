@@ -13,6 +13,7 @@ import { tables } from "./schema";
 import { router } from "..";
 
 const prodDatabase = config.prodDatabase as false;
+if (prodDatabase) console.log("! USING PRODUCTION DATABASE !");
 
 const pool = new Pool({
   connectionString: dbConfig.pgDatabaseURL,
@@ -100,7 +101,7 @@ export const initDb = async () => {
           } catch (error) {
             // console.log(error);
             if (
-              !(error.cause && error.cause.toString().includes("duplicate"))
+              !(error.cause && /duplicate|unique/i.test(error.cause.toString()))
             ) {
               console.log(name, entry);
               console.error(

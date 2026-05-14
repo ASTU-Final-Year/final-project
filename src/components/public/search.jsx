@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import RequestHandler from "@/lib/request-handler";
 import { cn } from "@/lib/utils";
+import { config } from "@/lib/config";
 
 export default function SearchComponent({
   searchBarOnly,
@@ -47,9 +48,10 @@ export default function SearchComponent({
 
     try {
       const query = encodeURIComponent(searchQuery);
+      const ilike = config.prodDatabase ? "ilike" : "like";
       const dataRes = await RequestHandler.Get(
         searchQuery
-          ? `/query/v1/organizationService?guest&limit=10&~isActive=true&~name.ilike=%25${query}%25|~description.ilike=%25${query}%25|~organization.sector.ilike=%25${query}%25|~organization.name.ilike=%25${query}%25|~organization.description.ilike=%25${query}%25|~organization.address.ilike=%25${query}%25`
+          ? `/query/v1/organizationService?guest&limit=10&~isActive=true&~name.${ilike}=%25${query}%25|~description.${ilike}=%25${query}%25|~organization.sector.${ilike}=%25${query}%25|~organization.name.${ilike}=%25${query}%25|~organization.description.${ilike}=%25${query}%25|~organization.address.${ilike}=%25${query}%25`
           : `/query/v1/organizationService?guest&limit=10`,
       );
 
