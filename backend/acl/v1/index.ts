@@ -578,8 +578,7 @@ export const queryAuth = {
             eq(tables.organizationCalendar.id, tables.employee.calendarId),
           ],
         },
-        where: (req, { session }) =>
-          eq(tables.employee.userId, session.user?.id),
+        where: (req, { session }) => eq(tables.employee.userId, session.userId),
       },
 
       organization_admin: {
@@ -678,7 +677,7 @@ export const queryAuth = {
     GET: {
       mine: {
         select: omit(tables.user, ["password", "updatedAt"]),
-        where: (req, { session }) => eq(tables.user.id, session.user?.id),
+        where: (req, { session }) => eq(tables.user.id, session.userId),
       },
     },
 
@@ -717,7 +716,7 @@ export const queryAuth = {
     DELETE: {
       mine: {
         select: omit(tables.user, ["password"]),
-        where: (req, { session }) => eq(tables.user.id, session.user?.id),
+        where: (req, { session }) => eq(tables.user.id, session.userId),
       },
     },
   },
