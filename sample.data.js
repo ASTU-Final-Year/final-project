@@ -485,7 +485,10 @@ export const sampleData = {
       "description": "Monday to Friday schedule",
       "available": {
         "weekly": [1, 2, 3, 4, 5],
-        "hours": { "start": "09:00", "end": "18:00" }
+        "hours": [["09:00", "18:00"]]
+      },
+      "unavailable": {
+        "hours": [["11:30", "2:00"]]
       },
       "organizationId": fromDriverUUID("4bd16724-94c7-428b-b8ed-ae02a6b62a04")
     },
@@ -495,7 +498,10 @@ export const sampleData = {
       "description": "Saturday schedule",
       "available": {
         "weekly": [6],
-        "hours": { "start": "10:00", "end": "15:00" }
+        "hours": [["10:00", "15:00"]]
+      },
+      "unavailable": {
+        "hours": [["11:30", "2:00"]]
       },
       "organizationId": fromDriverUUID("4bd16724-94c7-428b-b8ed-ae02a6b62a04")
     },
@@ -507,7 +513,10 @@ export const sampleData = {
       "description": "Monday to Saturday schedule",
       "available": {
         "weekly": [1, 2, 3, 4, 5, 6],
-        "hours": { "start": "08:00", "end": "20:00" }
+        "hours": [["08:00", "20:00"]]
+      },
+      "unavailable": {
+        "hours": [["11:30", "2:00"]]
       },
       "organizationId": fromDriverUUID("83824481-00e1-4b05-b7e3-de54026b1f47")
     },
@@ -517,7 +526,10 @@ export const sampleData = {
       "description": "Sunday limited hours",
       "available": {
         "weekly": [7],
-        "hours": { "start": "10:00", "end": "16:00" }
+        "hours": [["10:00", "16:00"]]
+      },
+      "unavailable": {
+        "hours": [["11:30", "2:00"]]
       },
       "organizationId": fromDriverUUID("83824481-00e1-4b05-b7e3-de54026b1f47")
     },
@@ -529,7 +541,10 @@ export const sampleData = {
       "description": "7 days a week",
       "available": {
         "weekly": [1, 2, 3, 4, 5, 6, 7],
-        "hours": { "start": "00:00", "end": "23:59" }
+        "hours": [["00:00", "23:59"]]
+      },
+      "unavailable": {
+        "hours": [["11:30", "2:00"]]
       },
       "organizationId": fromDriverUUID("976e9b87-f6c3-416a-9e1a-e0350e359697")
     },
@@ -541,7 +556,10 @@ export const sampleData = {
       "description": "Monday to Friday, government hours",
       "available": {
         "weekly": [1, 2, 3, 4, 5],
-        "hours": { "start": "08:30", "end": "16:30" }
+        "hours": [["08:30", "16:30"]]
+      },
+      "unavailable": {
+        "hours": [["11:30", "2:00"]]
       },
       "organizationId": fromDriverUUID("0b7ab6df-13c0-4e29-885c-7ac5631588f6")
     },
@@ -553,7 +571,10 @@ export const sampleData = {
       "description": "Early morning to late night",
       "available": {
         "weekly": [1, 2, 3, 4, 5, 6, 7],
-        "hours": { "start": "05:00", "end": "22:00" }
+        "hours": [["05:00", "22:00"]]
+      },
+      "unavailable": {
+        "hours": [["11:30", "2:00"]]
       },
       "organizationId": fromDriverUUID("f15e3b68-2bd4-4070-8377-1ca6dba659c5")
     },
@@ -565,7 +586,10 @@ export const sampleData = {
       "description": "Service center hours",
       "available": {
         "weekly": [1, 2, 3, 4, 5, 6],
-        "hours": { "start": "08:00", "end": "18:00" }
+        "hours": [["08:00", "18:00"]]
+      },
+      "unavailable": {
+        "hours": [["11:30", "2:00"]]
       },
       "organizationId": fromDriverUUID("fc53bec0-736f-4b93-adf5-c3ac25dbc1be")
     },
@@ -577,7 +601,10 @@ export const sampleData = {
       "description": "Always open",
       "available": {
         "weekly": [1, 2, 3, 4, 5, 6, 7],
-        "hours": { "start": "00:00", "end": "23:59" }
+        "hours": [["00:00", "23:59"]]
+      },
+      "unavailable": {
+        "hours": [["11:30", "2:00"]]
       },
       "organizationId": fromDriverUUID("81e054ac-aafc-4fa3-8d22-f261432518da")
     },
@@ -587,7 +614,10 @@ export const sampleData = {
       "description": "Regular clinic hours",
       "available": {
         "weekly": [1, 2, 3, 4, 5],
-        "hours": { "start": "08:00", "end": "17:00" }
+        "hours": [["08:00", "17:00"]]
+      },
+      "unavailable": {
+        "hours": [["11:30", "2:00"]]
       },
       "organizationId": fromDriverUUID("81e054ac-aafc-4fa3-8d22-f261432518da")
     },
@@ -599,7 +629,10 @@ export const sampleData = {
       "description": "24/7 emergency services",
       "available": {
         "weekly": [1, 2, 3, 4, 5, 6, 7],
-        "hours": { "start": "00:00", "end": "23:59" }
+        "hours": [["00:00", "23:59"]]
+      },
+      "unavailable": {
+        "hours": [["11:30", "2:00"]]
       },
       "organizationId": fromDriverUUID("d38848d7-437e-4275-a765-9b6b2eb46944")
     },
@@ -609,7 +642,10 @@ export const sampleData = {
       "description": "General clinic hours",
       "available": {
         "weekly": [1, 2, 3, 4, 5],
-        "hours": { "start": "08:00", "end": "18:00" }
+        "hours": [["08:00", "18:00"]]
+      },
+      "unavailable": {
+        "hours": [["11:30", "2:00"]]
       },
       "organizationId": fromDriverUUID("d38848d7-437e-4275-a765-9b6b2eb46944")
     },
@@ -621,7 +657,10 @@ export const sampleData = {
       "description": "24/7 hospital services",
       "available": {
         "weekly": [1, 2, 3, 4, 5, 6, 7],
-        "hours": { "start": "00:00", "end": "23:59" }
+        "hours": [["00:00", "23:59"]]
+      },
+      "unavailable": {
+        "hours": [["11:30", "2:00"]]
       },
       "organizationId": fromDriverUUID("53d7a49a-93f0-4b3b-ae46-956bb2d5403d")
     },
@@ -631,7 +670,10 @@ export const sampleData = {
       "description": "Academic medical center hours",
       "available": {
         "weekly": [1, 2, 3, 4, 5],
-        "hours": { "start": "07:00", "end": "19:00" }
+        "hours": [["07:00", "19:00"]]
+      },
+      "unavailable": {
+        "hours": [["11:30", "2:00"]]
       },
       "organizationId": fromDriverUUID("53d7a49a-93f0-4b3b-ae46-956bb2d5403d")
     },
@@ -643,7 +685,10 @@ export const sampleData = {
       "description": "Private hospital hours",
       "available": {
         "weekly": [1, 2, 3, 4, 5, 6],
-        "hours": { "start": "07:00", "end": "21:00" }
+        "hours": [["07:00", "21:00"]]
+      },
+      "unavailable": {
+        "hours": [["11:30", "2:00"]]
       },
       "organizationId": fromDriverUUID("13485662-824f-4a1a-9c14-c50fe68e91d6")
     },
@@ -653,7 +698,10 @@ export const sampleData = {
       "description": "Specialist appointment hours",
       "available": {
         "weekly": [1, 2, 4, 5],
-        "hours": { "start": "09:00", "end": "17:00" }
+        "hours": [["09:00", "17:00"]]
+      },
+      "unavailable": {
+        "hours": [["11:30", "2:00"]]
       },
       "organizationId": fromDriverUUID("13485662-824f-4a1a-9c14-c50fe68e91d6")
     },
@@ -665,7 +713,10 @@ export const sampleData = {
       "description": "Government office hours",
       "available": {
         "weekly": [1, 2, 3, 4, 5],
-        "hours": { "start": "08:30", "end": "17:30" }
+        "hours": [["08:30", "17:30"]]
+      },
+      "unavailable": {
+        "hours": [["11:30", "2:00"]]
       },
       "organizationId": fromDriverUUID("5a31b145-0992-4e12-b6d0-b9917c0f7cfd")
     },
@@ -677,7 +728,10 @@ export const sampleData = {
       "description": "Service center hours",
       "available": {
         "weekly": [1, 2, 3, 4, 5, 6],
-        "hours": { "start": "09:00", "end": "18:00" }
+        "hours": [["09:00", "18:00"]]
+      },
+      "unavailable": {
+        "hours": [["11:30", "2:00"]]
       },
       "organizationId": fromDriverUUID("d9940d5b-7158-475f-bd97-22c6dec23350")
     },
@@ -689,7 +743,10 @@ export const sampleData = {
       "description": "Regular banking hours",
       "available": {
         "weekly": [1, 2, 3, 4, 5],
-        "hours": { "start": "08:00", "end": "16:00" }
+        "hours": [["08:00", "16:00"]]
+      },
+      "unavailable": {
+        "hours": [["11:30", "2:00"]]
       },
       "organizationId": fromDriverUUID("9ed5e12e-7de5-4dd8-bb97-7b0031f10979")
     },
@@ -701,7 +758,10 @@ export const sampleData = {
       "description": "Open daily",
       "available": {
         "weekly": [1, 2, 3, 4, 5, 6, 7],
-        "hours": { "start": "07:00", "end": "22:00" }
+        "hours": [["07:00", "22:00"]]
+      },
+      "unavailable": {
+        "hours": [["11:30", "2:00"]]
       },
       "organizationId": fromDriverUUID("47a0016c-008f-497b-a906-3f2317b1c9e1")
     },
@@ -713,7 +773,10 @@ export const sampleData = {
       "description": "Weekday training",
       "available": {
         "weekly": [1, 2, 3, 4, 5],
-        "hours": { "start": "09:00", "end": "20:00" }
+        "hours": [["09:00", "20:00"]]
+      },
+      "unavailable": {
+        "hours": [["11:30", "2:00"]]
       },
       "organizationId": fromDriverUUID("e24dfabc-07c1-428c-85fb-a7503068136b")
     }
