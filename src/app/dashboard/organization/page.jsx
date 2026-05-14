@@ -150,7 +150,7 @@ export default function DashboardOverview() {
           icon={Briefcase}
         />
         <StatCard
-          title="Totla Services"
+          title="Total Services"
           value={stats.services}
           href={`/dashboard/organization/services`}
           icon={Briefcase}
