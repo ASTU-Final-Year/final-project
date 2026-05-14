@@ -128,6 +128,7 @@ export default function AppointmentsPage() {
       (async () => setTotalCount(count))();
       let results = appointments || [];
 
+      console.log(results);
       if (statusFilter !== "all") {
         results = results.filter(
           (s) => s.isActive === (statusFilter === "active"),
@@ -136,8 +137,10 @@ export default function AppointmentsPage() {
       if (searchQuery) {
         results = results.filter(
           (s) =>
-            s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            s.description.toLowerCase().includes(searchQuery.toLowerCase()),
+            s.service.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            s.service.description
+              .toLowerCase()
+              .includes(searchQuery.toLowerCase()),
         );
       }
       (async () => setAppointments(results))();
@@ -264,10 +267,14 @@ export default function AppointmentsPage() {
                     </div>
                   </TableCell>
                   <TableCell className="">
-                    {new Date(appointment.startTime).toUTCString()}
+                    {new Date(appointment.startTime).toLocaleString("en", {
+                      dateStyle: "full",
+                      timeStyle: "short",
+                    })}
                   </TableCell>
                   <TableCell>
-                    <AcriveBadge isActive={appointment.isActive} />
+                    {appointment.status}
+                    {/* <AcriveBadge isActive={appointment.isActive} /> */}
                   </TableCell>
                   <TableCell className="text-right">
                     {/* <Button

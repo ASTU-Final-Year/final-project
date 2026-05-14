@@ -14,6 +14,7 @@ export function CalendarDatePicker({
   mode = "single",
   startMonth = new Date(),
   endMonth = new Date(new Date().getTime() + 10 * 365.25 * 24 * 60 * 60 * 1000),
+  ...props
 }) {
   const monthStrs = {
     en: [
@@ -78,8 +79,8 @@ export function CalendarDatePicker({
             </div>
           </div>
           {/* Calendars */}
-          <div className="flex gap-2">
-            <div className="p-2 rounded space-y-2">
+          <div className="flex gap-2 justify-center items-center">
+            <div className="p-2 flex justify-center items-center rounded space-y-2">
               {/* Availablity Calendars */}
               <TabsContent value="ethiopian" className="flex mt-0">
                 <EthiopianCalendar
@@ -93,6 +94,7 @@ export function CalendarDatePicker({
                   reverseYears
                   className="px-0 py-0 pb-1 mx-auto"
                   captionLayout="dropdown"
+                  {...props}
                 />
               </TabsContent>
               <TabsContent value="gregorian" className="flex mt-0">
@@ -107,6 +109,7 @@ export function CalendarDatePicker({
                   reverseYears
                   className="px-0 py-2 mx-auto"
                   captionLayout="dropdown"
+                  {...props}
                 />
               </TabsContent>
             </div>

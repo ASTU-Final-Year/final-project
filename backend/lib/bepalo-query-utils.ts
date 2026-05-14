@@ -69,7 +69,7 @@ type _QueryAuthEntry<
   validateBody?: <B extends Record<string, unknown>>(
     body: B,
     req: Request,
-    ctx: RouterContext<XContext & CTXCookie & CTXAuth>,
+    ctx: RouterContext<XContext & CTXCookie & CTXBody & CTXAuth>,
   ) =>
     | Record<string, unknown>
     | ArkErrors

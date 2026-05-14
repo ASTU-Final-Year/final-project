@@ -23,13 +23,87 @@ import {
 } from "~/middleware";
 import { JWT } from "@bepalo/jwt";
 
+// Helper function to check calendar availability
+async function checkCalendarAvailability(
+  serviceId: string,
+  startTime: Date,
+  endTime: Date,
+  tx: Transaction,
+): Promise<boolean> {
+  // Get service with calendar
+  const [service] = await tx
+    .select({
+      calendarId: tables.organizationService.calendarId,
+      calendar: tables.organizationCalendar,
+    })
+    .from(tables.organizationService)
+    .leftJoin(
+      tables.organizationCalendar,
+      eq(tables.organizationService.calendarId, tables.organizationCalendar.id),
+    )
+    .where(eq(tables.organizationService.id, serviceId));
+
+  if (!service || !service.calendar) {
+    return true; // No calendar restrictions
+  }
+
+  const dayOfWeek = startTime.getDay();
+  const adjustedDay = dayOfWeek === 0 ? 7 : dayOfWeek;
+  const availableDays = service.calendar.available?.weekly || [];
+
+  // Check if service is available on this day
+  if (!availableDays.includes(adjustedDay)) {
+    return false;
+  }
+
+  // Check if time is within available hours
+  const availableHours = service.calendar.available?.hours || [
+    ["09:00", "17:00"],
+  ];
+  const startHour = startTime.getHours();
+  const startMinute = startTime.getMinutes();
+
+  let isWithinHours = false;
+  for (const [start, end] of availableHours) {
+    const [startH, startM] = start.split(":").map(Number);
+    const [endH, endM] = end.split(":").map(Number);
+
+    const startTotal = startHour * 60 + startMinute;
+    const availableStartTotal = startH * 60 + startM;
+    const availableEndTotal = endH * 60 + endM;
+
+    if (startTotal >= availableStartTotal && startTotal < availableEndTotal) {
+      isWithinHours = true;
+      break;
+    }
+  }
+
+  if (!isWithinHours) {
+    return false;
+  }
+
+  // Check for overlapping appointments
+  const [overlapping] = await tx
+    .select({ count: sql<number>`count(*)` })
+    .from(tables.appointment)
+    .where(
+      and(
+        eq(tables.appointment.serviceId, serviceId),
+        sql`${tables.appointment.startTime} < ${endTime.toISOString()}`,
+        sql`${tables.appointment.endTime} > ${startTime.toISOString()}`,
+        eq(tables.appointment.isActive, true),
+      ),
+    );
+
+  return overlapping.count === 0;
+}
+
 export const queryAuth = {
   pricingPlan: {
     GET: {
       guest: {
         select: { ...tables.pricingPlan, price1: sql`price` },
       },
-
       allUsers: {
         select: tables.pricingPlan,
       },
@@ -60,10 +134,62 @@ export const queryAuth = {
               "updatedAt",
             ]),
             eq(tables.organization.id, tables.appointment.organizationId),
+            "organization",
           ],
         },
         where: (req, { session }) =>
           eq(tables.appointment.clientId, session.userId),
+      },
+
+      organization_admin: {
+        select: tables.appointment,
+        include: {
+          client: [
+            omit(tables.user, ["password"]),
+            eq(tables.user.id, tables.appointment.clientId),
+            "user",
+          ],
+          service: [
+            tables.organizationService,
+            eq(tables.organizationService.id, tables.appointment.serviceId),
+            "organizationService",
+          ],
+        },
+        where: (req, { session }) =>
+          eq(
+            tables.appointment.organizationId,
+            (session as OrganizationSession).organization.id,
+          ),
+      },
+
+      employee: {
+        select: tables.appointment,
+        include: {
+          client: [
+            omit(tables.user, ["password"]),
+            eq(tables.user.id, tables.appointment.clientId),
+            "user",
+          ],
+          service: [
+            tables.organizationService,
+            eq(tables.organizationService.id, tables.appointment.serviceId),
+            "organizationService",
+          ],
+        },
+        where: async (req, { session }) => {
+          const employee = (session as EmployeeSession).employee;
+          // Get appointments for services assigned to this employee
+          const serviceFirstEmployee = await db
+            .select({ serviceId: tables.serviceFirstEmployee.serviceId })
+            .from(tables.serviceFirstEmployee)
+            .where(eq(tables.serviceFirstEmployee.employeeId, employee.id));
+
+          const serviceIds = serviceFirstEmployee.map((s) => s.serviceId);
+          if (serviceIds.length === 0) {
+            return sql`1 = 0`; // No appointments if no services assigned
+          }
+          return sql`${tables.appointment.serviceId} IN (${sql.join(serviceIds)})`;
+        },
       },
     },
 
@@ -77,31 +203,171 @@ export const queryAuth = {
               "clientId",
               "organizationId",
               "status",
-              "notes",
               "metadata",
               "createdAt",
               "updatedAt",
+              "isActive",
             ]),
+            { notes: true },
           )(body);
+
           if (b instanceof ArkErrors) {
             return b;
           }
-          const [service] = await db
-            .select()
+
+          // Validate service exists
+          const [service] = await ctx.transaction
+            .select({
+              id: tables.organizationService.id,
+              organizationId: tables.organizationService.organizationId,
+              calendarId: tables.organizationService.calendarId,
+              isActive: tables.organizationService.isActive,
+              price: tables.organizationService.price,
+            })
             .from(tables.organizationService)
             .where(eq(tables.organizationService.id, b.serviceId as string));
+
           if (!service) {
-            throw new HttpError("Service not found", 404);
+            throw new HttpError("Service not found", Status._404_NotFound);
           }
-          ctx.data = { service };
+
+          if (!service.isActive) {
+            throw new HttpError(
+              "Service is not available",
+              Status._400_BadRequest,
+            );
+          }
+
+          // Validate organization is active
+          const [organization] = await ctx.transaction
+            .select({ isActive: tables.organization.isActive })
+            .from(tables.organization)
+            .where(eq(tables.organization.id, service.organizationId));
+
+          if (!organization || !organization.isActive) {
+            throw new HttpError(
+              "Organization is not active",
+              Status._400_BadRequest,
+            );
+          }
+
+          // Validate start and end times
+          const startTime = new Date(b.startTime as string);
+          const endTime = new Date(b.endTime as string);
+
+          if (startTime >= endTime) {
+            throw new HttpError(
+              "End time must be after start time",
+              Status._400_BadRequest,
+            );
+          }
+
+          if (startTime < new Date()) {
+            throw new HttpError(
+              "Cannot book appointments in the past",
+              Status._400_BadRequest,
+            );
+          }
+
+          // Check calendar availability
+          const isAvailable = await checkCalendarAvailability(
+            service.id,
+            startTime,
+            endTime,
+            ctx.transaction,
+          );
+
+          if (!isAvailable) {
+            throw new HttpError(
+              "Selected time slot is not available. Please choose another time.",
+              Status._400_BadRequest,
+            );
+          }
+
+          ctx.data = { service, startTime, endTime };
           return b;
         },
+
         injectBody: (body, req, { session, data }) => ({
           ...body,
           clientId: session.userId,
           serviceId: (data as any).service.id,
           organizationId: (data as any).service.organizationId,
+          status: "scheduled",
+          isActive: true,
         }),
+
+        afterQuery: async (req, ctx) => {
+          const appointment = ctx.result.appointments?.[0];
+          if (appointment) {
+            // Optionally create a task for the appointment
+            const [firstEmployee] = await ctx.transaction
+              .select({ employeeId: tables.serviceFirstEmployee.employeeId })
+              .from(tables.serviceFirstEmployee)
+              .where(
+                eq(
+                  tables.serviceFirstEmployee.serviceId,
+                  appointment.serviceId,
+                ),
+              )
+              .limit(1);
+
+            if (firstEmployee) {
+              await ctx.transaction.insert(tables.task).values({
+                appointmentId: appointment.id,
+                name: `Appointment: ${appointment.id}`,
+                status: "pending",
+                employeeId: firstEmployee.employeeId,
+                createdBy: appointment.clientId,
+              });
+            }
+          }
+        },
+      },
+    },
+
+    PATCH: {
+      client: {
+        select: tables.appointment,
+        validateBody: genArkSchemaValidator(
+          omit(tables.appointment, [
+            "id",
+            "clientId",
+            "organizationId",
+            "serviceId",
+            "createdAt",
+            "updatedAt",
+          ]),
+          true,
+        ),
+        where: (req, { session }) =>
+          and(
+            eq(tables.appointment.clientId, session.userId),
+            eq(tables.appointment.isActive, true),
+          ),
+      },
+
+      organization_admin: {
+        select: tables.appointment,
+        validateBody: genArkSchemaValidator(
+          omit(tables.appointment, [
+            "id",
+            "clientId",
+            "organizationId",
+            "serviceId",
+            "createdAt",
+            "updatedAt",
+          ]),
+          true,
+        ),
+        where: (req, { session }) =>
+          and(
+            eq(
+              tables.appointment.organizationId,
+              (session as OrganizationSession).organization.id,
+            ),
+            eq(tables.appointment.isActive, true),
+          ),
       },
     },
 
@@ -109,11 +375,56 @@ export const queryAuth = {
       client: {
         select: tables.appointment,
         where: (req, { session }) =>
-          eq(tables.appointment.clientId, session.userId),
+          and(
+            eq(tables.appointment.clientId, session.userId),
+            eq(tables.appointment.isActive, true),
+          ),
+        beforeQuery: async (req, ctx) => {
+          // Check if appointment can be cancelled (e.g., not too close to start time)
+          const appointment = ctx.query?.[0];
+          if (appointment) {
+            const startTime = new Date(appointment.startTime);
+            const now = new Date();
+            const hoursUntilAppointment =
+              (startTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+            if (hoursUntilAppointment < 2) {
+              throw new HttpError(
+                "Cannot cancel appointments less than 2 hours before start time",
+                Status._400_BadRequest,
+              );
+            }
+          }
+        },
+        afterQuery: async (req, ctx) => {
+          // Soft delete - set isActive to false instead of actual delete
+          if (ctx.result.appointments?.[0]) {
+            await ctx.transaction
+              .update(tables.appointment)
+              .set({ isActive: false, status: "canceled" })
+              .where(eq(tables.appointment.id, ctx.result.appointments[0].id));
+          }
+        },
+      },
+
+      organization_admin: {
+        select: tables.appointment,
+        where: (req, { session }) =>
+          eq(
+            tables.appointment.organizationId,
+            (session as OrganizationSession).organization.id,
+          ),
+        afterQuery: async (req, ctx) => {
+          if (ctx.result.appointments?.[0]) {
+            await ctx.transaction
+              .update(tables.appointment)
+              .set({ status: "canceled" })
+              .where(eq(tables.appointment.id, ctx.result.appointments[0].id));
+          }
+        },
       },
     },
   },
-
   task: {
     GET: {
       client: {
@@ -123,16 +434,6 @@ export const queryAuth = {
             tables.appointment,
             eq(tables.appointment.id, tables.task.appointmentId),
           ],
-          // organization: [
-          //   omit(tables.organization, [
-          //     "adminId",
-          //     "billingStart",
-          //     "billingEnd",
-          //     "billingPeriod",
-          //     "updatedAt",
-          //   ]),
-          //   eq(tables.organization.id, tables.task.organizationId),
-          // ],
           client: [
             omit(tables.user, ["password"]),
             eq(tables.user.id, tables.appointment.clientId),

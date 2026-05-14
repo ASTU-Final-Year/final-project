@@ -1009,40 +1009,6 @@ export const getBepaloQueryRouter = <
             );
           }
           try {
-            let body = ctx.body;
-            if (authProtected.validateBody != null) {
-              if (Array.isArray(body)) {
-                for (let i = 0; i < body.length; i++) {
-                  const vb = await authProtected.validateBody(
-                    body[i],
-                    req,
-                    ctx,
-                  );
-                  if (vb instanceof ArkErrors) {
-                    throw new HttpError(vb.toString(), Status._400_BadRequest);
-                  }
-                  body[i] = vb;
-                }
-              } else {
-                const vb = await authProtected.validateBody(body, req, ctx);
-                if (vb instanceof ArkErrors) {
-                  throw new HttpError(vb.toString(), Status._400_BadRequest);
-                }
-                body = vb;
-              }
-            }
-            if (authProtected.injectBody != null) {
-              if (Array.isArray(body)) {
-                for (let i = 0; i < body.length; i++) {
-                  const vb = await authProtected.injectBody(body[i], req, ctx);
-                  if (vb != null) body[i] = vb;
-                }
-              } else {
-                const vb = await authProtected.injectBody(body, req, ctx);
-                if (vb != null) body = vb;
-              }
-            }
-            ctx.body = body;
             const qSelect =
               querySelect &&
               Object.entries(querySelect).map(([a, fields]) => {
@@ -1127,6 +1093,47 @@ export const getBepaloQueryRouter = <
                 : undefined;
             await database.transaction(async (transaction) => {
               ctx.transaction = transaction;
+              let body = ctx.body;
+              if (authProtected.validateBody != null) {
+                if (Array.isArray(body)) {
+                  for (let i = 0; i < body.length; i++) {
+                    const vb = await authProtected.validateBody(
+                      body[i],
+                      req,
+                      ctx,
+                    );
+                    if (vb instanceof ArkErrors) {
+                      throw new HttpError(
+                        vb.toString(),
+                        Status._400_BadRequest,
+                      );
+                    }
+                    body[i] = vb;
+                  }
+                } else {
+                  const vb = await authProtected.validateBody(body, req, ctx);
+                  if (vb instanceof ArkErrors) {
+                    throw new HttpError(vb.toString(), Status._400_BadRequest);
+                  }
+                  body = vb;
+                }
+              }
+              if (authProtected.injectBody != null) {
+                if (Array.isArray(body)) {
+                  for (let i = 0; i < body.length; i++) {
+                    const vb = await authProtected.injectBody(
+                      body[i],
+                      req,
+                      ctx,
+                    );
+                    if (vb != null) body[i] = vb;
+                  }
+                } else {
+                  const vb = await authProtected.injectBody(body, req, ctx);
+                  if (vb != null) body = vb;
+                }
+              }
+              ctx.body = body;
               try {
                 if (authProtected.beforeQuery) {
                   await authProtected.beforeQuery(req, ctx);
@@ -1256,36 +1263,6 @@ export const getBepaloQueryRouter = <
             );
           }
           try {
-            let body = ctx.body;
-            if (authProtected.validateBody != null) {
-              if (Array.isArray(body)) {
-                body.map(async (b) => {
-                  const vb = await authProtected.validateBody(b, req, ctx);
-                  if (vb instanceof ArkErrors) {
-                    throw new HttpError(vb.toString(), Status._400_BadRequest);
-                  }
-                  return vb;
-                });
-              } else {
-                const vb = await authProtected.validateBody(body, req, ctx);
-                if (vb instanceof ArkErrors) {
-                  throw new HttpError(vb.toString(), Status._400_BadRequest);
-                }
-                body = vb;
-              }
-            }
-            if (authProtected.injectBody != null) {
-              if (Array.isArray(body)) {
-                body.map(async (b) => {
-                  const vb = await authProtected.injectBody(b, req, ctx);
-                  return vb == null ? b : vb;
-                });
-              } else {
-                const vb = await authProtected.injectBody(body, req, ctx);
-                if (vb != null) body = vb;
-              }
-            }
-            ctx.body = body;
             const parsedQueryFiltersEntries: (
               | [string, string]
               | [string, string][]
@@ -1448,6 +1425,39 @@ export const getBepaloQueryRouter = <
             );
             await database.transaction(async (transaction) => {
               ctx.transaction = transaction;
+              let body = ctx.body;
+              if (authProtected.validateBody != null) {
+                if (Array.isArray(body)) {
+                  body.map(async (b) => {
+                    const vb = await authProtected.validateBody(b, req, ctx);
+                    if (vb instanceof ArkErrors) {
+                      throw new HttpError(
+                        vb.toString(),
+                        Status._400_BadRequest,
+                      );
+                    }
+                    return vb;
+                  });
+                } else {
+                  const vb = await authProtected.validateBody(body, req, ctx);
+                  if (vb instanceof ArkErrors) {
+                    throw new HttpError(vb.toString(), Status._400_BadRequest);
+                  }
+                  body = vb;
+                }
+              }
+              if (authProtected.injectBody != null) {
+                if (Array.isArray(body)) {
+                  body.map(async (b) => {
+                    const vb = await authProtected.injectBody(b, req, ctx);
+                    return vb == null ? b : vb;
+                  });
+                } else {
+                  const vb = await authProtected.injectBody(body, req, ctx);
+                  if (vb != null) body = vb;
+                }
+              }
+              ctx.body = body;
               try {
                 if (authProtected.beforeQuery) {
                   await authProtected.beforeQuery(req, ctx);
