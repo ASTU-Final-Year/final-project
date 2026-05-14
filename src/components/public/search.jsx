@@ -63,10 +63,16 @@ export default function SearchComponent({
         ...(limit ? { limit: limit.toFixed() } : {}),
         "~isActive": true,
       });
+      console.log({
+        sparams,
+        offset,
+        limit,
+        searchFilter,
+      });
       const dataRes = await RequestHandler.Get(
         searchQuery
-          ? `/query/v1/organizationService?${sparams.toString()}&${searchFilter}`
-          : `/query/v1/organizationService?${sparams.toString()}`,
+          ? `/query/v1/organizationService?guest&${sparams.toString()}&${searchFilter}`
+          : `/query/v1/organizationService?guest&${sparams.toString()}`,
       );
 
       if (dataRes.ok) {
