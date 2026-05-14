@@ -697,16 +697,20 @@ export const queryAuth = {
     },
 
     PATCH: {
-      guest: {
+      mine: {
         select: omit(tables.user, ["password"]),
         validateBody: genArkSchemaValidator(
-          omit(tables.user, ["id", "createdAt", "updatedAt"]),
+          omit(tables.user, ["id", , "role", "createdAt", "updatedAt"]),
           true,
         ),
-        injectBody: (body) => ({
-          ...body,
-          password: hashPassword(body.password as string),
-        }),
+        injectBody: (body) =>
+          body.password
+            ? {
+                ...body,
+                password: hashPassword(body.password as string),
+              }
+            : body,
+        where: (req, { session }) => eq(tables.user.id, session.userId),
       },
     },
 

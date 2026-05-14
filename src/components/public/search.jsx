@@ -47,11 +47,18 @@ export default function SearchComponent({
     setHasSearched(true);
 
     try {
-      const query = encodeURIComponent(searchQuery);
+      const query = searchQuery;
       const ilike = config.prodDatabase ? "ilike" : "like";
+      const queryTokens = query.split(/\s|,|:/);
+      const searchFilter = queryTokens
+        .map((q) => {
+          const query = encodeURIComponent(q);
+          return `~name.${ilike}=%25${query}%25|~description.${ilike}=%25${query}%25|~organization.sector.${ilike}=%25${query}%25|~organization.name.${ilike}=%25${query}%25|~organization.description.${ilike}=%25${query}%25|~organization.address.${ilike}=%25${query}%25`;
+        })
+        .join("|");
       const dataRes = await RequestHandler.Get(
         searchQuery
-          ? `/query/v1/organizationService?guest&limit=10&~isActive=true&~name.${ilike}=%25${query}%25|~description.${ilike}=%25${query}%25|~organization.sector.${ilike}=%25${query}%25|~organization.name.${ilike}=%25${query}%25|~organization.description.${ilike}=%25${query}%25|~organization.address.${ilike}=%25${query}%25`
+          ? `/query/v1/organizationService?guest&limit=10&~isActive=true&${searchFilter}`
           : `/query/v1/organizationService?guest&limit=10`,
       );
 

@@ -51,7 +51,7 @@ export default function LoginFormContent({ searchParams }) {
   }, [router, _loaded, session?.user, redirectUrl]);
 
   if (!_loaded) {
-    return <div>Loading...</div>;
+    return null;
   }
   const handleLogin = (e) => {
     if (e) e.preventDefault();

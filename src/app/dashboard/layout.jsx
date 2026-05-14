@@ -47,6 +47,7 @@ export default function OrganizationDashboardLayout({ children }) {
   })();
 
   const [_loaded, _setLoaded] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(session != null);
 
   useEffect(() => {
     if (!_loaded) {
@@ -55,6 +56,7 @@ export default function OrganizationDashboardLayout({ children }) {
         //   return router.push("/login");
         // }
         Auth.isLoggedIn().then(async (isLoggedIn) => {
+          setIsLoggedIn(isLoggedIn);
           if (!isLoggedIn) {
             router.push("/login");
           }
@@ -63,6 +65,8 @@ export default function OrganizationDashboardLayout({ children }) {
       })();
     }
   }, [router, _loaded, session?.user]);
+
+  if (!isLoggedIn) return null;
 
   return (
     <SidebarProvider
