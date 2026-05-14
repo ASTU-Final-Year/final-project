@@ -85,6 +85,17 @@ export const pgUsers = pgTable("users", {
   email: varchar("email", { length: 40 }).notNull().unique(),
   phone: varchar("phone", { length: 16 }).notNull(),
   password: varchar("password", { length: 128 }).notNull(),
+  profile: jsonb("profile").notNull().default({ picture: null }),
+  preferences: jsonb("preferences")
+    .notNull()
+    .default({
+      notifications: {
+        emailNotifications: false,
+        smsAlerts: true,
+        appointmentReminders: true,
+        promotionalOffers: false,
+      },
+    }),
   ...timestamps,
 });
 

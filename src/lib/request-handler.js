@@ -7,23 +7,27 @@ function _fetch(url, method, init) {
       method,
       credentials: "include",
       ...init,
-      headers: [
-        ["Content-type", "application/json"],
-        ...(init.headers ? init.headers : [])
-      ],
     });
   } else {
-    const body = JSON.stringify(init.body);
-    return fetch(url, {
-      method,
-      credentials: "include",
-      ...init,
-      body,
-      headers: [
-        ["Content-type", "application/json"],
-        ...(init.headers ? init.headers : [])
-      ],
-    });
+    if(init.body instanceof FormData) {
+      return fetch(url, {
+        method,
+        credentials: "include",
+        ...init,
+      });
+    } else {
+      const body = JSON.stringify(init.body);
+      return fetch(url, {
+        method,
+        credentials: "include",
+        ...init,
+        body,
+        headers: [
+          ["Content-type", "application/json"],
+          ...(init.headers ? init.headers : [])
+        ],
+      });
+    }
   }
 }
 
@@ -34,6 +38,10 @@ const RequestHandler = {
 
   async Post(url, init) {
     return _fetch(url, "POST", init);
+  },
+
+  async Put(url, init) {
+    return _fetch(url, "PUT", init);
   },
 
   async Patch(url, init) {

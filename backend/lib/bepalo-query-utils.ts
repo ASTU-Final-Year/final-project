@@ -6,6 +6,7 @@ import type {
 } from "@bepalo/router";
 import { type, type ArkErrors, type distill, type Type } from "arktype";
 import type { InferSelectModel, SQL, SQLWrapper, Table } from "drizzle-orm";
+import { tables } from "~/db/schema";
 
 export class HttpError extends Error {
   status: number = 500;
@@ -225,7 +226,7 @@ export const mapArkDataType = (dataType: string) => {
       typeStr = "string.date.parse";
       break;
     case "json":
-      typeStr = "string.json.parse";
+      typeStr = "object|object[]";
       break;
     default:
       typeStr = "unknown";

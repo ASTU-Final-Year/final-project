@@ -74,6 +74,19 @@ export const sqUsers = sqliteTable(
     email: text("email", { length: 40 }).notNull().unique(),
     phone: text("phone", { length: 16 }).notNull(),
     password: text("password", { length: 128 }).notNull(),
+    profile: text("profile", { mode: "json" })
+      .notNull()
+      .default({ picture: null }),
+    preferences: text("preferences", { mode: "json" })
+      .notNull()
+      .default({
+        notifications: {
+          emailNotifications: false,
+          smsAlerts: true,
+          appointmentReminders: true,
+          promotionalOffers: false,
+        },
+      }),
     ...timestamps,
   },
   (table: any) => [

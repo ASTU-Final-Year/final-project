@@ -13,6 +13,8 @@ import { cn } from "@/lib/utils";
 import { config } from "@/lib/config";
 
 export default function SearchComponent({
+  offset,
+  limit,
   searchBarOnly,
   floatServiceList,
   saerchBarClassName,
@@ -55,11 +57,16 @@ export default function SearchComponent({
           const query = encodeURIComponent(q);
           return `~name.${ilike}=%25${query}%25|~description.${ilike}=%25${query}%25|~organization.sector.${ilike}=%25${query}%25|~organization.name.${ilike}=%25${query}%25|~organization.description.${ilike}=%25${query}%25|~organization.address.${ilike}=%25${query}%25`;
         })
-        .join("|");
+        .join("&");
+      const sparams = new URLSearchParams({
+        ...(offset ? { offset: offset.toFixed() } : {}),
+        ...(limit ? { limit: limit.toFixed() } : {}),
+        "~isActive": true,
+      });
       const dataRes = await RequestHandler.Get(
         searchQuery
-          ? `/query/v1/organizationService?guest&limit=10&~isActive=true&${searchFilter}`
-          : `/query/v1/organizationService?guest&limit=10`,
+          ? `/query/v1/organizationService?${sparams.toString()}&${searchFilter}`
+          : `/query/v1/organizationService?${sparams.toString()}`,
       );
 
       if (dataRes.ok) {

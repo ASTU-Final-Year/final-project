@@ -11,6 +11,7 @@ import SessionService from "~/services/session.service";
 import { sampleData } from "../../sample.data";
 import { tables } from "./schema";
 import { router } from "..";
+import { sql } from "drizzle-orm";
 
 const prodDatabase = config.prodDatabase as false;
 if (prodDatabase) console.log("! USING PRODUCTION DATABASE !");
@@ -86,7 +87,10 @@ export const initDb = async () => {
         await PaymentService.createPricingPlan(pricingPlan);
       }
     }
-    if (!config.isProduction) {
+    if (
+      (config.loadSamples || !config.isProduction) &&
+      (await db.select(sql<number>`count (*)`).from(tables.user))?.count === 0
+    ) {
       for (const [name, entries] of Object.entries(sampleData)) {
         // const res = await router.respond(
         //   new Request(`/query/v1/${name}`, {

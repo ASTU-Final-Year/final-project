@@ -10,6 +10,7 @@ export const config = {
   url: process.env.URL || "http://localhost",
   isProduction: process.env.NODE_ENV === "production",
   prodDatabase: !!process.env.PROD_DATABASE,
+  loadSamples: !!process.env.LOAD_SAMPLES,
   emailDomain: process.env.EMAIL_DOMAIN || "servesyncplus.et",
   errorFd: 0,
   infoFd: 0,
