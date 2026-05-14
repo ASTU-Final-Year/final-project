@@ -26,30 +26,32 @@ export const sessionJwt = JWT.createSymmetric<
 export const SESSION_COOKIE_ID = securityConfig.sessionCookie;
 export const SESSION_MAX_AGE = securityConfig.sessionMaxAge;
 
+export type Session = Required<InferSelectModel<typeof tables.session>> & {
+  user: Required<Omit<InferSelectModel<typeof tables.user>, "password">>;
+};
+
+export type OrganizationSession = {
+  organization: Required<InferSelectModel<typeof tables.organization>>;
+};
+
+export type EmployeeSession = {
+  employee: Required<InferSelectModel<typeof tables.employee>>;
+};
+
+export type CTXSession = {
+  session: Session | (Session & (OrganizationSession | EmployeeSession));
+};
+
+export type CTXOrganizationSession = {
+  session: Session & OrganizationSession;
+};
+
+export type CTXEmployeeSession = {
+  session: Session & EmployeeSession;
+};
 declare global {
-  export type Session = Required<InferSelectModel<typeof tables.session>> & {
-    user: Required<Omit<InferSelectModel<typeof tables.user>, "password">>;
-  };
-
-  export type OrganizationSession = {
-    organization: Required<InferSelectModel<typeof tables.organization>>;
-  };
-
-  export type EmployeeSession = {
-    employee: Required<InferSelectModel<typeof tables.employee>>;
-  };
-
-  export type CTXSession = {
-    session: Session | (Session & (OrganizationSession | EmployeeSession));
-  };
-
-  export type CTXOrganizationSession = {
-    session: Session & OrganizationSession;
-  };
-
-  export type CTXEmployeeSession = {
-    session: Session & EmployeeSession;
-  };
+  export type BEPALO_Session = Session;
+  export type BEPALO_CTXSession = CTXSession;
 }
 
 export const hashPassword = (password: string): string =>

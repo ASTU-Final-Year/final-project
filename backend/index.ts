@@ -1,7 +1,7 @@
 import { json, RouterFramework, type SocketAddress } from "@bepalo/router";
 import type { CTXMain } from "./base";
 import { config } from "./config";
-import { initDb } from "./db";
+import { db, initDb, type Transaction } from "./db";
 import fs from "fs";
 import path, { resolve } from "path";
 import { LOGE, LOGI } from "./lib";
@@ -9,6 +9,7 @@ import { join } from "path";
 import { getBepaloQueryRouter } from "./lib/bepalo-query";
 import queryAuth from "~/acl/v1";
 import { tables } from "./db/schema";
+import type { CTXSession } from "./middleware";
 
 console.log("-".repeat(80));
 console.log(`💫 Launching...`);
@@ -44,7 +45,12 @@ export const router = new RouterFramework<CTXMain>({
 
 router.append(
   "/query/v1/*",
-  getBepaloQueryRouter<typeof tables, { data?: Record<string, unknown> }>({
+  getBepaloQueryRouter<
+    typeof tables,
+    typeof db,
+    Transaction,
+    { data?: Record<string, unknown> }
+  >(db, {
     tables,
     queryAuth,
     pathPrefix: "/query/v1/",

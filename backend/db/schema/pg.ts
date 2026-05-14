@@ -266,33 +266,6 @@ export const pgServiceFirstEmployees = pgTable(
   (table) => [primaryKey({ columns: [table.serviceId, table.employeeId] })],
 );
 
-export const pgTasks = pgTable("tasks", {
-  id: cpuuid("id").primaryKey().notNull().$defaultFn(randomCUUID),
-  isDone: boolean("is_done").default(false).notNull(),
-  name: varchar("name", { length: 54 }).notNull(),
-  status: varchar("status", { length: 20 }).notNull(),
-  progress: jsonb("progress"),
-  serviceId: cpuuid("service_id")
-    .references(() => pgOrganizationServices.id, {
-      onUpdate: "cascade",
-      onDelete: "cascade",
-    })
-    .notNull(),
-  organizationId: cpuuid("organization_id")
-    .references(() => pgOrganizations.id, {
-      onUpdate: "cascade",
-      onDelete: "cascade",
-    })
-    .notNull(),
-  clientId: cpuuid("client_id")
-    .references(() => pgUsers.id, {
-      onUpdate: "cascade",
-      onDelete: "cascade",
-    })
-    .notNull(),
-  ...timestamps,
-});
-
 export const pgAppointments = pgTable("appointments", {
   id: cpuuid("id").primaryKey().notNull().$defaultFn(randomCUUID),
   organizationId: cpuuid("organization_id")
@@ -305,13 +278,13 @@ export const pgAppointments = pgTable("appointments", {
     .notNull()
     .references(() => pgOrganizationServices.id, {
       onUpdate: "cascade",
-      onDelete: "cascade",
+      onDelete: "no action",
     }),
   clientId: cpuuid("client_id")
     .notNull()
     .references(() => pgUsers.id, {
       onUpdate: "cascade",
-      onDelete: "cascade",
+      onDelete: "no action",
     }),
   startTime: timestamp("start_time", { withTimezone: true }).notNull(),
   endTime: timestamp("end_time", { withTimezone: true }).notNull(),
@@ -319,6 +292,37 @@ export const pgAppointments = pgTable("appointments", {
   notes: varchar("notes", { length: 255 }),
   metadata: jsonb("metadata").default("{}"),
   isActive: boolean("is_active").notNull().default(true),
+  ...timestamps,
+});
+
+export const pgTasks = pgTable("tasks", {
+  id: cpuuid("id").primaryKey().notNull().$defaultFn(randomCUUID),
+  isDone: boolean("is_done").default(false).notNull(),
+  name: varchar("name", { length: 54 }).notNull(),
+  status: varchar("status", { length: 20 }).notNull(),
+  requirements: jsonb("requirements").default({}),
+  submissions: jsonb("submissions").default({}),
+  forwards: jsonb("forwards").default({}),
+  appointmentId: cpuuid("appointment_id")
+    .references(() => pgAppointments.id, {
+      onUpdate: "cascade",
+      onDelete: "no action",
+    })
+    .notNull(),
+  employeeId: cpuuid("employee_id")
+    .references(() => pgEmployees.id, {
+      onUpdate: "cascade",
+      onDelete: "no action",
+    })
+    .notNull(),
+  previousTaskId: cpuuid("previous_task_id").references(() => pgTasks.id, {
+    onUpdate: "cascade",
+    onDelete: "no action",
+  }),
+  nextTaskId: cpuuid("next_task_id").references(() => pgTasks.id, {
+    onUpdate: "cascade",
+    onDelete: "no action",
+  }),
   ...timestamps,
 });
 
@@ -397,21 +401,6 @@ export const pgServiceFirstEmployeesRelations = relations(
   }),
 );
 
-export const pgTasksRelations = relations(pgTasks, ({ one }) => ({
-  service: one(pgOrganizationServices, {
-    fields: [pgTasks.serviceId],
-    references: [pgOrganizationServices.id],
-  }),
-  organization: one(pgOrganizations, {
-    fields: [pgTasks.organizationId],
-    references: [pgOrganizations.id],
-  }),
-  client: one(pgUsers, {
-    fields: [pgTasks.clientId],
-    references: [pgUsers.id],
-  }),
-}));
-
 export const pgAppointmentsRelations = relations(pgAppointments, ({ one }) => ({
   organization: one(pgOrganizations, {
     fields: [pgAppointments.organizationId],
@@ -428,6 +417,37 @@ export const pgAppointmentsRelations = relations(pgAppointments, ({ one }) => ({
   // employee: one(pgEmployees, {
   //   fields: [pgAppointments.employeeId],
   //   references: [pgEmployees.id],
+  // }),
+}));
+
+export const pgTasksRelations = relations(pgTasks, ({ one }) => ({
+  // appointment: one(pgAppointments, {
+  //   fields: [pgTasks.appointmentId],
+  //   references: [pgAppointments.id],
+  // }),
+  // employee: one(pgEmployees, {
+  //   fields: [pgTasks.employeeId],
+  //   references: [pgEmployees.id],
+  // }),
+  // previous_task: one(pgTasks, {
+  //   fields: [pgTasks.previousTaskId],
+  //   references: [pgTasks.id],
+  // }),
+  // next_task: one(pgTasks, {
+  //   fields: [pgTasks.nextTaskId],
+  //   references: [pgTasks.id],
+  // }),
+  // service: one(pgOrganizationServices, {
+  //   fields: [pgTasks.serviceId],
+  //   references: [pgOrganizationServices.id],
+  // }),
+  // organization: one(pgOrganizations, {
+  //   fields: [pgTasks.organizationId],
+  //   references: [pgOrganizations.id],
+  // }),
+  // client: one(pgUsers, {
+  //   fields: [pgTasks.clientId],
+  //   references: [pgUsers.id],
   // }),
 }));
 

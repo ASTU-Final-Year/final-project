@@ -266,33 +266,6 @@ export const sqServiceFirstEmployees = sqliteTable(
   (table) => [primaryKey({ columns: [table.serviceId, table.employeeId] })],
 );
 
-export const sqTasks = sqliteTable("tasks", {
-  id: cpuuid("id").primaryKey().notNull().$defaultFn(randomCUUID),
-  isDone: integer("is_done", { mode: "boolean" }).default(false).notNull(),
-  name: text("name", { length: 54 }).notNull(),
-  status: text("status", { length: 20 }).notNull(),
-  progress: text("progress", { mode: "json" }),
-  serviceId: cpuuid("service_id")
-    .references(() => sqOrganizationServices.id, {
-      onUpdate: "cascade",
-      onDelete: "cascade",
-    })
-    .notNull(),
-  organizationId: cpuuid("organization_id")
-    .references(() => sqOrganizations.id, {
-      onUpdate: "cascade",
-      onDelete: "cascade",
-    })
-    .notNull(),
-  clientId: cpuuid("client_id")
-    .references(() => sqUsers.id, {
-      onUpdate: "cascade",
-      onDelete: "cascade",
-    })
-    .notNull(),
-  ...timestamps,
-});
-
 export const sqAppointments = sqliteTable("appointments", {
   id: cpuuid("id").primaryKey().notNull().$defaultFn(randomCUUID),
   organizationId: cpuuid("organization_id")
@@ -305,11 +278,14 @@ export const sqAppointments = sqliteTable("appointments", {
     .notNull()
     .references(() => sqOrganizationServices.id, {
       onUpdate: "cascade",
-      onDelete: "cascade",
+      onDelete: "no action",
     }),
   clientId: cpuuid("client_id")
     .notNull()
-    .references(() => sqUsers.id, { onUpdate: "cascade", onDelete: "cascade" }),
+    .references(() => sqUsers.id, {
+      onUpdate: "cascade",
+      onDelete: "no action",
+    }),
   // employeeId: cpuuid("employee_id").references(() => sqliteEmployees.id, {
   //   onDelete: "set null",
   // }),
@@ -323,6 +299,37 @@ export const sqAppointments = sqliteTable("appointments", {
   notes: text("notes", { length: 255 }),
   metadata: text("metadata", { mode: "json" }).default("{}"),
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  ...timestamps,
+});
+
+export const sqTasks = sqliteTable("tasks", {
+  id: cpuuid("id").primaryKey().notNull().$defaultFn(randomCUUID),
+  isDone: integer("is_done", { mode: "boolean" }).notNull().default(false),
+  name: text("name", { length: 54 }).notNull(),
+  status: text("status", { length: 20 }).notNull(),
+  requirements: text("requirements", { mode: "json" }),
+  submissions: text("submissions", { mode: "json" }),
+  forwards: text("forwards", { mode: "json" }),
+  appointmentId: cpuuid("appointment_id")
+    .references(() => sqAppointments.id, {
+      onUpdate: "cascade",
+      onDelete: "no action",
+    })
+    .notNull(),
+  employeeId: cpuuid("employee_id")
+    .references(() => sqEmployees.id, {
+      onUpdate: "cascade",
+      onDelete: "no action",
+    })
+    .notNull(),
+  previousTaskId: cpuuid("previous_task_id").references(() => sqTasks.id, {
+    onUpdate: "no action",
+    onDelete: "no action",
+  }),
+  nextTaskId: cpuuid("next_task_id").references(() => sqTasks.id, {
+    onUpdate: "no action",
+    onDelete: "no action",
+  }),
   ...timestamps,
 });
 
@@ -402,21 +409,6 @@ export const sqServiceFirstEmployeesRelations = relations(
   }),
 );
 
-export const sqTasksRelations = relations(sqTasks, ({ one }) => ({
-  service: one(sqOrganizationServices, {
-    fields: [sqTasks.serviceId],
-    references: [sqOrganizationServices.id],
-  }),
-  organization: one(sqOrganizations, {
-    fields: [sqTasks.organizationId],
-    references: [sqOrganizations.id],
-  }),
-  client: one(sqUsers, {
-    fields: [sqTasks.clientId],
-    references: [sqUsers.id],
-  }),
-}));
-
 export const sqAppointmentsRelations = relations(sqAppointments, ({ one }) => ({
   organization: one(sqOrganizations, {
     fields: [sqAppointments.organizationId],
@@ -433,6 +425,37 @@ export const sqAppointmentsRelations = relations(sqAppointments, ({ one }) => ({
   // employee: one(sqEmployees, {
   //   fields: [sqAppointments.employeeId],
   //   references: [sqEmployees.id],
+  // }),
+}));
+
+export const sqTasksRelations = relations(sqTasks, ({ one }) => ({
+  // appointment: one(sqAppointments, {
+  //   fields: [sqTasks.appointmentId],
+  //   references: [sqAppointments.id],
+  // }),
+  // employee: one(sqEmployees, {
+  //   fields: [sqTasks.employeeId],
+  //   references: [sqEmployees.id],
+  // }),
+  // previous_task: one(sqTasks, {
+  //   fields: [sqTasks.previousTaskId],
+  //   references: [sqTasks.id],
+  // }),
+  // next_task: one(sqTasks, {
+  //   fields: [sqTasks.nextTaskId],
+  //   references: [sqTasks.id],
+  // }),
+  // service: one(sqOrganizationServices, {
+  //   fields: [sqTasks.serviceId],
+  //   references: [sqOrganizationServices.id],
+  // }),
+  // organization: one(sqOrganizations, {
+  //   fields: [sqTasks.organizationId],
+  //   references: [sqOrganizations.id],
+  // }),
+  // client: one(sqUsers, {
+  //   fields: [sqTasks.clientId],
+  //   references: [sqUsers.id],
   // }),
 }));
 

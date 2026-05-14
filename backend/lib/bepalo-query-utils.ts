@@ -25,6 +25,7 @@ type Include<S extends Table | Record<string, Table>> = S extends Table
 type _QueryAuthEntry<
   S extends Record<string, Table>,
   K extends keyof S,
+  TX = BEPALO_Transaction,
   XContext = {},
 > = {
   /**
@@ -68,7 +69,7 @@ type _QueryAuthEntry<
   validateBody?: <B extends Record<string, unknown>>(
     body: B,
     req: Request,
-    ctx: RouterContext<XContext & CTXCookie & CTXAuth & CTXSession>,
+    ctx: RouterContext<XContext & CTXCookie & CTXAuth>,
   ) =>
     | Record<string, unknown>
     | ArkErrors
@@ -87,7 +88,7 @@ type _QueryAuthEntry<
   >(
     body: B,
     req: Request,
-    ctx: RouterContext<XContext & CTXCookie & CTXBody & CTXAuth & CTXSession>,
+    ctx: RouterContext<XContext & CTXCookie & CTXBody & CTXAuth>,
   ) =>
     | S[K]
     | Record<string, unknown>
@@ -101,7 +102,7 @@ type _QueryAuthEntry<
    */
   where?: (
     req: Request,
-    ctx: RouterContext<XContext & CTXCookie & CTXBody & CTXAuth & CTXSession>,
+    ctx: RouterContext<XContext & CTXCookie & CTXBody & CTXAuth>,
   ) => SQL | SQLWrapper | undefined;
 
   /**
@@ -110,7 +111,10 @@ type _QueryAuthEntry<
   beforeQuery?: (
     req: Request,
     ctx: RouterContext<
-      XContext & CTXCookie & CTXBody & CTXAuth & CTXSession & { result: any }
+      XContext &
+        CTXCookie &
+        CTXBody &
+        CTXAuth & { transaction: TX; result: any }
     >,
   ) => void | Promise<void>;
 
@@ -120,7 +124,10 @@ type _QueryAuthEntry<
   afterQuery?: (
     req: Request,
     ctx: RouterContext<
-      XContext & CTXCookie & CTXBody & CTXAuth & CTXSession & { result: any }
+      XContext &
+        CTXCookie &
+        CTXBody &
+        CTXAuth & { transaction: TX; result: any }
     >,
   ) => void | Promise<void>;
 
@@ -130,7 +137,10 @@ type _QueryAuthEntry<
   onQueryError?: (
     req: Request,
     ctx: RouterContext<
-      XContext & CTXCookie & CTXBody & CTXAuth & CTXSession & { result: any }
+      XContext &
+        CTXCookie &
+        CTXBody &
+        CTXAuth & { transaction: TX; result: any }
     >,
   ) => void | Promise<void>;
 };
@@ -139,25 +149,78 @@ export type QueryAuthEntry<
   S extends Record<string, Table>,
   K extends keyof S,
   omit extends keyof _QueryAuthEntry<S, K> = never,
+  TX = BEPALO_Transaction,
   XContext = {},
-> = Omit<_QueryAuthEntry<S, K, XContext>, omit>;
+> = Omit<_QueryAuthEntry<S, K, TX, XContext>, omit>;
 
-type ROLES = "guest" | "mine" | "allUsers" | UserRole;
+type ROLES = "guest" | "mine" | "allUsers" | BEPALO_UserRole;
 
-export type QueryAuth<S extends Record<string, Table>, XContext = {}> = {
+export type QueryAuth<
+  S extends Record<string, Table>,
+  Transaction = BEPALO_Transaction,
+  XContext = {},
+> = {
   [K in keyof S as S[K] extends Table ? K : never]?: Partial<{
     GET: Partial<
       Record<
         ROLES,
-        QueryAuthEntry<S, K, "validateBody" | "injectBody", XContext>
+        QueryAuthEntry<
+          S,
+          K,
+          "validateBody" | "injectBody",
+          Transaction,
+          XContext
+        >
       >
     >;
     POST: Partial<
-      Record<ROLES, QueryAuthEntry<S, K, "include" | "where", XContext>>
+      Record<
+        ROLES,
+        QueryAuthEntry<
+          S,
+          K,
+          "include" | "where",
+          Transaction,
+          XContext & { dontRollback?: boolean }
+        >
+      >
     >;
-    PUT: Partial<Record<ROLES, QueryAuthEntry<S, K, "include", XContext>>>;
-    PATCH: Partial<Record<ROLES, QueryAuthEntry<S, K, "include", XContext>>>;
-    DELETE: Partial<Record<ROLES, QueryAuthEntry<S, K, "include", XContext>>>;
+    PUT: Partial<
+      Record<
+        ROLES,
+        QueryAuthEntry<
+          S,
+          K,
+          "include",
+          Transaction,
+          XContext & { dontRollback?: boolean }
+        >
+      >
+    >;
+    PATCH: Partial<
+      Record<
+        ROLES,
+        QueryAuthEntry<
+          S,
+          K,
+          "include",
+          Transaction,
+          XContext & { dontRollback?: boolean }
+        >
+      >
+    >;
+    DELETE: Partial<
+      Record<
+        ROLES,
+        QueryAuthEntry<
+          S,
+          K,
+          "include",
+          Transaction,
+          XContext & { dontRollback?: boolean }
+        >
+      >
+    >;
   }>;
 };
 

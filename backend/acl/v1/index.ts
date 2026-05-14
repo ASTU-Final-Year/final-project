@@ -9,10 +9,18 @@ import {
   type QueryAuth,
 } from "~/lib/bepalo-query-utils";
 import { ArkErrors, type } from "arktype";
-import { db } from "~/db";
+import { db, type Transaction } from "~/db";
 import { clearCookie, setCookie, Status } from "@bepalo/router";
 import { config, securityConfig } from "~/config";
-import { hashPassword, sessionJwt, verifyPassword } from "~/middleware";
+import {
+  hashPassword,
+  sessionJwt,
+  verifyPassword,
+  type CTXSession,
+  type EmployeeSession,
+  type OrganizationSession,
+  type Session,
+} from "~/middleware";
 import { JWT } from "@bepalo/jwt";
 
 export const queryAuth = {
@@ -86,7 +94,6 @@ export const queryAuth = {
             throw new HttpError("Service not found", 404);
           }
           ctx.data = { service };
-          console.log(b);
           return b;
         },
         injectBody: (body, req, { session, data }) => ({
@@ -112,28 +119,32 @@ export const queryAuth = {
       client: {
         select: tables.task,
         include: {
-          service: [
-            tables.organizationService,
-            eq(tables.organizationService.id, tables.task.serviceId),
+          appointment: [
+            tables.appointment,
+            eq(tables.appointment.id, tables.task.appointmentId),
           ],
-          organization: [
-            omit(tables.organization, [
-              "adminId",
-              "billingStart",
-              "billingEnd",
-              "billingPeriod",
-              "updatedAt",
-            ]),
-            eq(tables.organization.id, tables.task.organizationId),
-          ],
+          // organization: [
+          //   omit(tables.organization, [
+          //     "adminId",
+          //     "billingStart",
+          //     "billingEnd",
+          //     "billingPeriod",
+          //     "updatedAt",
+          //   ]),
+          //   eq(tables.organization.id, tables.task.organizationId),
+          // ],
           client: [
             omit(tables.user, ["password"]),
-            eq(tables.user.id, tables.task.clientId),
+            eq(tables.user.id, tables.appointment.clientId),
           ],
         },
+        where: (req, { session }) =>
+          eq(tables.appointment.clientId, session.userId),
       },
       employee: {
         select: tables.task,
+        where: (req, { session }) =>
+          eq(tables.task.employeeId, (session as EmployeeSession).employee.id),
       },
     },
 
@@ -142,13 +153,7 @@ export const queryAuth = {
         select: tables.task,
         validateBody: async (body, req, ctx) => {
           const b = genArkSchemaValidator(
-            omit(tables.task, [
-              "id",
-              "isDone",
-              "organizationId",
-              "createdAt",
-              "updatedAt",
-            ]),
+            omit(tables.task, ["id", "isDone", "createdAt", "updatedAt"]),
           )(body);
           if (!(b instanceof ArkErrors)) {
             const [service] = await db
@@ -173,13 +178,7 @@ export const queryAuth = {
         select: tables.task,
         validateBody: async (body, req, ctx) => {
           const b = genArkSchemaValidator(
-            omit(tables.task, [
-              "id",
-              "isDone",
-              "organizationId",
-              "createdAt",
-              "updatedAt",
-            ]),
+            omit(tables.task, ["id", "isDone", "createdAt", "updatedAt"]),
           )(body);
           if (!(b instanceof ArkErrors)) {
             const [service] = await db
@@ -266,7 +265,7 @@ export const queryAuth = {
         beforeQuery: async (req, ctx) => {
           const body = ctx.body as Record<string, unknown>;
           const data = ctx.data as { admin: Record<string, unknown> };
-          const [existingUser] = (await db
+          const [existingUser] = (await ctx.transaction
             .select({ count: sql`count (*)` })
             .from(tables.user)
             .where(eq(tables.user.email, data.admin.email as string))) as {
@@ -278,7 +277,7 @@ export const queryAuth = {
               400,
             );
           }
-          const [admin] = await db
+          const [admin] = await ctx.transaction
             .insert(tables.user)
             .values({
               ...(data.admin as InferSelectModel<typeof tables.user>),
@@ -290,14 +289,15 @@ export const queryAuth = {
           if (!admin) throw new HttpError("Insert admin user failed", 500);
           body.adminId = admin.id;
         },
-        onQueryError: async (req, ctx) => {
-          const data = ctx.data as { admin: Record<string, unknown> };
-          if (data.admin?.id) {
-            await db
-              .delete(tables.user)
-              .where(eq(tables.user.id, data.admin.id as string));
-          }
-        },
+        // onQueryError: async (req, ctx) => {
+        //   ctx.dontRollback = true;
+        //   // const data = ctx.data as { admin: Record<string, unknown> };
+        //   // if (data.admin?.id) {
+        //   //   await db
+        //   //     .delete(tables.user)
+        //   //     .where(eq(tables.user.id, data.admin.id as string));
+        //   // }
+        // },
       },
     },
 
@@ -699,7 +699,7 @@ export const queryAuth = {
       mine: {
         select: omit(tables.user, ["password"]),
         validateBody: genArkSchemaValidator(
-          omit(tables.user, ["id", , "role", "createdAt", "updatedAt"]),
+          omit(tables.user, ["id", "role", "createdAt", "updatedAt"]),
           true,
         ),
         injectBody: (body) =>
@@ -812,6 +812,10 @@ export const queryAuth = {
       },
     },
   },
-} satisfies QueryAuth<typeof tables, { data: Record<string, unknown> }>;
+} satisfies QueryAuth<
+  typeof tables,
+  Transaction,
+  { data?: Record<string, unknown> } & CTXSession
+>;
 
 export default queryAuth;

@@ -2,12 +2,14 @@ import { config } from "~/config";
 import { pgTables, pgRelations } from "./pg";
 import { sqTables, sqRelations } from "./sqlite";
 
+export type UserRole =
+  | "super_admin"
+  | "organization_admin"
+  | "employee"
+  | "client";
+
 declare global {
-  export type UserRole =
-    | "super_admin"
-    | "organization_admin"
-    | "employee"
-    | "client";
+  export type BEPALO_UserRole = UserRole;
 }
 
 const prodDatabase = config.prodDatabase as false;
