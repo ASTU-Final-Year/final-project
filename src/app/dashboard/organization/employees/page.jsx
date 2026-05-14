@@ -402,7 +402,7 @@ export default function EmployeesPage() {
                   </TableCell>
                   <TableCell>
                     <div className="text-xs text-muted-foreground truncate max-w-[400px] overflow-auto">
-                      {employee.calendar.name || "-"}
+                      {employee.calendar?.name || "-"}
                     </div>
                   </TableCell>
                   <TableCell className="text-center">

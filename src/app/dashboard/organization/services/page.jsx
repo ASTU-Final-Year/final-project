@@ -348,7 +348,7 @@ export default function ServicesPage() {
                     </div>
                   </TableCell>
                   <TableCell className="">{service.price} Birr</TableCell>
-                  <TableCell className="">{service.calendar.name}</TableCell>
+                  <TableCell className="">{service.calendar?.name || "-"}</TableCell>
                   <TableCell className="">
                     <AcriveBadge isActive={service.isActive} />
                   </TableCell>
