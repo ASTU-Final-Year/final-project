@@ -63,6 +63,7 @@ import AcriveBadge from "@/components/ui/active-badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import SearchComponent from "@/components/public/search";
 import { useClientStore } from "@/store";
+import Link from "next/link";
 
 export default function AppointmentsPage() {
   const client = useClientStore(({ client }) => client);
@@ -259,12 +260,14 @@ export default function AppointmentsPage() {
                     />
                   </TableCell>
                   <TableCell>
-                    <div className="font-semibold text-primary">
-                      {appointment.service.name}
-                    </div>
-                    <div className="text-xs text-muted-foreground truncate max-w-[400px]">
-                      {appointment.service.description}
-                    </div>
+                    <Link href={`/dashboard/client/appointment/${appointment.id}`}>
+                      <div className="font-semibold text-primary">
+                        {appointment.service.name}
+                      </div>
+                      <div className="text-xs text-muted-foreground truncate max-w-[400px]">
+                        {appointment.service.description}
+                      </div>
+                    </Link>
                   </TableCell>
                   <TableCell className="">
                     {new Date(appointment.startTime).toLocaleString("en", {
