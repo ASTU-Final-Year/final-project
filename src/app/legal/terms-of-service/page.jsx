@@ -2,25 +2,19 @@
 "use client";
 
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
-  FileText,
   Scale,
   Shield,
   AlertTriangle,
   CheckCircle,
   Users,
   Building2,
-  Clock,
   CreditCard,
-  Bot,
   Mail,
   Phone,
   MapPin,
-  Download,
-  Printer,
   Globe,
   Gavel,
   BookOpen,
@@ -34,357 +28,192 @@ export default function TermsOfServicePage() {
   const effectiveDate = "April 1, 2026";
 
   return (
-    // <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/20">
     <div className="flex min-h-screen flex-col font-sans">
       <SiteHeader />
 
-      <main className="container mx-auto px-4 py-12 max-w-4xl" id="terms-content">
-        {/* Hero Section */}
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-indigo-100 mb-4">
-            <Scale className="h-8 w-8 text-indigo-700" />
+      <div 
+        className="flex-1 bg-cover bg-center bg-fixed relative pb-20"
+        style={{ backgroundImage: 'url("/images/pexels-lovetosmile-36200692-blurred-dim.jpg")' }}
+      >
+        <div className="absolute inset-0 bg-slate-900/70 backdrop-blur-[2px] pointer-events-none z-0"></div>
+
+        <main className="container relative z-10 mx-auto px-4 py-16 max-w-4xl" id="terms-content">
+          {/* Hero Section */}
+          <div className="text-center mb-16 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+            <div className="inline-flex items-center justify-center h-20 w-20 rounded-3xl bg-white/10 backdrop-blur-md border border-white/20 mb-6 shadow-xl">
+              <Scale className="h-10 w-10 text-white" />
+            </div>
+            <h1 className="text-5xl md:text-6xl font-extrabold text-white mb-4 drop-shadow-md tracking-tight">Terms of Service</h1>
+            <p className="text-indigo-100 text-lg md:text-xl font-light mb-6">Last Updated: {lastUpdated} | Effective: {effectiveDate}</p>
+            <div className="flex flex-wrap gap-3 justify-center">
+              <Badge variant="outline" className="border-indigo-300 text-indigo-100 bg-indigo-900/50 px-4 py-1.5 backdrop-blur-md shadow-lg text-sm">Version 1.0</Badge>
+              <Badge variant="outline" className="border-indigo-300 text-indigo-100 bg-indigo-900/50 px-4 py-1.5 backdrop-blur-md shadow-lg text-sm">Ethiopia</Badge>
+              <Badge variant="outline" className="border-indigo-300 text-indigo-100 bg-indigo-900/50 px-4 py-1.5 backdrop-blur-md shadow-lg text-sm">Legally Binding</Badge>
+            </div>
           </div>
-          <h1 className="text-4xl font-bold text-indigo-950 mb-2">Terms of Service</h1>
-          <p className="text-indigo-600">Last Updated: {lastUpdated} | Effective: {effectiveDate}</p>
-          <div className="flex gap-2 justify-center mt-4">
-            <Badge variant="outline" className="border-indigo-200 text-indigo-700">Version 1.0</Badge>
-            <Badge variant="outline" className="border-indigo-200 text-indigo-700">Ethiopia</Badge>
-            <Badge variant="outline" className="border-indigo-200 text-indigo-700">Legally Binding</Badge>
+
+          {/* Important Notice */}
+          <Card className="mb-8 border-amber-200/50 bg-amber-50/95 backdrop-blur-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 rounded-2xl overflow-hidden group">
+            <CardContent className="p-6">
+              <div className="flex gap-4 items-start">
+                <div className="p-2 bg-amber-100 rounded-full shrink-0">
+                  <AlertTriangle className="h-6 w-6 text-amber-600" />
+                </div>
+                <div>
+                  <p className="text-lg font-bold text-amber-900 mb-1">Please Read Carefully</p>
+                  <p className="text-base text-black font-medium">By using ServeSync+, you agree to these terms. This is a legally binding agreement between you and ServeSync+.</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="space-y-8">
+            {/* Section 1 & 2: Intro & Acceptance */}
+            <Card className="border-white/20 bg-white/95 backdrop-blur-xl shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 rounded-2xl overflow-hidden group">
+              <CardHeader className="bg-slate-50/50 border-b border-slate-100/50 pb-5 pt-6 px-8">
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 rounded-xl bg-indigo-100 flex items-center justify-center shrink-0 group-hover:bg-indigo-600 transition-colors duration-300">
+                    <BookOpen className="h-6 w-6 text-indigo-600 group-hover:text-white transition-colors duration-300" />
+                  </div>
+                  <CardTitle className="text-2xl font-bold text-indigo-950">1. Intro & Acceptance</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="p-8">
+                <p className="text-black text-lg leading-relaxed mb-4">
+                  Welcome to ServeSync+ ("we," "our," or "us"). These Terms govern your use of our Services. ServeSync+ is an ASTU senior project platform connecting clients with organizations across sectors.
+                </p>
+                <p className="text-black text-lg leading-relaxed mb-4">
+                  By creating an account or using our Services, you agree to be bound by these Terms. If representing an organization, you confirm authority to bind them.
+                </p>
+                <div className="bg-red-50 p-5 rounded-xl border border-red-200/50 flex gap-3 items-center">
+                  <AlertTriangle className="h-5 w-5 text-red-600 shrink-0" />
+                  <p className="text-red-800 text-base font-semibold">
+                    If you do not agree to these Terms, you may not access or use the Services.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Section 3 & 4: Accounts & Service Usage */}
+            <Card className="border-white/20 bg-white/95 backdrop-blur-xl shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 rounded-2xl overflow-hidden group">
+              <CardHeader className="bg-slate-50/50 border-b border-slate-100/50 pb-5 pt-6 px-8">
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 rounded-xl bg-indigo-100 flex items-center justify-center shrink-0 group-hover:bg-indigo-600 transition-colors duration-300">
+                    <Users className="h-6 w-6 text-indigo-600 group-hover:text-white transition-colors duration-300" />
+                  </div>
+                  <CardTitle className="text-2xl font-bold text-indigo-950">2. Accounts & Service Usage</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="p-8 grid md:grid-cols-2 gap-8">
+                <div>
+                  <h3 className="text-xl font-bold text-indigo-900 mb-4">User Accounts</h3>
+                  <ul className="list-disc pl-5 space-y-2 text-black text-lg">
+                    <li>Must provide accurate info and be 16+ years old.</li>
+                    <li>Credentials must remain secure and unshared.</li>
+                    <li><strong>Types:</strong> Clients, Employees (human/AI), Admins.</li>
+                    <li>We reserve the right to suspend violating accounts.</li>
+                  </ul>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-indigo-900 mb-4">Service Delivery</h3>
+                  <ul className="list-disc pl-5 space-y-2 text-black text-lg">
+                    <li>Appointments subject to org availability/policies.</li>
+                    <li>Progress updates/ETAs are estimates, not guarantees.</li>
+                    <li>Orgs are responsible for their AI agents' outputs.</li>
+                    <li>We don't train core models on your data without consent.</li>
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Section 5: Payments and Fees */}
+            <Card className="border-white/20 bg-white/95 backdrop-blur-xl shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 rounded-2xl overflow-hidden group">
+              <CardHeader className="bg-slate-50/50 border-b border-slate-100/50 pb-5 pt-6 px-8">
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 rounded-xl bg-indigo-100 flex items-center justify-center shrink-0 group-hover:bg-indigo-600 transition-colors duration-300">
+                    <CreditCard className="h-6 w-6 text-indigo-600 group-hover:text-white transition-colors duration-300" />
+                  </div>
+                  <CardTitle className="text-2xl font-bold text-indigo-950">3. Payments and Fees</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="p-8">
+                <p className="text-black text-lg mb-4 font-medium">All fees are in ETB, exclusive of taxes, processed via secure gateways. Auto-renew applies unless canceled.</p>
+                <div className="overflow-x-auto rounded-xl border border-slate-200">
+                  <table className="w-full border-collapse bg-white">
+                    <thead>
+                      <tr className="bg-slate-100">
+                        <th className="border-b border-slate-200 px-6 py-4 text-left text-base font-bold text-indigo-950">Plan</th>
+                        <th className="border-b border-slate-200 px-6 py-4 text-left text-base font-bold text-indigo-950">Price (ETB/mo)</th>
+                        <th className="border-b border-slate-200 px-6 py-4 text-left text-base font-bold text-indigo-950">Services</th>
+                        <th className="border-b border-slate-200 px-6 py-4 text-left text-base font-bold text-indigo-950">Employees</th>
+                      </tr>
+                    </thead>
+                    <tbody className="text-black text-lg">
+                      <tr className="hover:bg-slate-50"><td className="border-b border-slate-100 px-6 py-3 font-medium">Free</td><td className="border-b border-slate-100 px-6 py-3">0</td><td className="border-b border-slate-100 px-6 py-3">1</td><td className="border-b border-slate-100 px-6 py-3">10 max</td></tr>
+                      <tr className="hover:bg-slate-50"><td className="border-b border-slate-100 px-6 py-3 font-medium">Small Business</td><td className="border-b border-slate-100 px-6 py-3">1,000</td><td className="border-b border-slate-100 px-6 py-3">3</td><td className="border-b border-slate-100 px-6 py-3">30 max</td></tr>
+                      <tr className="hover:bg-slate-50"><td className="border-b border-slate-100 px-6 py-3 font-medium">Medium Business</td><td className="border-b border-slate-100 px-6 py-3">3,000</td><td className="border-b border-slate-100 px-6 py-3">20</td><td className="border-b border-slate-100 px-6 py-3">200 max</td></tr>
+                      <tr className="hover:bg-slate-50">                             <td className="px-6 py-3 font-medium">Large Business</td><td className="px-6 py-3">10,000</td><td className="px-6 py-3">100</td><td className="px-6 py-3">1000 max</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Section 6: Prohibited & Legal */}
+            <Card className="border-white/20 bg-white/95 backdrop-blur-xl shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 rounded-2xl overflow-hidden group">
+              <CardHeader className="bg-slate-50/50 border-b border-slate-100/50 pb-5 pt-6 px-8">
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 rounded-xl bg-indigo-100 flex items-center justify-center shrink-0 group-hover:bg-indigo-600 transition-colors duration-300">
+                    <Gavel className="h-6 w-6 text-indigo-600 group-hover:text-white transition-colors duration-300" />
+                  </div>
+                  <CardTitle className="text-2xl font-bold text-indigo-950">4. Legal & Restrictions</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="p-8">
+                <ul className="list-disc pl-5 space-y-3 text-black text-lg">
+                  <li><strong>Prohibited:</strong> Illegal acts, unauthorized access, malicious code, impersonation, spam, or reverse engineering.</li>
+                  <li><strong>Intellectual Property:</strong> We own ServeSync+ IP. You own your data but license us to host it.</li>
+                  <li><strong>Warranties & Liability:</strong> Provided "as is" without guarantees. Liability capped at the amount paid in the last 12 months.</li>
+                  <li><strong>Governing Law:</strong> Governed by the Federal Democratic Republic of Ethiopia. Disputes resolved in Adama courts.</li>
+                  <li><strong>Changes:</strong> We may modify terms and will notify you of material changes.</li>
+                </ul>
+              </CardContent>
+            </Card>
+
+            {/* Section 12: Contact Information */}
+            <Card className="border-white/20 bg-white/95 backdrop-blur-xl shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 rounded-2xl overflow-hidden group">
+              <CardHeader className="bg-slate-50/50 border-b border-slate-100/50 pb-5 pt-6 px-8">
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 rounded-xl bg-indigo-100 flex items-center justify-center shrink-0 group-hover:bg-indigo-600 transition-colors duration-300">
+                    <HelpCircle className="h-6 w-6 text-indigo-600 group-hover:text-white transition-colors duration-300" />
+                  </div>
+                  <CardTitle className="text-2xl font-bold text-indigo-950">5. Contact Information</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="p-8">
+                <div className="bg-slate-100/50 p-6 rounded-xl border border-slate-200/50">
+                  <p className="text-black text-lg mb-2">For questions about these Terms, contact our legal team:</p>
+                  <p className="text-lg text-black">
+                    Email: <a href="mailto:legal@servesyncplus.et" className="text-blue-600 hover:text-blue-800 hover:underline font-medium transition-colors">legal@servesyncplus.et</a><br/>
+                    Phone: <a href="tel:+251115543322" className="text-blue-600 hover:text-blue-800 hover:underline font-medium transition-colors">+251-11-554-3322</a><br/>
+                    Address: ASTU, Dept. of CSE, P.O. Box 1888, Adama, Ethiopia
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        </div>
 
-        {/* Important Notice */}
-        <Card className="mb-6 border-amber-200 bg-amber-50">
-          <CardContent className="p-5">
-            <div className="flex gap-3 items-start">
-              <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5" />
-              <div>
-                <p className="font-semibold text-amber-800">Please Read Carefully</p>
-                <p className="text-sm text-amber-700">By using ServeSync+, you agree to these terms. This is a legally binding agreement between you and ServeSync+.</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Section 1: Introduction */}
-        <Card className="mb-6 border-indigo-100">
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-indigo-100 flex items-center justify-center">
-                <BookOpen className="h-5 w-5 text-indigo-700" />
-              </div>
-              <CardTitle className="text-xl text-indigo-900">1. Introduction</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-indigo-700 leading-relaxed">
-              Welcome to ServeSync+ ("we," "our," or "us"). These Terms of Service ("Terms") govern your use of our web and mobile applications, 
-              APIs, and related services (collectively, the "Services"). By accessing or using ServeSync+, you agree to be bound by these Terms.
+          {/* Footer Note */}
+          <div className="text-center mt-16 pt-8 text-base text-white/80 border-t border-white/20">
+            <p>© {new Date().getFullYear()} ServeSync+ – Adama Science & Technology University. All rights reserved.</p>
+            <p className="mt-3">
+              <Link href="/legal/privacy-policy" className="text-blue-300 hover:text-blue-200 hover:underline font-medium">Privacy Policy</Link>
+              <span className="mx-3 opacity-50">|</span>
+              <Link href="/legal/terms-of-service" className="text-blue-300 hover:text-blue-200 hover:underline font-medium">Terms of Service</Link>
             </p>
-            <p className="text-indigo-700 leading-relaxed mt-3">
-              ServeSync+ is a multi-sector service scheduling and progress tracking platform developed as a senior project at 
-              <strong> Adama Science and Technology University</strong>. The platform connects clients with service providers across 
-              healthcare, government, automotive, and professional services sectors.
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Section 2: Acceptance of Terms */}
-        <Card className="mb-6 border-indigo-100">
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-indigo-100 flex items-center justify-center">
-                <CheckCircle className="h-5 w-5 text-indigo-700" />
-              </div>
-              <CardTitle className="text-xl text-indigo-900">2. Acceptance of Terms</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-indigo-700 leading-relaxed">
-              By creating an account, accessing, or using our Services, you confirm that you have read, understood, and agree to be bound 
-              by these Terms. If you are using the Services on behalf of an organization, you represent that you have authority to bind 
-              that organization to these Terms.
-            </p>
-            <div className="bg-red-50 p-4 rounded-lg mt-4 border border-red-200">
-              <p className="text-red-700 text-sm flex gap-2">
-                <AlertTriangle className="h-4 w-4" />
-                <span>If you do not agree to these Terms, you may not access or use the Services.</span>
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Section 3: User Accounts */}
-        <Card className="mb-6 border-indigo-100">
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-indigo-100 flex items-center justify-center">
-                <Users className="h-5 w-5 text-indigo-700" />
-              </div>
-              <CardTitle className="text-xl text-indigo-900">3. User Accounts</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <h3 className="font-semibold text-indigo-800 mb-2">3.1 Account Registration</h3>
-              <ul className="list-disc pl-5 space-y-1 text-indigo-700">
-                <li>You must provide accurate, current, and complete information during registration</li>
-                <li>You are responsible for maintaining the security of your account credentials</li>
-                <li>You must be at least 16 years old to use the Services</li>
-                <li>You may not share your account credentials with others</li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-semibold text-indigo-800 mb-2">3.2 Account Types</h3>
-              <ul className="list-disc pl-5 space-y-1 text-indigo-700">
-                <li><strong>Clients:</strong> Individuals seeking services from organizations</li>
-                <li><strong>Employees:</strong> Staff members (human or AI agents) who provide services</li>
-                <li><strong>Administrators:</strong> Organization representatives who manage services and employees</li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-semibold text-indigo-800 mb-2">3.3 Account Termination</h3>
-              <p className="text-indigo-700">
-                We reserve the right to suspend or terminate accounts that violate these Terms or applicable laws. 
-                You may delete your account at any time through your account settings.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Section 4: Service Usage */}
-        <Card className="mb-6 border-indigo-100">
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-indigo-100 flex items-center justify-center">
-                <Building2 className="h-5 w-5 text-indigo-700" />
-              </div>
-              <CardTitle className="text-xl text-indigo-900">4. Service Usage</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <h3 className="font-semibold text-indigo-800 mb-2">4.1 Scheduling and Appointments</h3>
-              <ul className="list-disc pl-5 space-y-1 text-indigo-700">
-                <li>Appointments are subject to availability and organization-specific policies</li>
-                <li>Cancellation policies may vary by organization and service type</li>
-                <li>We are not responsible for no-shows or late arrivals by either party</li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-semibold text-indigo-800 mb-2">4.2 Progress Tracking</h3>
-              <ul className="list-disc pl-5 space-y-1 text-indigo-700">
-                <li>Service status updates are provided in real-time based on staff input</li>
-                <li>Estimated completion times are estimates and not guarantees</li>
-                <li>We strive for accuracy but cannot guarantee real-time precision in all conditions</li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-semibold text-indigo-800 mb-2">4.3 AI Agents</h3>
-              <ul className="list-disc pl-5 space-y-1 text-indigo-700">
-                <li>Organizations may integrate AI agents to assist with service delivery</li>
-                <li>AI agents are identified as such when interacting with clients</li>
-                <li>Organizations are responsible for the actions and outputs of their AI agents</li>
-                <li>We do not train our own models on your data without consent</li>
-              </ul>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Section 5: Payments and Fees */}
-        <Card className="mb-6 border-indigo-100">
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-indigo-100 flex items-center justify-center">
-                <CreditCard className="h-5 w-5 text-indigo-700" />
-              </div>
-              <CardTitle className="text-xl text-indigo-900">5. Payments and Fees</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <h3 className="font-semibold text-indigo-800 mb-2">5.1 Subscription Plans</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="bg-indigo-50">
-                      <th className="border border-indigo-200 px-4 py-2 text-left text-sm font-semibold text-indigo-800">Plan</th>
-                      <th className="border border-indigo-200 px-4 py-2 text-left text-sm font-semibold text-indigo-800">Price (ETB/month)</th>
-                      <th className="border border-indigo-200 px-4 py-2 text-left text-sm font-semibold text-indigo-800">Services</th>
-                      <th className="border border-indigo-200 px-4 py-2 text-left text-sm font-semibold text-indigo-800">Employees</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr><td className="border border-indigo-200 px-4 py-2 text-indigo-700">Free</td><td className="border border-indigo-200 px-4 py-2 text-indigo-700">0</td><td className="border border-indigo-200 px-4 py-2 text-indigo-700">1</td><td className="border border-indigo-200 px-4 py-2 text-indigo-700">10 max</td></tr>
-                    <tr><td className="border border-indigo-200 px-4 py-2 text-indigo-700">Small Business</td><td className="border border-indigo-200 px-4 py-2 text-indigo-700">1,000</td><td className="border border-indigo-200 px-4 py-2 text-indigo-700">3</td><td className="border border-indigo-200 px-4 py-2 text-indigo-700">30 max</td></tr>
-                    <tr><td className="border border-indigo-200 px-4 py-2 text-indigo-700">Medium Business</td><td className="border border-indigo-200 px-4 py-2 text-indigo-700">3,000</td><td className="border border-indigo-200 px-4 py-2 text-indigo-700">20</td><td className="border border-indigo-200 px-4 py-2 text-indigo-700">200 max</td></tr>
-                    <tr><td className="border border-indigo-200 px-4 py-2 text-indigo-700">Large Business</td><td className="border border-indigo-200 px-4 py-2 text-indigo-700">10,000</td><td className="border border-indigo-200 px-4 py-2 text-indigo-700">100</td><td className="border border-indigo-200 px-4 py-2 text-indigo-700">1000 max</td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            <div>
-              <h3 className="font-semibold text-indigo-800 mb-2">5.2 Payment Terms</h3>
-              <ul className="list-disc pl-5 space-y-1 text-indigo-700">
-                <li>All fees are in Ethiopian Birr (ETB) and are exclusive of taxes</li>
-                <li>Payments are processed through secure third-party gateways</li>
-                <li>Subscriptions auto-renew monthly unless canceled</li>
-                <li>Refunds are handled on a case-by-case basis</li>
-              </ul>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Section 6: Prohibited Activities */}
-        <Card className="mb-6 border-red-200 bg-red-50">
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-red-100 flex items-center justify-center">
-                <AlertTriangle className="h-5 w-5 text-red-700" />
-              </div>
-              <CardTitle className="text-xl text-red-800">6. Prohibited Activities</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <ul className="list-disc pl-5 space-y-2 text-red-700">
-              <li>Using the Services for any illegal purpose or in violation of Ethiopian law</li>
-              <li>Attempting to gain unauthorized access to other accounts or systems</li>
-              <li>Uploading malicious code or interfering with service operation</li>
-              <li>Impersonating another person or entity</li>
-              <li>Using the Services to spam, harass, or harm others</li>
-              <li>Reverse engineering or copying the platform's code</li>
-              <li>Using AI agents in ways that violate applicable laws or regulations</li>
-            </ul>
-          </CardContent>
-        </Card>
-
-        {/* Section 7: Intellectual Property */}
-        <Card className="mb-6 border-indigo-100">
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-indigo-100 flex items-center justify-center">
-                <Shield className="h-5 w-5 text-indigo-700" />
-              </div>
-              <CardTitle className="text-xl text-indigo-900">7. Intellectual Property</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <ul className="list-disc pl-5 space-y-2 text-indigo-700">
-              <li><strong>Our IP:</strong> The ServeSync+ platform, logo, and content are owned by us and protected by Ethiopian and international intellectual property laws</li>
-              <li><strong>Your IP:</strong> You retain ownership of your data and content. You grant us a license to host and process your data to provide the Services</li>
-              <li><strong>Feedback:</strong> Any suggestions or feedback you provide may be used without compensation or obligation</li>
-            </ul>
-          </CardContent>
-        </Card>
-
-        {/* Section 8: Limitation of Liability */}
-        <Card className="mb-6 border-indigo-100">
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-indigo-100 flex items-center justify-center">
-                <Gavel className="h-5 w-5 text-indigo-700" />
-              </div>
-              <CardTitle className="text-xl text-indigo-900">8. Limitation of Liability</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-indigo-700 leading-relaxed">
-              To the maximum extent permitted by law, ServeSync+ and its developers shall not be liable for any indirect, incidental, 
-              special, consequential, or punitive damages, including loss of profits, data, or goodwill, arising from your use of the Services.
-            </p>
-            <p className="text-indigo-700 leading-relaxed mt-3">
-              Our total liability shall not exceed the amount you paid us (if any) in the 12 months preceding the claim.
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Section 9: Disclaimer of Warranties */}
-        <Card className="mb-6 border-indigo-100">
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-indigo-100 flex items-center justify-center">
-                <AlertTriangle className="h-5 w-5 text-indigo-700" />
-              </div>
-              <CardTitle className="text-xl text-indigo-900">9. Disclaimer of Warranties</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-indigo-700 leading-relaxed">
-              The Services are provided "as is" and "as available" without warranties of any kind, either express or implied. 
-              We do not guarantee that the Services will be uninterrupted, error-free, or secure.
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Section 10: Governing Law */}
-        <Card className="mb-6 border-indigo-100">
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-indigo-100 flex items-center justify-center">
-                <Globe className="h-5 w-5 text-indigo-700" />
-              </div>
-              <CardTitle className="text-xl text-indigo-900">10. Governing Law</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-indigo-700 leading-relaxed">
-              These Terms shall be governed by the laws of the <strong>Federal Democratic Republic of Ethiopia</strong>. 
-              Any disputes arising under these Terms shall be resolved in the courts of Adama, Ethiopia.
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Section 11: Changes to Terms */}
-        <Card className="mb-6 border-indigo-100">
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-indigo-100 flex items-center justify-center">
-                <Clock className="h-5 w-5 text-indigo-700" />
-              </div>
-              <CardTitle className="text-xl text-indigo-900">11. Changes to Terms</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-indigo-700 leading-relaxed">
-              We may modify these Terms at any time. We will notify you of material changes via email or through the platform. 
-              Your continued use after changes constitutes acceptance of the revised Terms.
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Section 12: Contact Information */}
-        <Card className="mb-6 border-indigo-200 bg-indigo-50">
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-indigo-200 flex items-center justify-center">
-                <HelpCircle className="h-5 w-5 text-indigo-700" />
-              </div>
-              <CardTitle className="text-xl text-indigo-900">12. Contact Information</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2 text-indigo-800">
-              <p className="flex items-center gap-2"><Mail className="h-4 w-4" /> Email: legal@servesyncplus.et</p>
-              <p className="flex items-center gap-2"><Phone className="h-4 w-4" /> Phone: +251-11-554-3322</p>
-              <p className="flex items-center gap-2"><MapPin className="h-4 w-4" /> Address: Adama Science & Technology University, Department of CSE, P.O. Box 1888, Adama, Ethiopia</p>
-            </div>
-            <div className="mt-4 pt-4 border-t border-indigo-200">
-              <p className="text-sm text-indigo-600">
-                For questions about these Terms, please contact our legal team at the email above.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Footer */}
-        <div className="text-center mt-8 text-sm text-indigo-400 border-t border-indigo-100 pt-6">
-          <p>© {new Date().getFullYear()} ServeSync+ – Adama Science & Technology University. All rights reserved.</p>
-          <p className="mt-2 text-xs">
-            <Link href="/privacy" className="hover:underline">Privacy Policy</Link> | 
-            <Link href="/terms" className="hover:underline ml-2">Terms of Service</Link>
-          </p>
-        </div>
-      </main>
+          </div>
+        </main>
+      </div>
       
       <SiteFooter />
     </div>

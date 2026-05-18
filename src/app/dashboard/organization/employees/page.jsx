@@ -337,23 +337,23 @@ export default function EmployeesPage() {
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       ) : view === "table" ? (
-        <div className="rounded border bg-card  overflow-hidden">
-          <Table className=" font-mono">
-            <TableHeader className="bg-muted/30 uppercase">
+        <div className="rounded-xl border bg-card overflow-hidden shadow-sm">
+          <Table className="font-sans text-lg text-black">
+            <TableHeader className="bg-muted/30 uppercase text-black">
               <TableRow>
                 <TableHead className="px-2"></TableHead>
-                {/* <TableHead className="font-bold">ID</TableHead> */}
-                <TableHead className="font-bold">Fullname</TableHead>
-                <TableHead className="font-bold">Job</TableHead>
-                <TableHead className="font-bold">Gender</TableHead>
-                <TableHead className="font-bold">Calendar</TableHead>
-                <TableHead className="font-bold text-center">Status</TableHead>
-                <TableHead className="text-right font-bold">Actions</TableHead>
+                {/* <TableHead className="font-bold text-black text-base">ID</TableHead> */}
+                <TableHead className="font-bold text-black text-base">Fullname</TableHead>
+                <TableHead className="font-bold text-black text-base">Job</TableHead>
+                <TableHead className="font-bold text-black text-base">Gender</TableHead>
+                <TableHead className="font-bold text-black text-base">Calendar</TableHead>
+                <TableHead className="font-bold text-center text-black text-base">Status</TableHead>
+                <TableHead className="text-right font-bold text-black text-base">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredEmployees.map((employee) => (
-                <TableRow key={employee.id}>
+                <TableRow key={employee.id} className="hover:bg-muted/50 transition-colors">
                   <TableCell className="w-8">
                     <Checkbox
                       checked={selectedEmployees[employee.id]}
@@ -375,33 +375,33 @@ export default function EmployeesPage() {
                     </div>
                   </TableCell> */}
                   <TableCell>
-                    <div className="font-semibold">
+                    <div className="font-semibold text-lg text-black">
                       {`${employee.user.firstname} ${employee.user.lastname}`}
                     </div>
-                    <div className="text-xs text-foreground/80">
+                    <div className="text-base">
                       <Link
                         href={`mailto:${employee.user.email}`}
-                        className="text-blue-800/90 hover:underline"
+                        className="text-blue-600 hover:text-blue-800 hover:underline"
                       >
                         {employee.user.email}
                       </Link>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="text-xs text-muted-foreground truncate max-w-[400px]">
-                      <div className="text-sm font-bold">
+                    <div className="text-base text-black/80 truncate max-w-[400px]">
+                      <div className="text-lg font-bold text-black">
                         {employee.jobTitle}
                       </div>
                       <div>{employee.jobDescription}</div>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="text-xs text-muted-foreground truncate max-w-[400px]">
+                    <div className="text-base text-black/80 truncate max-w-[400px]">
                       {employee.user.gender}
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="text-xs text-muted-foreground truncate max-w-[400px] overflow-auto">
+                    <div className="text-base text-black/80 truncate max-w-[400px] overflow-auto">
                       {employee.calendar?.name || "-"}
                     </div>
                   </TableCell>
@@ -451,7 +451,7 @@ export default function EmployeesPage() {
           {filteredEmployees.map((employee) => (
             <Card
               key={employee.id}
-              className="bg-background  group flex flex-col relative overflow-hidden transition-all hover:ring-2 hover:ring-primary/20"
+              className="bg-background group flex flex-col relative overflow-hidden shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 rounded-2xl"
             >
               <CardHeader className="pb-3 border-b bg-muted/5 flex flex-row items-center justify-between space-y-0">
                 <CardTitle className="font-bold text-primary truncate pr-4">
@@ -460,10 +460,10 @@ export default function EmployeesPage() {
                       <User />
                     </div>
                     <div>
-                      <div>
+                      <div className="text-lg text-black">
                         {`${employee.user.firstname} ${employee.user.lastname}`}
                       </div>
-                      <p className="muted-foreground text-muted-foreground font-normal text-xs">
+                      <p className="text-black/80 font-normal text-base mt-1">
                         {employee.jobTitle}
                       </p>
                     </div>
@@ -490,8 +490,8 @@ export default function EmployeesPage() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               </CardHeader>
-              <CardContent className="flex-grow">
-                <p className="text-muted-foreground line-clamp-3 min-h-[60px]">
+              <CardContent className="flex-grow pt-4">
+                <p className="text-black text-base line-clamp-3 min-h-[60px]">
                   {employee.jobDescription ||
                     "No job description provided for this employee."}
                 </p>
@@ -575,7 +575,7 @@ export default function EmployeesPage() {
           }
         }}
       >
-        <DialogContent>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl border-0 p-6">
           <DialogHeader>
             <DialogTitle>
               {isEditOpen ? "Edit Employee" : "Hire New Employee"}

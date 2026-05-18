@@ -71,6 +71,7 @@ import { EthDateTime } from "ethiopian-calendar-date-converter";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useOrganizationStore } from "@/store";
+import { WeeklyHoursConfig, GlobalHoursConfig } from "@/components/ui/calendar-hours-form";
 
 const startMonth = new Date();
 const endMonth = new Date(Date.now() + 10 * 365.25 * 24 * 60 * 60 * 1000);
@@ -460,19 +461,19 @@ export default function CalendarsPage() {
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       ) : view === "table" ? (
-        <div className="rounded border bg-card overflow-hidden">
-          <Table className=" font-mono">
-            <TableHeader className="bg-muted/30 uppercase">
+        <div className="rounded-xl border bg-card overflow-hidden shadow-sm">
+          <Table className="font-sans text-lg text-black">
+            <TableHeader className="bg-muted/30 uppercase text-black">
               <TableRow>
                 <TableHead className="px-2"></TableHead>
-                <TableHead className="font-bold">Calendar</TableHead>
+                <TableHead className="font-bold text-black text-base">Calendar</TableHead>
                 {/* <TableHead className="font-bold text-center">Status</TableHead> */}
-                <TableHead className="text-right font-bold">Actions</TableHead>
+                <TableHead className="text-right font-bold text-black text-base">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {calendars.map((calendar) => (
-                <TableRow key={calendar.id}>
+                <TableRow key={calendar.id} className="hover:bg-muted/50 transition-colors">
                   <TableCell className="w-8">
                     <Checkbox
                       checked={selectedCalendars[calendar.id]}
@@ -489,14 +490,15 @@ export default function CalendarsPage() {
                     />
                   </TableCell>
                   <TableCell>
-                    <div className="font-semibold text-primary">
+                    <div className="font-semibold text-lg">
                       <Link
                         href={"/dashboard/organization/calendar/" + calendar.id}
+                        className="text-blue-600 hover:text-blue-800 hover:underline"
                       >
                         {calendar.name}
                       </Link>
                     </div>
-                    <div className="text-xs text-muted-foreground truncate max-w-[400px]">
+                    <div className="text-base text-black/80 truncate max-w-[400px]">
                       {calendar.description}
                     </div>
                   </TableCell>
@@ -545,12 +547,13 @@ export default function CalendarsPage() {
           {calendars.map((calendar) => (
             <Card
               key={calendar.id}
-              className="bg-background shadow-md group flex flex-col relative overflow-hidden transition-all hover:ring-2 hover:ring-primary/20"
+              className="bg-background group flex flex-col relative overflow-hidden shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 rounded-2xl"
             >
               <CardHeader className="pb-3 border-b bg-muted/5 flex flex-row items-center justify-between space-y-0">
-                <CardTitle className="font-bold text-primary truncate pr-4">
+                <CardTitle className="font-bold text-lg truncate pr-4">
                   <Link
                     href={"/dashboard/organization/calendar/" + calendar.id}
+                    className="text-blue-600 hover:text-blue-800 hover:underline"
                   >
                     {calendar.name}
                   </Link>
@@ -576,8 +579,8 @@ export default function CalendarsPage() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               </CardHeader>
-              <CardContent className="flex-grow">
-                <p className="text-muted-foreground line-clamp-3 min-h-[60px]">
+              <CardContent className="flex-grow pt-4">
+                <p className="text-black text-base line-clamp-3 min-h-[60px]">
                   {calendar.description ||
                     "No description provided for this calendar."}
                 </p>
@@ -661,7 +664,7 @@ export default function CalendarsPage() {
           }
         }}
       >
-        <DialogContent>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl border-0 p-6">
           <DialogHeader>
             <DialogTitle>
               {isEditOpen ? "Edit Calendar" : "Add New Calendar"}
@@ -867,6 +870,16 @@ export default function CalendarsPage() {
                               S
                             </ToggleGroupItem>
                           </ToggleGroup>
+                          <WeeklyHoursConfig
+                            weekly={formData.available?.weekly}
+                            weeklyHours={formData.available?.weeklyHours}
+                            onChange={(weeklyHours) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                available: { ...prev.available, weeklyHours },
+                              }))
+                            }
+                          />
                         </div>
                         {/* Availablity Calendars */}
                         <TabsContent
@@ -1013,6 +1026,15 @@ export default function CalendarsPage() {
                               S
                             </ToggleGroupItem>
                           </ToggleGroup>
+                          <GlobalHoursConfig
+                            hours={formData.unavailable?.hours}
+                            onChange={(hours) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                unavailable: { ...prev.unavailable, hours },
+                              }))
+                            }
+                          />
                         </div>
                         {/* Unavailablity Calendars */}
                         <TabsContent

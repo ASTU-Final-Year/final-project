@@ -56,24 +56,30 @@ const isDateInRange = (date, ranges) => {
 
 // --- Core Rules Engine Logic ---
 const evaluateDateStatus = (date, calendar) => {
-  if (!calendar) return { status: null, reason: null };
+  if (!calendar) return { status: null, reason: null, hours: null };
 
   const { available, unavailable } = calendar;
   let isAvail = false;
   let reasonId = 0;
   let reason = "";
+  let hours = null;
+  let blockOutHours = null;
+
+  const dayIdx = date.getDay() === 0 ? 6 : date.getDay() - 1;
 
   // 1. Evaluate Base Availability (additive)
   if (available) {
-    if (available.weekly?.includes(date.getDay() - 1)) {
+    if (available.weekly?.includes(dayIdx)) {
       isAvail = true;
       reasonId = 1;
       reason = "Weekly standard hours";
+      hours = available.weeklyHours?.[dayIdx] || available.hours?.[0] || null;
     }
     if (!isAvail && isDateInRange(date, available.ranges)) {
       isAvail = true;
       reasonId = 2;
       reason = "Custom availability range";
+      hours = available.hours?.[0] || null;
     }
     if (
       !isAvail &&
@@ -82,16 +88,18 @@ const evaluateDateStatus = (date, calendar) => {
       isAvail = true;
       reasonId = 3;
       reason = "Specific available date";
+      hours = available.hours?.[0] || null;
     }
   }
 
   // 2. Evaluate Exceptions / Blockouts (subtractive - overrides base)
   if (unavailable) {
-    if (unavailable.weekly?.includes(date.getDay() - 1)) {
+    if (unavailable.weekly?.includes(dayIdx)) {
       return {
         status: "unavailable",
         reasonId: 1,
         reason: "Blocked (Weekly rule)",
+        hours: null,
       };
     }
     if (isDateInRange(date, unavailable.ranges)) {
@@ -99,6 +107,7 @@ const evaluateDateStatus = (date, calendar) => {
         status: "unavailable",
         reasonId: 2,
         reason: "Blocked (Date range)",
+        hours: null,
       };
     }
     if (unavailable.exactly?.some((d) => isSameDay(date, new Date(d)))) {
@@ -106,14 +115,31 @@ const evaluateDateStatus = (date, calendar) => {
         status: "unavailable",
         reasonId: 3,
         reason: "Blocked (Specific date)",
+        hours: null,
       };
     }
+    // Handle partial unavailabilities (lunch breaks, blocked hours)
+    if (isAvail && unavailable.hours?.length > 0) {
+      blockOutHours = unavailable.hours;
+    }
+  }
+
+  let finalReason = isAvail ? reason : "Outside operational hours";
+  let displayHours = "";
+  
+  if (isAvail && hours) {
+    displayHours = `${hours[0]} - ${hours[1]}`;
+    if (blockOutHours) {
+      displayHours += ` (Blocked: ${blockOutHours.map(h => `${h[0]}-${h[1]}`).join(', ')})`;
+    }
+    finalReason += ` | ${displayHours}`;
   }
 
   return {
     status: isAvail ? "available" : "unavailable",
     reasonId,
-    reason: isAvail ? reason : "Outside operational hours",
+    reason: finalReason,
+    hours: displayHours,
   };
 };
 
@@ -359,18 +385,18 @@ export default function SmartCalendarGrid() {
                 </div>
 
                 {/* Status Block */}
-                {/* <div className="mt-auto pt-2">
-                  <div
-                    className={cn(
-                      "text-[10px] sm:text-xs font-medium px-2 py-1 rounded-md w-full truncate border",
-                      isAvailable
-                        ? "bg-green-100/50 text-green-700 border-green-200"
-                        : "bg-red-50 text-red-700/80 border-red-100",
+                {isAvailable && dayObj.hours && (
+                  <div className="mt-auto pt-1 w-full flex flex-col gap-0.5">
+                    <div className="text-[9px] sm:text-[10px] font-bold text-center text-primary bg-primary/10 rounded py-0.5 px-1 truncate">
+                      {dayObj.hours.split(' (Blocked:')[0]}
+                    </div>
+                    {dayObj.hours.includes('Blocked') && (
+                      <div className="text-[8px] sm:text-[9px] font-semibold text-center text-red-600 bg-red-50 border border-red-100 rounded py-0.5 px-1 truncate" title={dayObj.hours.split('Blocked: ')[1].replace(')', '')}>
+                        <span className="opacity-70 line-through mr-1"></span>{dayObj.hours.split('Blocked: ')[1].replace(')', '')}
+                      </div>
                     )}
-                  >
-                    {dayObj.reason}
                   </div>
-                </div> */}
+                )}
 
                 {/* Hover Tooltip (CSS only) */}
                 <div className="absolute hidden group-hover:block bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[200px] p-2 bg-slate-800 text-slate-100 text-xs rounded-md shadow-xl z-20">

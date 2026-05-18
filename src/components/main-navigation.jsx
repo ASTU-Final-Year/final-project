@@ -44,7 +44,7 @@ export default function MainNavigationMenu({ navlinks }) {
               className="bg-transparent focus:bg-transparent"
               key={idx}
             >
-              <NavigationMenuTrigger className="px-4 py-2 rounded transition-colors text-sm text-white/70 hover:text-white bg-transparent active:bg-transparent focus:bg-transparent hover:bg-transparent data-open:bg-transparent data-open:hover:bg-transparent data-open:focus:bg-transparent hover:border-b-2 hover:border-white/70 font-medium">
+              <NavigationMenuTrigger className="px-4 py-2 rounded transition-colors text-base text-white/70 hover:text-white bg-transparent active:bg-transparent focus:bg-transparent hover:bg-transparent data-open:bg-transparent data-open:hover:bg-transparent data-open:focus:bg-transparent hover:border-b-2 hover:border-white/70 font-semibold">
                 {label}
               </NavigationMenuTrigger>
               <NavigationMenuContent className="bg-slate-900 text-lg">
@@ -71,7 +71,7 @@ export default function MainNavigationMenu({ navlinks }) {
                 asChild
                 className={cn(
                   navigationMenuTriggerStyle(),
-                  "bg-transparent text-sm text-white/70 hover:bg-transparent focus:bg-transparent active:bg-transparent hover:border-b-2 hover:border-white/60",
+                  "bg-transparent text-base font-semibold text-white/70 hover:bg-transparent focus:bg-transparent active:bg-transparent hover:border-b-2 hover:border-white/60",
                   activeNavlink?.path === path ? "text-white" : "",
                 )}
               >

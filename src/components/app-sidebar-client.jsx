@@ -51,11 +51,7 @@ const navData = [
     url: "/dashboard/client/appointments",
     icon: CalendarDays,
   },
-  // {
-  //   title: "Analytics",
-  //   url: "/dashboard/employee/analytics",
-  //   icon: PieChart,
-  // },},
+
   {
     title: "Profile",
     url: "/dashboard/client/profile",
@@ -90,7 +86,7 @@ export function AppSidebarClient() {
       </SidebarHeader>
 
       <SidebarContent className="py-4">
-        <SidebarMenu>
+        <SidebarMenu className="gap-4">
           {navData.map((item) => (
             <SidebarItem key={item.title} item={item} pathname={pathname} />
           ))}
@@ -129,9 +125,9 @@ function SidebarItem({ item, pathname }) {
         {hasSub ? (
           <>
             <CollapsibleTrigger asChild>
-              <SidebarMenuButton tooltip={item.title} isActive={isActive}>
-                <item.icon className="size-4" />
-                <span className="font-semibold">{item.title}</span>
+              <SidebarMenuButton tooltip={item.title} isActive={isActive} className="py-3 h-auto">
+                <item.icon className="size-5" />
+                <span className="font-semibold text-base">{item.title}</span>
                 <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
               </SidebarMenuButton>
             </CollapsibleTrigger>
@@ -157,10 +153,11 @@ function SidebarItem({ item, pathname }) {
             asChild
             tooltip={item.title}
             isActive={pathname === item.url}
+            className="py-3 h-auto"
           >
             <Link href={item.url}>
-              <item.icon className="size-4" />
-              <span className="font-semibold">{item.title}</span>
+              <item.icon className="size-5" />
+              <span className="font-semibold text-base">{item.title}</span>
             </Link>
           </SidebarMenuButton>
         )}
