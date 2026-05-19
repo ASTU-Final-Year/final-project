@@ -204,7 +204,7 @@ export default function RegisterUserContent() {
                       className={cn(
                         "pl-11 h-12",
                         errors.firstname &&
-                          "border-red-500 focus-visible:ring-red-500",
+                        "border-red-500 focus-visible:ring-red-500",
                       )}
                       placeholder="Abebe"
                       value={formData.firstname}
@@ -230,7 +230,7 @@ export default function RegisterUserContent() {
                       className={cn(
                         "pl-11 h-12",
                         errors.lastname &&
-                          "border-red-500 focus-visible:ring-red-500",
+                        "border-red-500 focus-visible:ring-red-500",
                       )}
                       placeholder="Bekele"
                       value={formData.lastname}
@@ -284,7 +284,7 @@ export default function RegisterUserContent() {
                       className={cn(
                         "pl-11 h-12",
                         errors.email &&
-                          "border-red-500 focus-visible:ring-red-500",
+                        "border-red-500 focus-visible:ring-red-500",
                       )}
                       placeholder="abebe@example.com"
                       value={formData.email}
@@ -308,7 +308,7 @@ export default function RegisterUserContent() {
                       className={cn(
                         "pl-11 h-12",
                         errors.phone &&
-                          "border-red-500 focus-visible:ring-red-500",
+                        "border-red-500 focus-visible:ring-red-500",
                       )}
                       placeholder="+251 900000000"
                       value={formData.phone}
@@ -333,7 +333,7 @@ export default function RegisterUserContent() {
                       className={cn(
                         "pl-11 pr-11 h-12",
                         errors.password &&
-                          "border-red-500 focus-visible:ring-red-500",
+                        "border-red-500 focus-visible:ring-red-500",
                       )}
                       placeholder="Create a strong password"
                       value={formData.password}
