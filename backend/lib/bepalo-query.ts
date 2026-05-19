@@ -11,6 +11,7 @@ import type {
   CTXAuth,
   HandlerType,
   HttpMethod,
+  Pipeline,
 } from "@bepalo/router";
 import { Status } from "@bepalo/router";
 import type { AnyColumn, BinaryOperator, Column, Table } from "drizzle-orm";
@@ -35,6 +36,8 @@ import {
   DrizzleQueryError,
   sql,
   or,
+  getTableName,
+  aliasedTable,
 } from "drizzle-orm";
 import { type, ArkErrors, type Type } from "arktype";
 
@@ -111,17 +114,25 @@ const join = (
   cur: number,
 ) => {
   if (cur >= include.length) return query;
-  let [alias, [, filter, tableId, joinType]] = include[cur];
+  let [alias, [, filterRes, tableId, joinType]] = include[cur];
   if (!tableId) tableId = alias;
-  const table = tables[tableId as keyof typeof tables];
+  // const isAliased = alias != tableId;
+  const table =
+    typeof tableId === "string"
+      ? tables[tableId as keyof typeof tables]
+      : tableId;
+  // const tableOriginal = tables[tableId as keyof typeof tables];
+  // const table = isAliased ? aliasedTable(tableOriginal, alias) : tableOriginal;
+  // const filterRes = filter(table);
+  // const filterRes = filter(table);
   switch (joinType) {
     case "middle":
-      return join(tables, query.middleJoin(table, filter), include, cur + 1);
+      return join(tables, query.middleJoin(table, filterRes), include, cur + 1);
     case "right":
-      return join(tables, query.rightJoin(table, filter), include, cur + 1);
+      return join(tables, query.rightJoin(table, filterRes), include, cur + 1);
     default:
     case "left":
-      return join(tables, query.leftJoin(table, filter), include, cur + 1);
+      return join(tables, query.leftJoin(table, filterRes), include, cur + 1);
   }
 };
 
@@ -170,12 +181,14 @@ export const getBepaloQueryRouter = <
     queryAuth,
     isProduction,
     currentTableSelectorId = "",
+    routeFilters,
   }: {
     tables: S;
     pathPrefix: string;
     queryAuth: QueryAuth<S, TX, XContext>;
     isProduction?: boolean;
     currentTableSelectorId?: string;
+    routeFilters?: Pipeline<XContext>;
   },
 ) => {
   const IS_PRODUCTION = isProduction;
@@ -275,10 +288,23 @@ export const getBepaloQueryRouter = <
       k = t;
       selectTable = table;
     } else {
-      selectTable = tables[t];
+      const aliased =
+        authProtected.include[t] &&
+        typeof authProtected.include[t][2] === "object";
+      selectTable = aliased ? authProtected.include[t][2] : tables[t];
+      if (aliased) t = getTableName(selectTable);
     }
     if (selectTable == null) {
-      throw new HttpError("Invalid table", Status._400_BadRequest);
+      throw new HttpError(
+        `Invalid table '${t}'->'${p}'`,
+        Status._400_BadRequest,
+      );
+    }
+    if (selectTable[k] == null) {
+      throw new HttpError(
+        `Invalid column '${k}'->'${p}'`,
+        Status._400_BadRequest,
+      );
     }
     const operator = operatorMap[op];
     if (!operator) {
@@ -306,7 +332,10 @@ export const getBepaloQueryRouter = <
             t = tableId;
             refTable = table;
           } else {
-            refTable = tables[t];
+            const aliased =
+              authProtected.include[t] &&
+              typeof authProtected.include[t][2] !== "string";
+            refTable = aliased ? authProtected.include[t][2] : tables[t];
           }
           if (refTable == null) {
             throw new HttpError(`Invalid table ${t}`, Status._400_BadRequest);
@@ -371,7 +400,9 @@ export const getBepaloQueryRouter = <
       }
       if (req.method !== "OPTIONS") {
         const queryAuthEntry = tablePermissions[
-          (req.method === "HEAD" ? "GET" : req.method) as HttpMethod
+          (req.method === "HEAD"
+            ? "GET"
+            : req.method) as keyof typeof tablePermissions
         ] as QueryAuthEntries<S, keyof S>;
         if (queryAuthEntry == null) {
           return req.method === "OPTIONS" || req.method === "HEAD"
@@ -431,6 +462,7 @@ export const getBepaloQueryRouter = <
       }
   >[] = [
     // auth
+    ...(routeFilters || []),
     parseCookie(),
     authenticate({
       parseAuth,
@@ -443,11 +475,30 @@ export const getBepaloQueryRouter = <
   const route = {
     OPTIONS: {
       FILTER: [
+        ...(routeFilters || []),
+        parseCookie(),
         authenticate({
           parseAuth,
           checkOnly: true,
         }),
         parseTableAuth(),
+        (req, ctx) => {
+          const q = TOptionsQuery(
+            Object.fromEntries(
+              ctx.url.searchParams
+                .entries()
+                .map(([k, v]) => [k, v.replace(/\%\%/g, "%")]),
+            ),
+          );
+          if (q instanceof ArkErrors) {
+            return json(
+              { error: q.toString() },
+              { status: Status._400_BadRequest },
+            );
+          }
+          ctx.query = q;
+          console.log(ctx.url.searchParams, ctx.query);
+        },
       ],
       HANDLER: [
         async (req, ctx) => {
@@ -460,24 +511,27 @@ export const getBepaloQueryRouter = <
           }
           const tablePermissions = queryAuth[tableId];
           let allowedMethods;
-          if (queryGuest && queryMine) {
-            allowedMethods = Object.entries(tablePermissions)
-              .filter(([method, perm]) => perm.mine || perm.guest)
-              .map(([method]) => method);
-          } else if (queryGuest) {
+          if (queryGuest) {
             allowedMethods = Object.entries(tablePermissions)
               .filter(([method, perm]) => perm.guest)
               .map(([method]) => method);
           } else if (queryMine) {
             allowedMethods = Object.entries(tablePermissions)
-              .filter(([method, perm]) => perm.mine)
+              .filter(
+                ([method, perm]) =>
+                  perm.mine || (auth.role && perm[auth.role]) || perm.allUsers,
+              )
               .map(([method]) => method);
-          } else {
+          } else if (auth?.role) {
             allowedMethods = Object.entries(tablePermissions)
               .filter(
                 ([method, perm]) =>
-                  (auth?.role && perm[auth.role]) || perm.allUsers,
+                  (auth.role && perm[auth.role]) || perm.allUsers || perm.mine,
               )
+              .map(([method]) => method);
+          } else {
+            allowedMethods = Object.entries(tablePermissions)
+              .filter(([method, perm]) => perm.guest)
               .map(([method]) => method);
           }
           if (allowedMethods.length > 0) {
@@ -1157,8 +1211,9 @@ export const getBepaloQueryRouter = <
                   ctx.error = error as Error;
                   await authProtected.onQueryError(req, ctx);
                 }
-                if (!ctx.dontRollback) transaction.rollback();
-                if (!ctx.dontThrow) throw error;
+                if (ctx.dontRollback !== undefined && !ctx.dontRollback)
+                  transaction.rollback();
+                if (ctx.dontThrow !== undefined && !ctx.dontThrow) throw error;
               }
             });
             return json(ctx.result, { status: Status._201_Created });
@@ -1505,8 +1560,9 @@ export const getBepaloQueryRouter = <
                   ctx.error = error as Error;
                   await authProtected.onQueryError(req, ctx);
                 }
-                if (!ctx.dontRollback) transaction.rollback();
-                if (!ctx.dontThrow) throw error;
+                if (ctx.dontRollback !== undefined && !ctx.dontRollback)
+                  transaction.rollback();
+                if (ctx.dontThrow !== undefined && !ctx.dontThrow) throw error;
               }
             });
             return json(ctx.result);
@@ -1780,8 +1836,9 @@ export const getBepaloQueryRouter = <
                   ctx.error = error as Error;
                   await authProtected.onQueryError(req, ctx);
                 }
-                if (!ctx.dontRollback) transaction.rollback();
-                if (!ctx.dontThrow) throw error;
+                if (ctx.dontRollback !== undefined && !ctx.dontRollback)
+                  transaction.rollback();
+                if (ctx.dontThrow !== undefined && !ctx.dontThrow) throw error;
               }
             });
             return json(ctx.result);
@@ -1838,6 +1895,21 @@ export const getBepaloQueryRouter = <
     }
   }
   return router;
+};
+
+export const TOptionsQuery = type({
+  "mine?": "string.integer|'true'|'false'|''",
+  "guest?": "string.integer|'true'|'false'|''",
+  "countOnly?": "string.integer|'true'|'false'|''",
+}).pipe(({ mine, guest, countOnly, ...rest }) => ({
+  mine: mine ? parseBoolean(mine) : undefined,
+  guest: guest ? parseBoolean(guest) : undefined,
+  countOnly: countOnly ? parseBoolean(countOnly) : undefined,
+  ...rest,
+}));
+
+export type CTXOptionsQuery = {
+  query: typeof TOptionsQuery.infer;
 };
 
 export const TGetQuery = type({

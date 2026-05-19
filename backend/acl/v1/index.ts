@@ -1,11 +1,19 @@
 // acl/v1/index.ts
 
-import { and, eq, type InferSelectModel, sql } from "drizzle-orm";
+import {
+  aliasedTable,
+  and,
+  eq,
+  type InferSelectModel,
+  or,
+  sql,
+} from "drizzle-orm";
 import { tables } from "~/db/schema";
 import {
   genArkSchemaValidator,
   HttpError,
   omit,
+  pick,
   type QueryAuth,
 } from "~/lib/bepalo-query-utils";
 import { ArkErrors, type } from "arktype";
@@ -22,6 +30,11 @@ import {
   type Session,
 } from "~/middleware";
 import { JWT } from "@bepalo/jwt";
+
+const clientUser = aliasedTable(tables.user, "client");
+const employeeUser = aliasedTable(tables.user, "employee");
+const service = aliasedTable(tables.organizationService, "service");
+const employement = aliasedTable(tables.employee, "employment");
 
 // Helper function to check calendar availability
 async function checkCalendarAvailability(
@@ -175,21 +188,31 @@ export const queryAuth = {
             eq(tables.organizationService.id, tables.appointment.serviceId),
             "organizationService",
           ],
+          task: [
+            tables.task,
+            eq(tables.task.appointmentId, tables.appointment.id),
+          ],
         },
-        where: async (req, { session }) => {
-          const employee = (session as EmployeeSession).employee;
-          // Get appointments for services assigned to this employee
-          const serviceFirstEmployee = await db
-            .select({ serviceId: tables.serviceFirstEmployee.serviceId })
-            .from(tables.serviceFirstEmployee)
-            .where(eq(tables.serviceFirstEmployee.employeeId, employee.id));
+        where: (req, { session }) =>
+          or(
+            ...(session as EmployeeSession).employments.map((employment) =>
+              eq(tables.task.employeeId, employment.id),
+            ),
+          ),
+        // where: async (req, { session }) => {
+        //   const employee = (session as EmployeeSession).employee;
+        //   // Get appointments for services assigned to this employee
+        //   const serviceFirstEmployee = await db
+        //     .select({ serviceId: tables.serviceFirstEmployee.serviceId })
+        //     .from(tables.serviceFirstEmployee)
+        //     .where(eq(tables.serviceFirstEmployee.employeeId, employee.id));
 
-          const serviceIds = serviceFirstEmployee.map((s) => s.serviceId);
-          if (serviceIds.length === 0) {
-            return sql`1 = 0`; // No appointments if no services assigned
-          }
-          return sql`${tables.appointment.serviceId} IN (${sql.join(serviceIds)})`;
-        },
+        //   const serviceIds = serviceFirstEmployee.map((s) => s.serviceId);
+        //   if (serviceIds.length === 0) {
+        //     return sql`1 = 0`; // No appointments if no services assigned
+        //   }
+        //   return sql`${tables.appointment.serviceId} IN (${sql.join(serviceIds)})`;
+        // },
       },
     },
 
@@ -297,32 +320,32 @@ export const queryAuth = {
           isActive: true,
         }),
 
-        afterQuery: async (req, ctx) => {
-          const appointment = ctx.result.appointments?.[0];
-          if (appointment) {
-            // Optionally create a task for the appointment
-            const [firstEmployee] = await ctx.transaction
-              .select({ employeeId: tables.serviceFirstEmployee.employeeId })
-              .from(tables.serviceFirstEmployee)
-              .where(
-                eq(
-                  tables.serviceFirstEmployee.serviceId,
-                  appointment.serviceId,
-                ),
-              )
-              .limit(1);
+        // afterQuery: async (req, ctx) => {
+        //   const appointment = ctx.result.appointments?.[0];
+        //   if (appointment) {
+        //     // Optionally create a task for the appointment
+        //     const [firstEmployee] = await ctx.transaction
+        //       .select({ employeeId: tables.serviceFirstEmployee.employeeId })
+        //       .from(tables.serviceFirstEmployee)
+        //       .where(
+        //         eq(
+        //           tables.serviceFirstEmployee.serviceId,
+        //           appointment.serviceId,
+        //         ),
+        //       )
+        //       .limit(1);
 
-            if (firstEmployee) {
-              await ctx.transaction.insert(tables.task).values({
-                appointmentId: appointment.id,
-                name: `Appointment: ${appointment.id}`,
-                status: "pending",
-                employeeId: firstEmployee.employeeId,
-                createdBy: appointment.clientId,
-              });
-            }
-          }
-        },
+        //     if (firstEmployee) {
+        //       await ctx.transaction.insert(tables.task).values({
+        //         appointmentId: appointment.id,
+        //         name: `Appointment: ${appointment.id}`,
+        //         status: "pending",
+        //         employeeId: firstEmployee.employeeId,
+        //         createdBy: appointment.clientId,
+        //       });
+        //     }
+        //   }
+        // },
       },
     },
 
@@ -425,6 +448,7 @@ export const queryAuth = {
       },
     },
   },
+
   task: {
     GET: {
       client: {
@@ -434,9 +458,25 @@ export const queryAuth = {
             tables.appointment,
             eq(tables.appointment.id, tables.task.appointmentId),
           ],
+          service: [
+            service,
+            eq(service.id, tables.appointment.serviceId),
+            service,
+          ],
           client: [
-            omit(tables.user, ["password"]),
-            eq(tables.user.id, tables.appointment.clientId),
+            omit(clientUser, ["password"]),
+            eq(clientUser.id, tables.appointment.clientId),
+            clientUser,
+          ],
+          employment: [
+            omit(employement, []),
+            eq(employement.id, tables.task.employeeId),
+            employement,
+          ],
+          employee: [
+            omit(employeeUser, ["password"]),
+            eq(employeeUser.id, tables.employee.userId),
+            employeeUser,
           ],
         },
         where: (req, { session }) =>
@@ -444,64 +484,126 @@ export const queryAuth = {
       },
       employee: {
         select: tables.task,
+        include: {
+          appointment: [
+            tables.appointment,
+            eq(tables.appointment.id, tables.task.appointmentId),
+          ],
+          service: [
+            service,
+            eq(service.id, tables.appointment.serviceId),
+            service,
+          ],
+          client: [
+            omit(clientUser, ["password"]),
+            eq(clientUser.id, tables.appointment.clientId),
+            clientUser,
+          ],
+          employment: [
+            omit(employement, []),
+            eq(employement.id, tables.task.employeeId),
+            employement,
+          ],
+          employee: [
+            omit(employeeUser, ["password"]),
+            eq(employeeUser.id, employement.userId),
+            employeeUser,
+          ],
+        },
         where: (req, { session }) =>
-          eq(tables.task.employeeId, (session as EmployeeSession).employee.id),
+          or(
+            ...(session as EmployeeSession).employments.map((employment) =>
+              eq(tables.task.employeeId, employment.id),
+            ),
+          ),
       },
     },
 
     POST: {
-      client: {
-        select: tables.task,
-        validateBody: async (body, req, ctx) => {
-          const b = genArkSchemaValidator(
-            omit(tables.task, ["id", "isDone", "createdAt", "updatedAt"]),
-          )(body);
-          if (!(b instanceof ArkErrors)) {
-            const [service] = await db
-              .select({ id: tables.organizationService.id })
-              .from(tables.organizationService)
-              .where(eq(tables.organizationService.id, b.serviceId as string));
-            if (!service) {
-              throw new HttpError("Service not found", Status._400_BadRequest);
-            }
-            ctx.data.service = service;
-          }
-          return b;
-        },
-        injectBody: (body, req, { data, session }) => ({
-          ...body,
-          organizationId: (data as any).service.organizationId,
-          sessionId: session.id,
-        }),
-      },
-
       employee: {
         select: tables.task,
         validateBody: async (body, req, ctx) => {
           const b = genArkSchemaValidator(
-            omit(tables.task, ["id", "isDone", "createdAt", "updatedAt"]),
+            omit(tables.task, [
+              "id",
+              "isDone",
+              "createdAt",
+              "updatedAt",
+              "nextTaskId",
+            ]),
+            {
+              forwards: true,
+              submissions: true,
+              requirements: true,
+              status: true,
+            },
           )(body);
           if (!(b instanceof ArkErrors)) {
             const [service] = await db
               .select({ id: tables.organizationService.id })
               .from(tables.organizationService)
-              .where(eq(tables.organizationService.id, b.serviceId as string));
+              .leftJoin(tables.appointment)
+              .where(
+                and(
+                  eq(tables.appointment.id, b.appointmentId as string),
+                  eq(
+                    tables.organizationService.id,
+                    tables.appointment.serviceId,
+                  ),
+                ),
+              );
             if (!service) {
               throw new HttpError("Service not found", Status._400_BadRequest);
             }
-            ctx.data.service = service;
+            ctx.data = { service };
           }
           return b;
         },
         injectBody: (body, req, { data, session }) => ({
           ...body,
-          organizationId: (session as EmployeeSession).employee.organizationId,
-          sessionId: session.id,
+          status: "pending",
+          // requirements: body.requirements ?? {},
+          organizationId: (data as any).service.organizationId,
         }),
+      },
+    },
+
+    PATCH: {
+      client: {
+        select: tables.task,
+        validateBody: genArkSchemaValidator(pick(tables.task, ["submissions"])),
+        where: (req, { session }) =>
+          eq(tables.appointment.clientId, session.userId),
+      },
+
+      employee: {
+        select: tables.task,
+        validateBody: genArkSchemaValidator(
+          pick(tables.task, [
+            "requirements",
+            "forwards",
+            "status",
+            "isDone",
+            "name",
+            "nextTaskId",
+          ]),
+          true,
+        ),
+        injectBody: (body) => {
+          // console.log(body);
+          return body;
+        },
+        where: (req, { session }) =>
+          or(
+            ...(session as EmployeeSession).employments.map((employment) =>
+              eq(tables.task.employeeId, employment.id),
+            ),
+          ),
       },
     },
   },
 
+  // Keep all existing configurations below unchanged
   organization: {
     GET: {
       guest: {
@@ -524,7 +626,6 @@ export const queryAuth = {
           ],
         },
       },
-
       organization_admin: {
         select: tables.organization,
         include: {
@@ -542,7 +643,6 @@ export const queryAuth = {
           eq(tables.organization.adminId, session.userId),
       },
     },
-
     POST: {
       guest: {
         select: tables.organization,
@@ -551,6 +651,7 @@ export const queryAuth = {
             "id",
             "adminId",
             "rating",
+            "isActive",
             "billingStart",
             "billingEnd",
             "createdAt",
@@ -590,24 +691,14 @@ export const queryAuth = {
           if (!admin) throw new HttpError("Insert admin user failed", 500);
           body.adminId = admin.id;
         },
-        // onQueryError: async (req, ctx) => {
-        //   ctx.dontRollback = true;
-        //   // const data = ctx.data as { admin: Record<string, unknown> };
-        //   // if (data.admin?.id) {
-        //   //   await db
-        //   //     .delete(tables.user)
-        //   //     .where(eq(tables.user.id, data.admin.id as string));
-        //   // }
-        // },
       },
     },
-
     DELETE: {
       organization_admin: {
         select: tables.organization,
         where: (req, { session }) =>
           eq(
-            tables.organizationCalendar.organizationId,
+            tables.organization.id,
             (session as OrganizationSession).organization.id,
           ),
       },
@@ -633,7 +724,6 @@ export const queryAuth = {
           ],
         },
       },
-
       organization_admin: {
         select: tables.organizationCalendar,
         include: {
@@ -651,7 +741,6 @@ export const queryAuth = {
             (session as OrganizationSession).organization.id,
           ),
       },
-
       employee: {
         select: tables.organizationCalendar,
         include: {
@@ -662,19 +751,11 @@ export const queryAuth = {
               tables.organizationCalendar.organizationId,
             ),
           ],
-          employee: [
-            tables.employee,
-            eq(
-              tables.employee.organizationId,
-              tables.organizationCalendar.organizationId,
-            ),
-          ],
         },
         where: (req, { session }) =>
           eq(tables.organizationCalendar.id, tables.employee.calendarId),
       },
     },
-
     POST: {
       organization_admin: {
         select: tables.organizationCalendar,
@@ -693,7 +774,6 @@ export const queryAuth = {
         }),
       },
     },
-
     PATCH: {
       organization_admin: {
         select: tables.organizationCalendar,
@@ -717,7 +797,6 @@ export const queryAuth = {
           ),
       },
     },
-
     DELETE: {
       organization_admin: {
         select: tables.organizationCalendar,
@@ -759,7 +838,6 @@ export const queryAuth = {
         },
         where: () => eq(tables.organization.isActive, true),
       },
-
       organization_admin: {
         select: tables.organizationService,
         include: {
@@ -778,6 +856,14 @@ export const queryAuth = {
               tables.organizationService.organizationId,
             ),
           ],
+          firstEmployees: [
+            tables.serviceFirstEmployee,
+            eq(
+              tables.serviceFirstEmployee.serviceId,
+              tables.organizationService.id,
+            ),
+            "serviceFirstEmployee",
+          ],
         },
         where: (req, { session }) =>
           eq(
@@ -785,7 +871,6 @@ export const queryAuth = {
             (session as OrganizationSession).organization.id,
           ),
       },
-
       employee: {
         select: tables.organizationService,
         include: {
@@ -796,19 +881,31 @@ export const queryAuth = {
               tables.organizationService.organizationId,
             ),
           ],
-          employee: [
-            tables.employee,
-            eq(
-              tables.employee.organizationId,
-              tables.organizationService.organizationId,
-            ),
-          ],
         },
-        where: () =>
-          eq(tables.organizationService.id, tables.employee.calendarId),
+        where: (req, { session }) =>
+          or(
+            ...(session as EmployeeSession).employments.map((employment) =>
+              eq(
+                tables.organizationService.organizationId,
+                employment.organizationId,
+              ),
+            ),
+          ),
+        // where: async (req, { session }) => {
+        //   const employee = (session as EmployeeSession).employee;
+        //   const serviceFirstEmployee = await db
+        //     .select({ serviceId: tables.serviceFirstEmployee.serviceId })
+        //     .from(tables.serviceFirstEmployee)
+        //     .where(eq(tables.serviceFirstEmployee.employeeId, employee.id));
+
+        //   const serviceIds = serviceFirstEmployee.map((s) => s.serviceId);
+        //   if (serviceIds.length === 0) {
+        //     return sql`1 = 0`;
+        //   }
+        //   return sql`${tables.organizationService.id} IN (${sql.join(serviceIds)})`;
+        // },
       },
     },
-
     POST: {
       organization_admin: {
         select: tables.organizationService,
@@ -826,7 +923,6 @@ export const queryAuth = {
         }),
       },
     },
-
     PATCH: {
       organization_admin: {
         select: tables.organizationService,
@@ -851,7 +947,6 @@ export const queryAuth = {
           ),
       },
     },
-
     DELETE: {
       organization_admin: {
         select: tables.organizationService,
@@ -866,10 +961,13 @@ export const queryAuth = {
 
   employee: {
     GET: {
-      employee: {
+      mine: {
         select: tables.employee,
         include: {
-          user: [tables.user, eq(tables.user.id, tables.employee.userId)],
+          user: [
+            omit(tables.user, ["password"]),
+            eq(tables.user.id, tables.employee.userId),
+          ],
           organization: [
             tables.organization,
             eq(tables.organization.id, tables.employee.organizationId),
@@ -881,7 +979,29 @@ export const queryAuth = {
         },
         where: (req, { session }) => eq(tables.employee.userId, session.userId),
       },
-
+      employee: {
+        select: tables.employee,
+        include: {
+          user: [
+            omit(tables.user, ["password"]),
+            eq(tables.user.id, tables.employee.userId),
+          ],
+          organization: [
+            tables.organization,
+            eq(tables.organization.id, tables.employee.organizationId),
+          ],
+          organizationCalendar: [
+            tables.organizationCalendar,
+            eq(tables.organizationCalendar.id, tables.employee.calendarId),
+          ],
+        },
+        where: (req, { session }) =>
+          or(
+            ...(session as EmployeeSession).employments.map((employment) =>
+              eq(tables.employee.organizationId, employment.organizationId),
+            ),
+          ),
+      },
       organization_admin: {
         select: tables.employee,
         include: {
@@ -906,7 +1026,6 @@ export const queryAuth = {
           ),
       },
     },
-
     POST: {
       organization_admin: {
         select: tables.employee,
@@ -935,13 +1054,11 @@ export const queryAuth = {
           return {
             ...b,
             userId: user.id,
-            organizationId: (session as EmployeeSession).employee
-              .organizationId,
+            organizationId: (session as OrganizationSession).organization.id,
           };
         },
       },
     },
-
     PATCH: {
       organization_admin: {
         select: tables.employee,
@@ -961,7 +1078,6 @@ export const queryAuth = {
           ),
       },
     },
-
     DELETE: {
       organization_admin: {
         select: tables.employee,
@@ -976,18 +1092,33 @@ export const queryAuth = {
 
   user: {
     GET: {
+      guest: {
+        select: omit(tables.user, [
+          "password",
+          "preferences",
+          "profile",
+          "updatedAt",
+        ]),
+        where: () =>
+          or(eq(tables.user.role, "client"), eq(tables.user.role, "employee")),
+      },
       mine: {
         select: omit(tables.user, ["password", "updatedAt"]),
         where: (req, { session }) => eq(tables.user.id, session.userId),
       },
     },
-
     POST: {
       guest: {
         select: omit(tables.user, ["password"]),
         validateBody: genArkSchemaValidator({
-          ...omit(tables.user, ["id", "role", "createdAt", "updatedAt"]),
-          omit: type("'user'|'organization_admin'"),
+          ...omit(tables.user, [
+            "id",
+            "preferences",
+            "profile",
+            "createdAt",
+            "updatedAt",
+          ]),
+          role: "'client'|'employee'",
         }),
         injectBody: (body) => ({
           ...body,
@@ -995,7 +1126,6 @@ export const queryAuth = {
         }),
       },
     },
-
     PATCH: {
       mine: {
         select: omit(tables.user, ["password"]),
@@ -1013,7 +1143,6 @@ export const queryAuth = {
         where: (req, { session }) => eq(tables.user.id, session.userId),
       },
     },
-
     DELETE: {
       mine: {
         select: omit(tables.user, ["password"]),
@@ -1032,7 +1161,6 @@ export const queryAuth = {
         where: (req, { session }) => eq(tables.session.id, session.id),
       },
     },
-
     POST: {
       guest: {
         select: omit(tables.session, ["updatedAt"]),
@@ -1089,14 +1217,12 @@ export const queryAuth = {
               path: "/",
               expires: new Date(Date.now() + securityConfig.sessionMaxAge),
               httpOnly: true,
-              // secure: config.isProduction,
             }),
           );
           ctx.result.token = sessionCookieToken;
         },
       },
     },
-
     DELETE: {
       mine: {
         select: tables.session,

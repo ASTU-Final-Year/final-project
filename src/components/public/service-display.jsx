@@ -50,7 +50,8 @@ import {
 } from "lucide-react";
 import RequestHandler from "@/lib/request-handler";
 import { CalendarDatePicker } from "../calendar-date-picker";
-import { useRouter } from "next/navigation";
+import { redirect, useRouter } from "next/navigation";
+import { useSessionStore } from "@/store";
 
 const sectorIcons = {
   Beauty: Scissors,
@@ -164,8 +165,8 @@ export default function PublicOrganizationService({ service }) {
       return;
     }
 
-    if (!isClient) {
-      toast.error("Please login to book an appointment");
+    if (!user || (user && !isClient)) {
+      toast.error("Please login as a client to book an appointment");
       return;
     }
 
@@ -498,6 +499,7 @@ export default function PublicOrganizationService({ service }) {
                     <Button
                       onClick={handleBookAppointment}
                       disabled={
+                        !user ||
                         !isClient ||
                         !selectedDate ||
                         !selectedTime ||
@@ -510,8 +512,10 @@ export default function PublicOrganizationService({ service }) {
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           Booking...
                         </>
-                      ) : (
+                      ) : isClient ? (
                         "Confirm Booking"
+                      ) : (
+                        "Login as a Client First"
                       )}
                     </Button>
                   </div>

@@ -306,6 +306,8 @@ export const sqTasks = sqliteTable("tasks", {
   id: cpuuid("id").primaryKey().notNull().$defaultFn(randomCUUID),
   isDone: integer("is_done", { mode: "boolean" }).notNull().default(false),
   name: text("name", { length: 54 }).notNull(),
+  startTime: integer("start_time", { mode: "timestamp" }).notNull(),
+  endTime: integer("end_time", { mode: "timestamp" }).notNull(),
   status: text("status", { length: 20 }).notNull(),
   requirements: text("requirements", { mode: "json" }),
   submissions: text("submissions", { mode: "json" }),

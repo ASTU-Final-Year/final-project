@@ -1,7 +1,14 @@
-import { json, RouterFramework, type SocketAddress } from "@bepalo/router";
+import {
+  cors,
+  json,
+  limitRate,
+  RouterFramework,
+  type CTXAddress,
+  type SocketAddress,
+} from "@bepalo/router";
 import type { CTXMain } from "./base";
 import { config } from "./config";
-import { db, initDb, type Transaction } from "./db";
+import { db, initDb, type Transaction } from "~/db";
 import fs from "fs";
 import path, { resolve } from "path";
 import { LOGE, LOGI } from "./lib";
@@ -10,6 +17,7 @@ import { getBepaloQueryRouter } from "./lib/bepalo-query";
 import queryAuth from "~/acl/v1";
 import { tables } from "./db/schema";
 import type { CTXSession } from "./middleware";
+import { Time } from "@bepalo/time";
 
 console.log("-".repeat(80));
 console.log(`💫 Launching...`);
@@ -49,12 +57,30 @@ router.append(
     typeof tables,
     typeof db,
     Transaction,
-    { data?: Record<string, unknown> }
+    CTXAddress & { data?: Record<string, unknown> }
   >(db, {
     tables,
     queryAuth,
     pathPrefix: "/query/v1/",
     isProduction: config.isProduction,
+    routeFilters: [
+      limitRate({
+        key: (_req, ctx) => ctx.address.address,
+        maxTokens: 200,
+        refillInterval: Time.every(60).seconds._ms,
+        refillRate: 100,
+        setXRateLimitHeaders: true,
+      }),
+      cors({
+        origins: [
+          `${config.url}:${config.port}`,
+          `${config.url}:${config.frontendPort}`,
+        ],
+        allowedHeaders: ["Content-Type", "Authorization", "Cache-Control"],
+        methods: ["HEAD", "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        credentials: true,
+      }),
+    ],
   }),
 );
 
@@ -160,3 +186,19 @@ process.on("unhandledRejection", (reason, promise) => {
   cleanup();
   process.exit(1);
 });
+
+// setInterval(async () => {
+//   const res = await router.respond(
+//     new Request("http://localhost:4000/api/v1/cron/process-tasks", {
+//       headers: [["Authorization", `Bearer ${process.env.CRON_SECRET}`]],
+//     }),
+//     {
+//       address: {
+//         family: "AFINET",
+//         address: "127.0.0.1",
+//         port: 23243,
+//       },
+//     },
+//   );
+//   console.log("-- running cron " + res.status);
+// }, 30_000);

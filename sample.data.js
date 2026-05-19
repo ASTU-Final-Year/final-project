@@ -556,7 +556,7 @@ export const sampleData = {
       "description": "Monday to Friday, government hours",
       "available": {
         "weekly": [1, 2, 3, 4, 5],
-        "hours": [["08:30", "16:30"]]
+        "hours": [["08:30", "17:30"]]
       },
       "unavailable": {
         "hours": [["11:30", "14:00"]]

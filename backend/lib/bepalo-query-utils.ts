@@ -16,11 +16,47 @@ export class HttpError extends Error {
   }
 }
 
-type JoinSelector = SQL | SQLWrapper | undefined;
+type JoinSelector<T extends Table> =
+  | SQL
+  | SQLWrapper
+  | undefined
+  | { (aliasedTable: T): SQL | SQLWrapper | undefined };
 
-type Include<S extends Table | Record<string, Table>> = S extends Table
+type IncludeTable<S extends Table | Record<string, Table>> = S extends Table
   ? Partial<Omit<Pick<S[keyof S], keyof S[keyof S]>, keyof S[keyof S]>>
   : Partial<Omit<Pick<S[keyof S], keyof S[keyof S]>, keyof S[keyof S]>>;
+
+type Include<
+  S extends Record<string, Table>,
+  K extends keyof S,
+  N extends keyof S | string = K | string,
+> = N extends K
+  ? Partial<
+      Record<
+        K,
+        | [IncludeTable<S[K]>, JoinSelector<S[K]>]
+        | [IncludeTable<S[K]>, JoinSelector<S[K]>, K | Table]
+        | [
+            IncludeTable<S[K]>,
+            JoinSelector<S[K]>,
+            K | Table,
+            "left" | "middle" | "right",
+          ]
+      >
+    >
+  : Partial<
+      Record<
+        N,
+        | [IncludeTable<S[K]>, JoinSelector<S[K]>]
+        | [IncludeTable<S[K]>, JoinSelector<S[K]>, K | Table]
+        | [
+            IncludeTable<S[K]>,
+            JoinSelector<S[K]>,
+            K | Table,
+            "left" | "middle" | "right",
+          ]
+      >
+    >;
 
 type _QueryAuthEntry<
   S extends Record<string, Table>,
@@ -46,22 +82,8 @@ type _QueryAuthEntry<
   /**
    * used to limit fields on included tables for selection
    */
-  include?: Partial<
-    Record<
-      keyof S,
-      | [Include<S>, JoinSelector]
-      | [Include<S>, JoinSelector, keyof S]
-      | [Include<S>, JoinSelector, keyof S, "left" | "middle" | "right"]
-    >
-  > &
-    Partial<
-      Record<
-        string,
-        | [Include<S>, JoinSelector]
-        | [Include<S>, JoinSelector, keyof S]
-        | [Include<S>, JoinSelector, keyof S, "left" | "middle" | "right"]
-      >
-    >;
+  include?: Include<S, keyof S>;
+  // Partial<Record<string, Include<S, keyof S>>>;
 
   /**
    * used to do custom validation and parsing on body

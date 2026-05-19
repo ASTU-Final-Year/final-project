@@ -299,6 +299,8 @@ export const pgTasks = pgTable("tasks", {
   id: cpuuid("id").primaryKey().notNull().$defaultFn(randomCUUID),
   isDone: boolean("is_done").default(false).notNull(),
   name: varchar("name", { length: 54 }).notNull(),
+  startTime: timestamp("start_time", { withTimezone: true }).notNull(),
+  endTime: timestamp("end_time", { withTimezone: true }).notNull(),
   status: varchar("status", { length: 20 }).notNull(),
   requirements: jsonb("requirements").default({}),
   submissions: jsonb("submissions").default({}),

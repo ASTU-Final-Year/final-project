@@ -35,7 +35,7 @@ export type OrganizationSession = {
 };
 
 export type EmployeeSession = {
-  employee: Required<InferSelectModel<typeof tables.employee>>;
+  employments: Required<InferSelectModel<typeof tables.employee>>[];
 };
 
 export type CTXSession = {
