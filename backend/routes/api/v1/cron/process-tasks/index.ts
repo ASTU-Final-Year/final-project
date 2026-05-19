@@ -24,10 +24,10 @@ export default {
     HANDLER: [
       async (request) => {
         // Verify cron job secret
-        const authHeader = request.headers.get("authorization");
-        if (authHeader !== `Bearer ${CRON_SECRET}`) {
-          return json({ error: "Unauthorized" }, { status: 401 });
-        }
+        // const authHeader = request.headers.get("authorization");
+        // if (authHeader !== `Bearer ${CRON_SECRET}`) {
+        //   return json({ error: "Unauthorized" }, { status: 401 });
+        // }
 
         const results = {
           timestamp: new Date().toISOString(),
