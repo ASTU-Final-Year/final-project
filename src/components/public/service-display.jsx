@@ -51,6 +51,7 @@ import {
 import RequestHandler from "@/lib/request-handler";
 import { CalendarDatePicker } from "../calendar-date-picker";
 import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
 
 const sectorIcons = {
   Beauty: Scissors,
@@ -62,6 +63,25 @@ const sectorIcons = {
   Banking: Landmark,
   Telecommunications: Wifi,
   Government: Building2,
+};
+
+const sectorImages = {
+  Beauty: "https://images.unsplash.com/photo-1560066984-138dadb4c035?q=80&w=800&auto=format&fit=crop",
+  Healthcare: "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?q=80&w=800&auto=format&fit=crop",
+  Fitness: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?q=80&w=800&auto=format&fit=crop",
+  Automotive: "https://images.unsplash.com/photo-1486006920555-c77dce18193b?q=80&w=800&auto=format&fit=crop",
+  "Food & Beverage": "https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=800&auto=format&fit=crop",
+  Technology: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=800&auto=format&fit=crop",
+  Banking: "https://images.unsplash.com/photo-1501167786227-4cba60f6d58f?q=80&w=800&auto=format&fit=crop",
+  Telecommunications: "https://images.unsplash.com/photo-1544197150-b99a580bb7a8?q=80&w=800&auto=format&fit=crop",
+  Government: "https://images.unsplash.com/photo-1541872703-74c5e44368f9?q=80&w=800&auto=format&fit=crop",
+};
+
+const getServiceImage = (sector) => {
+  const normalized = Object.keys(sectorImages).find(
+    (key) => key.toLowerCase() === (sector || "").toLowerCase()
+  );
+  return sectorImages[normalized] || "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=800&auto=format&fit=crop";
 };
 
 export default function PublicOrganizationService({ service }) {
@@ -223,138 +243,160 @@ export default function PublicOrganizationService({ service }) {
   if (!service) return null;
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
-      {/* Service Header */}
-      <div className="mb-8">
-        <Badge variant="secondary" className="mb-4 gap-2">
-          {service.isActive ? (
-            <>
-              <CheckCircle className="w-3 h-3" />
-              Available
-            </>
-          ) : (
-            "Unavailable"
-          )}
-        </Badge>
-        <h1 className="text-3xl md:text-4xl font-bold mb-4">{service.name}</h1>
-        <p className="text-muted-foreground text-lg">{service.description}</p>
-      </div>
+    <div className="container mx-auto px-4 py-12 max-w-6xl">
+      <div className="grid lg:grid-cols-3 gap-8 items-start">
+        {/* Main Content - Left Column (Unified Cohesive Card) */}
+        <div className="lg:col-span-2">
+          <Card className="rounded-2xl border border-slate-200 overflow-hidden bg-white shadow-sm flex flex-col">
+            {/* Service matching Image with badge at the top */}
+            <div className="relative h-64 md:h-[420px] w-full overflow-hidden bg-slate-100 shrink-0">
+              <img
+                src={getServiceImage(service.organization?.sector)}
+                alt={service.name}
+                className="h-full w-full object-cover"
+              />
+              <div className="absolute top-4 right-4 flex gap-2">
+                <Badge className={cn("text-white backdrop-blur-sm border shadow-sm font-semibold rounded-full px-3 py-1 text-xs", service.isActive ? "bg-emerald-500/90 border-emerald-400" : "bg-rose-500/90 border-rose-400")}>
+                  {service.isActive ? "Available" : "Unavailable"}
+                </Badge>
+              </div>
+            </div>
 
-      <div className="grid lg:grid-cols-3 gap-8">
-        {/* Main Content - Left Column */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Service Details */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Service Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <DollarSign className="w-5 h-5 text-green-600" />
-                  <span className="font-medium">Price</span>
-                </div>
-                <span className="text-2xl font-bold">
+            <CardContent className="p-6 md:p-8 space-y-6">
+              {/* Price and Sector badge */}
+              <div className="flex items-center justify-between">
+                <div className="text-3xl font-extrabold text-primary">
                   ETB {service.price?.toFixed(2) || "0.00"}
-                </span>
+                </div>
+                {service.organization?.sector && (
+                  <Badge
+                    variant="outline"
+                    className="border-primary/20 text-primary bg-primary/5 rounded-full px-3 py-1 text-xs font-semibold"
+                  >
+                    {service.organization.sector}
+                  </Badge>
+                )}
               </div>
 
-              {service.calendar && (
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Calendar className="w-4 h-4" />
-                  <span>
-                    Available:{" "}
-                    {service.calendar.available?.weekly
-                      ?.map(
-                        (d) =>
-                          ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][
-                            d - 1
-                          ],
-                      )
-                      .join(", ")}
-                  </span>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+              {/* Service title and description */}
+              <div className="space-y-3">
+                <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 leading-tight">
+                  {service.name}
+                </h1>
+                {service.description && (
+                  <p className="text-slate-600 text-sm md:text-base leading-relaxed">
+                    {service.description}
+                  </p>
+                )}
+              </div>
 
-          {/* Organization Info */}
-          {service.organization && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <SectorIcon className="w-5 h-5" />
-                  Service Provider
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <h3 className="font-semibold text-lg mb-2">
-                    {service.organization.name}
-                  </h3>
-                  <div className="space-y-2 text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4" />
-                      <span>{service.organization.address}</span>
+              {/* Location address */}
+              <div className="flex items-center gap-2 text-sm text-slate-500 font-medium">
+                <MapPin className="h-4.5 w-4.5 text-slate-400 shrink-0" />
+                <span>{service.organization?.address || "Address not listed"}</span>
+              </div>
+
+              {/* Divider */}
+              <div className="border-t border-slate-100 dark:border-slate-800" />
+
+              {/* Attributes grid (weekly hours, quality verified) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                {service.calendar && (
+                  <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/50 px-4 py-3 rounded-xl border border-slate-150/50 text-slate-650 min-w-0">
+                    <Calendar className="w-4.5 h-4.5 text-slate-450 shrink-0" />
+                    <span className="truncate">
+                      Available:{" "}
+                      {service.calendar.available?.weekly
+                        ?.map(
+                          (d) =>
+                            ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][
+                              d - 1
+                            ],
+                        )
+                        .join(", ")}
+                    </span>
+                  </div>
+                )}
+                <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/50 px-4 py-3 rounded-xl border border-slate-150/50 text-slate-650 min-w-0">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0 animate-pulse" />
+                  <span className="truncate font-semibold text-slate-700">Premium Quality Verified</span>
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div className="border-t border-slate-100 dark:border-slate-800" />
+
+              {/* Service Provider Profile Section */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/55 p-4 rounded-xl border border-slate-100">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-base border border-primary/20 shrink-0">
+                    {service.organization?.name?.substring(0, 2).toUpperCase() || "SP"}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-sm font-bold text-slate-900 truncate">
+                      {service.organization?.name}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Mail className="w-4 h-4" />
-                      <span>{service.organization.email}</span>
+                    <div className="text-xs text-slate-450 truncate">
+                      {service.organization?.email}
                     </div>
-                    {service.organization.phone && (
-                      <div className="flex items-center gap-2">
-                        <Phone className="w-4 h-4" />
-                        <span>{service.organization.phone}</span>
+                    {service.organization?.phone && (
+                      <div className="text-xs text-slate-400 mt-0.5 font-medium">
+                        {service.organization.phone}
                       </div>
                     )}
                   </div>
                 </div>
-                {service.organization.isGovernment && (
-                  <Badge variant="outline" className="gap-1">
-                    <Building2 className="w-3 h-3" />
-                    Government Organization
+                {service.organization?.isGovernment && (
+                  <Badge variant="outline" className="gap-1 rounded-full text-slate-500 border-slate-200 bg-white shadow-sm shrink-0">
+                    <Building2 className="w-3.5 h-3.5" />
+                    Government Org
                   </Badge>
                 )}
-              </CardContent>
-            </Card>
-          )}
+              </div>
 
-          {/* Additional Info */}
-          <Card>
-            <CardHeader>
-              <CardTitle>What to Expect</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2">
-                <li className="flex items-start gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-500 mt-0.5" />
-                  <span>Professional service delivery</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-500 mt-0.5" />
-                  <span>Timely appointment handling</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-500 mt-0.5" />
-                  <span>Quality assurance guaranteed</span>
-                </li>
-              </ul>
+              {/* Divider */}
+              <div className="border-t border-slate-100 dark:border-slate-800" />
+
+              {/* What to Expect checklist */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">What to Expect</h4>
+                <ul className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <li className="flex items-center gap-2.5 text-xs font-semibold text-slate-650">
+                    <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
+                    Professional delivery
+                  </li>
+                  <li className="flex items-center gap-2.5 text-xs font-semibold text-slate-650">
+                    <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
+                    Timely appointment
+                  </li>
+                  <li className="flex items-center gap-2.5 text-xs font-semibold text-slate-650">
+                    <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
+                    Quality guaranteed
+                  </li>
+                </ul>
+              </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Booking Sidebar - Right Column */}
         <div className="lg:col-span-1">
-          <Card className="sticky top-8">
-            <CardHeader>
-              <CardTitle>Book This Service</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="p-4 bg-primary/10 rounded-lg">
-                <div className="text-2xl font-bold text-primary">
+          <Card className="sticky top-8 rounded-2xl border border-slate-200 overflow-hidden bg-white shadow-sm flex flex-col">
+            {/* Same image style as first card at the top */}
+            <div className="relative h-44 w-full overflow-hidden bg-slate-100 shrink-0">
+              <img
+                src={getServiceImage(service.organization?.sector)}
+                alt={service.name}
+                className="h-full w-full object-cover"
+              />
+            </div>
+
+            <CardContent className="p-6 space-y-5">
+              <div className="p-4 bg-primary/5 rounded-xl border border-primary/10">
+                <div className="text-3xl font-extrabold text-primary">
                   ETB {service.price?.toFixed(2) || "0.00"}
                 </div>
-                <div className="text-sm text-muted-foreground">
+                <div className="text-xs font-medium text-slate-400 mt-0.5">
                   per appointment
                 </div>
               </div>
@@ -368,7 +410,7 @@ export default function PublicOrganizationService({ service }) {
               >
                 <DialogTrigger asChild>
                   <Button
-                    className="w-full"
+                    className="w-full text-sm font-semibold h-11 rounded-full shadow-md transition-all hover:shadow-lg"
                     size="lg"
                     disabled={!service.isActive}
                   >
