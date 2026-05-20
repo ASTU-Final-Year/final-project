@@ -338,7 +338,7 @@ export function PricingComparisonTable() {
           </thead>
           <tbody>
             <tr className="hover:bg-indigo-50/30 transition-colors">
-              <td className="p-4 border-b border-r border-indigo-100 font-medium text-indigo-700">
+              <td className="p-4 border-b border-r border-indigo-100 font-medium text-gray-900">
                 Max Employees
               </td>
               {plans.map((plan) => (
@@ -348,7 +348,7 @@ export function PricingComparisonTable() {
               ))}
             </tr>
             <tr className="hover:bg-indigo-50/30 transition-colors">
-              <td className="p-4 border-b border-r border-indigo-100 font-medium text-indigo-700">
+              <td className="p-4 border-b border-r border-indigo-100 font-medium text-gray-900">
                 Max Services
               </td>
               {plans.map((plan) => (
@@ -359,7 +359,7 @@ export function PricingComparisonTable() {
             </tr>
             {allFeatures.map((feature, idx) => (
               <tr key={idx} className="hover:bg-indigo-50/30 transition-colors">
-                <td className="p-4 border-b border-r border-indigo-100 font-medium text-indigo-700 text-sm">
+                <td className="p-4 border-b border-r border-indigo-100 font-medium text-gray-900 text-sm">
                   {feature}
                 </td>
                 {plans.map((plan) => (
