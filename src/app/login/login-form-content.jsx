@@ -116,7 +116,7 @@ export default function LoginFormContent({ searchParams }) {
                     className={cn(
                       "pl-10 h-11",
                       error &&
-                        "border-destructive focus-visible:ring-destructive",
+                      "border-destructive focus-visible:ring-destructive",
                     )}
                   />
                 </div>
@@ -150,7 +150,7 @@ export default function LoginFormContent({ searchParams }) {
                     className={cn(
                       "pl-10 pr-10 h-11",
                       error &&
-                        "border-destructive focus-visible:ring-destructive",
+                      "border-destructive focus-visible:ring-destructive",
                     )}
                   />
                   <button
