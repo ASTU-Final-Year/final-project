@@ -1,193 +1,975 @@
+// src/app/dashboard/client/page.jsx - Main Client Dashboard
 "use client";
 
-import { useEffect, useState } from "react";
-import RequestHandler from "@/lib/request-handler";
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-  Briefcase,
-  Users,
   CalendarDays,
-  Activity,
+  Clock,
+  MapPin,
+  Building2,
   User,
+  Phone,
+  Mail,
+  CheckCircle,
+  Circle,
+  AlertCircle,
+  ChevronRight,
+  Star,
+  StarHalf,
   Loader2,
+  FileText,
+  CreditCard,
+  MessageCircle,
+  Bell,
+  Calendar,
+  TrendingUp,
+  Award,
+  Clock as ClockIcon,
 } from "lucide-react";
-import { useClientStore, useSessionStore } from "@/store";
+import RequestHandler from "@/lib/request-handler";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
-import Auth from "@/lib/auth";
+import { format } from "date-fns";
 
-export default function DashboardOverview() {
-  // const [client, setClient] = useState(null);
-  // const [appointments, setAppointments] = useState(null);
-  const client = useClientStore(({ client }) => client);
-  const setClient = useClientStore(({ setClient }) => setClient);
-  const appointments = useClientStore(({ appointments }) => appointments);
-  const setAppointments = useClientStore(
-    ({ setAppointments }) => setAppointments,
-  );
-  const clientStats = useClientStore(({ clientStats }) => clientStats);
-  const setClientStats = useClientStore(({ setClientStats }) => setClientStats);
-  // const session = useSessionStore(({ session }) => session);
-  const [stats, setStats] = useState({
-    appointments: 0,
+// Helper functions
+const formatDate = (dateString) => {
+  if (!dateString) return "Not scheduled";
+  return new Date(dateString).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   });
-  const [isLoading, setIsLoading] = useState(clientStats == null);
+};
 
-  useEffect(() => {
-    Auth.checkSession();
-  }, []);
+const formatTime = (dateString) => {
+  if (!dateString) return "";
+  return new Date(dateString).toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        const clientRes = await RequestHandler.Get(
-          "/query/v1/user?mine&~role=client",
-        );
-        if (clientRes.ok) {
-          const {
-            users: [client],
-          } = await clientRes.json();
-          setClient(client);
-          const clientId = client.id;
+const getStatusColor = (status) => {
+  switch (status) {
+    case "completed":
+      return "bg-green-100 text-green-700 border-green-200";
+    case "in-progress":
+      return "bg-blue-100 text-blue-700 border-blue-200";
+    case "scheduled":
+      return "bg-yellow-100 text-yellow-700 border-yellow-200";
+    case "canceled":
+      return "bg-red-100 text-red-700 border-red-200";
+    default:
+      return "bg-gray-100 text-gray-700 border-gray-200";
+  }
+};
 
-          // Fetch aggregate stats concurrently
-          const [dataRes] = await Promise.all([
-            RequestHandler.Get(`/query/v1/appointment?~clientId=${clientId}`),
-          ]);
+// Task Status Badge Component
+const TaskStatusBadge = ({ task }) => {
+  const isCompleted = task.isDone || task.status === "completed";
+  const isActive = task.status === "active" && !isCompleted;
+  const isPending = task.status === "pending" && !isCompleted;
 
-          if (dataRes.ok) {
-            const { count, appointments } = await dataRes.json();
-            setAppointments(appointments);
-            setClientStats({ appointments: count || 0 });
-          }
-        }
-      } catch (error) {
-        console.error("Failed to load overview data", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchDashboardData();
-  }, [setClient, setClientStats, setAppointments]);
-
-  if (isLoading)
+  if (isCompleted) {
+    return <Badge className="bg-green-100 text-green-700">Completed</Badge>;
+  }
+  if (isActive) {
+    return <Badge className="bg-blue-100 text-blue-700">In Progress</Badge>;
+  }
+  if (
+    isPending &&
+    task.requirements &&
+    Object.keys(task.requirements).length > 0
+  ) {
     return (
-      <div className="h-48 flex items-center justify-center border rounded bg-card">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
+      <Badge className="bg-yellow-100 text-yellow-700">Action Required</Badge>
     );
-  if (!client) return <div>Client not found.</div>;
+  }
+  return <Badge variant="secondary">Pending</Badge>;
+};
+
+// Rating Component
+const StarRating = ({ rating, onRate, size = "md", readonly = false }) => {
+  const [hover, setHover] = useState(0);
+  const stars = [1, 2, 3, 4, 5];
+  const sizeClass =
+    size === "sm" ? "h-3 w-3" : size === "lg" ? "h-6 w-6" : "h-5 w-5";
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      {/* Client Profile Card */}
-      <Card className="border-primary/20">
-        <CardContent className="p-6">
-          <div className="flex items-start gap-6">
-            <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center border-2 border-primary/20">
-              <User className="h-10 w-10 text-primary" />
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <h2 className="text-2xl font-bold">
-                  {client.firstname + " " + client.lastname}
-                </h2>
-                {/* <Badge className="bg-primary/10 text-primary border-primary/20">
-                  Verified
-                </Badge> */}
-              </div>
-              <p className="text-muted-foreground mb-4">
-                <b>Client</b>
-              </p>
-              <div className="flex gap-6">
-                <div>
-                  <p className="text-sm text-muted-foreground">Email</p>
-                  <p className="font-medium">{client.email}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Phone</p>
-                  <p className="font-medium">{client.phone}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Joined</p>
-                  <p className="font-medium">
-                    {new Date(client.createdAt).getFullYear()}
-                  </p>
-                </div>
-              </div>
-            </div>
-            {/* <Button variant="outline" size="sm">
-              Edit Profile
-            </Button> */}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* <div>
-        <h2 className="text-2xl font-bold tracking-tight">
-          Welcome back, {client.firstname + " " + client.lastname}
-        </h2>
-        <p className="text-muted-foreground">
-          Here is an overview of your workspace today.
-        </p>
-      </div> */}
-
-      <div className="grid gap-3 grid-cols-1 md:grid-cols-2">
-        <StatCard
-          title="Appointments"
-          value={clientStats.appointments}
-          href={"/dashboard/client/appointments"}
-          icon={CalendarDays}
-        />
-        <StatCard
-          title="Client Status"
-          // value={client.isActive ? "Active" : "Inactive"}
-          value={"Active"}
-          icon={Activity}
-        />
-      </div>
-    </div>
-  );
-}
-
-const StatCardTitle = ({ href, className, children, ...props }) => {
-  return href ? (
-    <Link
-      href={href}
-      className={cn(
-        "flex flex-row items-center justify-between space-y-0 hover:underline w-full",
-        className,
-      )}
-      {...props}
-    >
-      {children}
-    </Link>
-  ) : (
-    <div
-      className={cn(
-        "flex flex-row items-center justify-between space-y-0 w-full",
-        className,
-      )}
-      {...props}
-    >
-      {children}
+    <div className="flex gap-0.5">
+      {stars.map((star) => (
+        <button
+          key={star}
+          type="button"
+          disabled={readonly}
+          onClick={() => !readonly && onRate?.(star)}
+          onMouseEnter={() => !readonly && setHover(star)}
+          onMouseLeave={() => !readonly && setHover(0)}
+          className={!readonly ? "cursor-pointer" : "cursor-default"}
+        >
+          {star <= (hover || rating) ? (
+            <Star className={`${sizeClass} fill-yellow-400 text-yellow-400`} />
+          ) : star - 0.5 <= (hover || rating) ? (
+            <StarHalf
+              className={`${sizeClass} fill-yellow-400 text-yellow-400`}
+            />
+          ) : (
+            <Star className={`${sizeClass} text-gray-300`} />
+          )}
+        </button>
+      ))}
     </div>
   );
 };
 
-function StatCard({ title, value, icon: Icon, href }) {
+// Task Requirements Modal
+const TaskRequirementsModal = ({ task, open, onClose, onComplete }) => {
+  const [formData, setFormData] = useState({});
+  const [files, setFiles] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
+
+  const handleInputChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleFileChange = (field, fileList) => {
+    const file = fileList[0];
+    if (file) {
+      const fieldConfig = task.requirements?.form?.[field];
+      if (fieldConfig?.accept && !fieldConfig.accept.includes(file.type)) {
+        toast.error(
+          `Invalid file type. Accepted: ${fieldConfig.accept.join(", ")}`,
+        );
+        return;
+      }
+      if (fieldConfig?.maxSize && file.size > fieldConfig.maxSize) {
+        toast.error(
+          `File too large. Max size: ${fieldConfig.maxSize / (1024 * 1024)}MB`,
+        );
+        return;
+      }
+      setFiles((prev) => ({ ...prev, [field]: file }));
+      setFormData((prev) => ({
+        ...prev,
+        [field]: { name: file.name, size: file.size, type: file.type },
+      }));
+    }
+  };
+
+  const handlePayment = async () => {
+    setPaymentProcessing(true);
+    try {
+      const paymentConfig = task.requirements?.payment;
+      const res = await RequestHandler.Post("/api/v1/payment/initialize", {
+        body: {
+          amount: paymentConfig.amount,
+          currency: paymentConfig.currency,
+          reason: paymentConfig.reason,
+          taskId: task.id,
+        },
+      });
+      if (res.ok) {
+        const { paymentUrl, reference } = await res.json();
+        await onComplete({ paymentReference: reference, status: "pending" });
+        window.location.href = paymentUrl;
+      }
+    } catch (error) {
+      console.error("Payment failed:", error);
+      toast.error("Payment failed. Please try again.");
+    } finally {
+      setPaymentProcessing(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    try {
+      // Upload files if any
+      const uploadedFiles = {};
+      for (const [field, file] of Object.entries(files)) {
+        const uploadFormData = new FormData();
+        uploadFormData.append("file", file);
+        const uploadRes = await fetch("/api/v1/upload", {
+          method: "POST",
+          body: uploadFormData,
+        });
+        if (uploadRes.ok) {
+          const { url } = await uploadRes.json();
+          uploadedFiles[field] = url;
+        }
+      }
+
+      const submissions = {
+        ...formData,
+        uploadedFiles,
+        completedAt: new Date().toISOString(),
+      };
+
+      await onComplete(submissions);
+      onClose();
+    } catch (error) {
+      console.error("Submission failed:", error);
+      toast.error("Failed to submit requirements");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (!open || !task?.requirements) return null;
+
+  const hasPayment = task.requirements.payment;
+  const hasForm =
+    task.requirements.form && Object.keys(task.requirements.form).length > 0;
+
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <StatCardTitle href={href}>
-          <CardTitle className="text-sm font-medium">{title}</CardTitle>
-          <Icon className="h-4 w-4 text-muted-foreground" />
-        </StatCardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
-      </CardContent>
-    </Card>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg max-w-lg w-full max-h-[80vh] overflow-y-auto m-4">
+        <div className="sticky top-0 bg-white border-b p-4">
+          <h2 className="text-xl font-semibold">Complete Requirements</h2>
+          <p className="text-sm text-gray-500">{task.name}</p>
+        </div>
+
+        <div className="p-4 space-y-4">
+          {hasPayment && (
+            <div className="space-y-3">
+              <div className="p-4 bg-blue-50 rounded-lg">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="text-sm text-gray-600">Payment Required</p>
+                    <p className="text-2xl font-bold">
+                      {task.requirements.payment.amount}{" "}
+                      {task.requirements.payment.currency}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {task.requirements.payment.reason}
+                    </p>
+                  </div>
+                  <CreditCard className="h-8 w-8 text-blue-500" />
+                </div>
+              </div>
+              <Button
+                onClick={handlePayment}
+                disabled={paymentProcessing}
+                className="w-full"
+              >
+                {paymentProcessing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "Pay Now"
+                )}
+              </Button>
+            </div>
+          )}
+
+          {hasForm && (
+            <div className="space-y-4">
+              <h3 className="font-medium">Required Information</h3>
+              {Object.entries(task.requirements.form).map(
+                ([fieldName, config]) => (
+                  <div key={fieldName} className="space-y-2">
+                    <label className="text-sm font-medium">
+                      {fieldName
+                        .replace(/-/g, " ")
+                        .replace(/\b\w/g, (l) => l.toUpperCase())}
+                      {!config.optional && (
+                        <span className="text-red-500 ml-1">*</span>
+                      )}
+                    </label>
+
+                    {config.type === "file" ? (
+                      <div className="border-2 border-dashed rounded-lg p-4 text-center">
+                        <input
+                          type="file"
+                          id={`file-${fieldName}`}
+                          className="hidden"
+                          accept={config.accept?.join(",")}
+                          onChange={(e) =>
+                            handleFileChange(fieldName, e.target.files)
+                          }
+                        />
+                        <label
+                          htmlFor={`file-${fieldName}`}
+                          className="cursor-pointer"
+                        >
+                          <Upload className="h-8 w-8 mx-auto text-gray-400" />
+                          <p className="text-sm text-gray-500">
+                            Click to upload
+                          </p>
+                          {files[fieldName] && (
+                            <p className="text-sm text-green-600 mt-1">
+                              {files[fieldName].name}
+                            </p>
+                          )}
+                        </label>
+                      </div>
+                    ) : config.type === "textarea" ? (
+                      <textarea
+                        className="w-full p-2 border rounded-md"
+                        rows={config.rows || 4}
+                        placeholder={config.placeholder}
+                        value={formData[fieldName] || ""}
+                        onChange={(e) =>
+                          handleInputChange(fieldName, e.target.value)
+                        }
+                        required={!config.optional}
+                      />
+                    ) : (
+                      <input
+                        type={config.type === "number" ? "number" : "text"}
+                        className="w-full p-2 border rounded-md"
+                        placeholder={config.placeholder}
+                        min={config.min}
+                        max={config.max}
+                        value={formData[fieldName] || ""}
+                        onChange={(e) =>
+                          handleInputChange(fieldName, e.target.value)
+                        }
+                        required={!config.optional}
+                      />
+                    )}
+                    {config.description && (
+                      <p className="text-xs text-gray-500">
+                        {config.description}
+                      </p>
+                    )}
+                  </div>
+                ),
+              )}
+              <Button
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+                className="w-full"
+              >
+                {isSubmitting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "Submit"
+                )}
+              </Button>
+            </div>
+          )}
+        </div>
+
+        <div className="sticky bottom-0 bg-white border-t p-4">
+          <Button variant="outline" onClick={onClose} className="w-full">
+            Close
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default function ClientDashboard() {
+  const router = useRouter();
+  const [appointments, setAppointments] = useState([]);
+  const [tasks, setTasks] = useState([]);
+  const [stats, setStats] = useState({
+    totalAppointments: 0,
+    completedServices: 0,
+    upcomingAppointments: 0,
+    pendingTasks: 0,
+  });
+  const [loading, setLoading] = useState(true);
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [showRequirementsModal, setShowRequirementsModal] = useState(false);
+
+  const fetchData = useCallback(async () => {
+    try {
+      // Fetch appointments
+      const aptRes = await RequestHandler.Get(
+        '/query/v1/appointment?order=["startTime.desc"]&select={"":["id","startTime","endTime","status","notes"],"service":["name","description","price","imageUrl","rating"],"organization":["name","address","email","phone"]}',
+      );
+      if (aptRes.ok) {
+        const { appointments: apts, count } = await aptRes.json();
+        setAppointments(apts || []);
+        const upcoming = (apts || []).filter(
+          (a) => a.status === "scheduled" || new Date(a.startTime) > new Date(),
+        ).length;
+        const completed = (apts || []).filter(
+          (a) => a.status === "completed",
+        ).length;
+        setStats((prev) => ({
+          ...prev,
+          totalAppointments: count || 0,
+          completedServices: completed,
+          upcomingAppointments: upcoming,
+        }));
+      }
+
+      // Fetch tasks with requirements
+      const taskRes = await RequestHandler.Get(
+        '/query/v1/task?order=["createdAt.desc"]&select={"":["id","name","status","isDone","requirements","submissions","createdAt"],"appointment":["startTime"],"service":["name"],"client":["firstname","lastname"]}',
+      );
+      if (taskRes.ok) {
+        const { tasks: taskList } = await taskRes.json();
+        setTasks(taskList || []);
+        const pendingWithRequirements = (taskList || []).filter(
+          (t) =>
+            !t.isDone &&
+            t.status !== "completed" &&
+            t.requirements &&
+            (t.requirements.form || t.requirements.payment),
+        ).length;
+        setStats((prev) => ({
+          ...prev,
+          pendingTasks: pendingWithRequirements,
+        }));
+      }
+    } catch (error) {
+      console.error("Failed to fetch dashboard data:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const handleCompleteTask = async (submissions) => {
+    try {
+      const res = await RequestHandler.Patch("/query/v1/task", {
+        body: {
+          id: selectedTask.id,
+          submissions: { ...selectedTask.submissions, ...submissions },
+          status: "completed",
+          isDone: true,
+        },
+      });
+      if (res.ok) {
+        toast.success("Task completed successfully!");
+        fetchData();
+        setShowRequirementsModal(false);
+        setSelectedTask(null);
+      }
+    } catch (error) {
+      console.error("Failed to complete task:", error);
+      toast.error("Failed to complete task");
+    }
+  };
+
+  const handleRateSepastAppointmentsrvice = async (appointmentId, rating) => {
+    try {
+      const res = await RequestHandler.Patch("/query/v1/organizationService", {
+        body: {
+          id: appointmentId,
+          rating: rating,
+        },
+      });
+      if (res.ok) {
+        toast.success("Thank you for your rating!");
+        fetchData();
+      }
+    } catch (error) {
+      console.error("Failed to rate service:", error);
+      toast.error("Failed to submit rating");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="max-w-6xl mx-auto p-6 space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-24" />
+          ))}
+        </div>
+        <Skeleton className="h-96" />
+        <Skeleton className="h-64" />
+      </div>
+    );
+  }
+
+  const upcomingAppointments = appointments.filter(
+    (a) => a.status === "scheduled" && new Date(a.startTime) >= new Date(),
+  );
+  const overDueAppointments = appointments.filter(
+    (a) => a.status === "scheduled" && new Date(a.startTime) < new Date(),
+  );
+  const pastAppointments = appointments.filter(
+    (a) => a.status === "completed" || new Date(a.startTime) < new Date(),
+  );
+  const actionRequiredTasks = tasks.filter(
+    (t) =>
+      !t.isDone &&
+      t.status !== "completed" &&
+      t.requirements &&
+      (t.requirements.form || t.requirements.payment),
+  );
+
+  return (
+    <div className="max-w-6xl mx-auto p-6 space-y-8">
+      {/* Welcome Header */}
+      {/* <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">My Dashboard</h1>
+          <p className="text-muted-foreground">
+            Track your appointments and tasks
+          </p>
+        </div>
+        <Button onClick={() => router.push("/dashboard/client/appointments")}>
+          <Calendar className="h-4 w-4 mr-2" />
+          Book New Service
+        </Button>
+      </div> */}
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  Total Appointments
+                </p>
+                <p className="text-2xl font-bold">{stats.totalAppointments}</p>
+              </div>
+              <CalendarDays className="h-8 w-8 text-blue-500" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Completed</p>
+                <p className="text-2xl font-bold">{stats.completedServices}</p>
+              </div>
+              <CheckCircle className="h-8 w-8 text-green-500" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Upcoming</p>
+                <p className="text-2xl font-bold">
+                  {stats.upcomingAppointments}
+                </p>
+              </div>
+              <ClockIcon className="h-8 w-8 text-yellow-500" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="relative overflow-hidden">
+          {stats.pendingTasks > 0 && (
+            <div className="absolute top-2 right-2">
+              <Badge className="bg-red-500 text-white">
+                {stats.pendingTasks}
+              </Badge>
+            </div>
+          )}
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Action Required</p>
+                <p className="text-2xl font-bold">{stats.pendingTasks}</p>
+              </div>
+              <FileText className="h-8 w-8 text-purple-500" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Tabs defaultValue="upcoming" className="space-y-6">
+        <TabsList className="grid w-full max-w-xl grid-cols-5">
+          <TabsTrigger value="upcoming">
+            Upcoming{" "}
+            <Badge variant="ghost" className="p-1">
+              {upcomingAppointments.length}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger value="over-due">
+            Over Due{" "}
+            <Badge variant="ghost" className="p-1">
+              {overDueAppointments.length}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger value="all">
+            All
+            <Badge variant="ghost" className="p-1">
+              {appointments.length}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger value="history">
+            History
+            <Badge variant="ghost" className="p-1">
+              {pastAppointments.length}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger value="tasks">
+            Tasks{" "}
+            <Badge variant="ghost" className="p-1">
+              {actionRequiredTasks.length}
+            </Badge>
+          </TabsTrigger>
+        </TabsList>
+        {/* Upcoming Appointments Tab */}
+        <TabsContent value="all" className="space-y-4">
+          {appointments.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <Calendar className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                <p className="text-gray-500">No appointments</p>
+                <Button
+                  className="mt-4"
+                  onClick={() => router.push("/dashboard/client/appointments")}
+                >
+                  Book an Appointment
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            appointments.map((apt) => (
+              <Card key={apt.id} className="hover:shadow-md transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex flex-wrap justify-between items-start gap-4">
+                    <div className="space-y-3 flex-1">
+                      <div className="flex items-center gap-3">
+                        {apt.service?.imageUrl && (
+                          <img
+                            src={apt.service.imageUrl}
+                            alt={apt.service.name}
+                            className="h-12 w-12 rounded-lg object-cover"
+                          />
+                        )}
+                        <div>
+                          <h3 className="font-semibold text-lg">
+                            {apt.service?.name}
+                          </h3>
+                          <p className="text-sm text-gray-500">
+                            {apt.organization?.name}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-4 text-sm">
+                        <div className="flex items-center gap-1 text-gray-600">
+                          <CalendarDays className="h-4 w-4" />
+                          {formatDate(apt.startTime)}
+                        </div>
+                        <div className="flex items-center gap-1 text-gray-600">
+                          <Clock className="h-4 w-4" />
+                          {formatTime(apt.startTime)} -{" "}
+                          {formatTime(apt.endTime)}
+                        </div>
+                        <div className="flex items-center gap-1 text-gray-600">
+                          <MapPin className="h-4 w-4" />
+                          {apt.organization?.address}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <Badge className={getStatusColor(apt.status)}>
+                        {apt.status?.replace("-", " ")}
+                      </Badge>
+                      <Button
+                        variant="ghost"
+                        className="mt-2"
+                        onClick={() =>
+                          router.push(`/dashboard/client/appointment/${apt.id}`)
+                        }
+                      >
+                        View Details
+                        <ChevronRight className="h-4 w-4 ml-1" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </TabsContent>
+        {/* Upcoming Tasks Tab */}
+        <TabsContent value="upcoming" className="space-y-4">
+          {upcomingAppointments.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <Calendar className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                <p className="text-gray-500">No upcoming appointments</p>
+                <Button
+                  className="mt-4"
+                  onClick={() => router.push("/dashboard/client/appointments")}
+                >
+                  Book an Appointment
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            upcomingAppointments.map((apt) => (
+              <Card key={apt.id} className="hover:shadow-md transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex flex-wrap justify-between items-start gap-4">
+                    <div className="space-y-3 flex-1">
+                      <div className="flex items-center gap-3">
+                        {apt.service?.imageUrl && (
+                          <img
+                            src={apt.service.imageUrl}
+                            alt={apt.service.name}
+                            className="h-12 w-12 rounded-lg object-cover"
+                          />
+                        )}
+                        <div>
+                          <h3 className="font-semibold text-lg">
+                            {apt.service?.name}
+                          </h3>
+                          <p className="text-sm text-gray-500">
+                            {apt.organization?.name}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-4 text-sm">
+                        <div className="flex items-center gap-1 text-gray-600">
+                          <CalendarDays className="h-4 w-4" />
+                          {formatDate(apt.startTime)}
+                        </div>
+                        <div className="flex items-center gap-1 text-gray-600">
+                          <Clock className="h-4 w-4" />
+                          {formatTime(apt.startTime)} -{" "}
+                          {formatTime(apt.endTime)}
+                        </div>
+                        <div className="flex items-center gap-1 text-gray-600">
+                          <MapPin className="h-4 w-4" />
+                          {apt.organization?.address}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <Badge className={getStatusColor(apt.status)}>
+                        {apt.status?.replace("-", " ")}
+                      </Badge>
+                      <Button
+                        variant="ghost"
+                        className="mt-2"
+                        onClick={() =>
+                          router.push(`/dashboard/client/appointment/${apt.id}`)
+                        }
+                      >
+                        View Details
+                        <ChevronRight className="h-4 w-4 ml-1" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </TabsContent>
+        {/* Over-due Tasks Tab */}
+        <TabsContent value="over-due" className="space-y-4">
+          {overDueAppointments.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <Calendar className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                <p className="text-gray-500">No over-due appointments</p>
+                <Button
+                  className="mt-4"
+                  onClick={() => router.push("/dashboard/client/appointments")}
+                >
+                  Book an Appointment
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            overDueAppointments.map((apt) => (
+              <Card key={apt.id} className="hover:shadow-md transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex flex-wrap justify-between items-start gap-4">
+                    <div className="space-y-3 flex-1">
+                      <div className="flex items-center gap-3">
+                        {apt.service?.imageUrl && (
+                          <img
+                            src={apt.service.imageUrl}
+                            alt={apt.service.name}
+                            className="h-12 w-12 rounded-lg object-cover"
+                          />
+                        )}
+                        <div>
+                          <h3 className="font-semibold text-lg">
+                            {apt.service?.name}
+                          </h3>
+                          <p className="text-sm text-gray-500">
+                            {apt.organization?.name}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-4 text-sm">
+                        <div className="flex items-center gap-1 text-gray-600">
+                          <CalendarDays className="h-4 w-4" />
+                          {formatDate(apt.startTime)}
+                        </div>
+                        <div className="flex items-center gap-1 text-gray-600">
+                          <Clock className="h-4 w-4" />
+                          {formatTime(apt.startTime)} -{" "}
+                          {formatTime(apt.endTime)}
+                        </div>
+                        <div className="flex items-center gap-1 text-gray-600">
+                          <MapPin className="h-4 w-4" />
+                          {apt.organization?.address}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <Badge className={getStatusColor(apt.status)}>
+                        {apt.status?.replace("-", " ")}
+                      </Badge>
+                      <Button
+                        variant="ghost"
+                        className="mt-2"
+                        onClick={() =>
+                          router.push(`/dashboard/client/appointment/${apt.id}`)
+                        }
+                      >
+                        View Details
+                        <ChevronRight className="h-4 w-4 ml-1" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </TabsContent>
+        <TabsContent value="tasks" className="space-y-4">
+          {actionRequiredTasks.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <CheckCircle className="h-12 w-12 mx-auto text-green-500 mb-4" />
+                <p className="text-gray-500">
+                  All caught up! No pending tasks.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            actionRequiredTasks.map((task) => (
+              <Card key={task.id} className="border-yellow-200 bg-yellow-50/30">
+                <CardContent className="p-6">
+                  <div className="flex flex-wrap justify-between items-start gap-4">
+                    <div className="space-y-2 flex-1">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-5 w-5 text-yellow-600" />
+                        <h3 className="font-semibold">{task.name}</h3>
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        {task.appointment?.service?.name} -{" "}
+                        {formatDate(task.appointment?.startTime)}
+                      </p>
+                      {task.requirements?.payment && (
+                        <Badge variant="outline" className="gap-1">
+                          <CreditCard className="h-3 w-3" />
+                          Payment Required
+                        </Badge>
+                      )}
+                      {task.requirements?.form &&
+                        Object.keys(task.requirements.form).length > 0 && (
+                          <Badge variant="outline" className="gap-1">
+                            <FileText className="h-3 w-3" />
+                            Information Required
+                          </Badge>
+                        )}
+                    </div>
+                    <Button
+                      onClick={() => {
+                        setSelectedTask(task);
+                        setShowRequirementsModal(true);
+                      }}
+                      className="bg-yellow-600 hover:bg-yellow-700"
+                    >
+                      Complete Task
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </TabsContent>
+
+        {/* History Tab */}
+        <TabsContent value="history" className="space-y-4">
+          {pastAppointments.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <Calendar className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                <p className="text-gray-500">No past appointments</p>
+              </CardContent>
+            </Card>
+          ) : (
+            pastAppointments.map((apt) => (
+              <Card key={apt.id}>
+                <CardContent className="p-6">
+                  <div className="flex flex-wrap justify-between items-start gap-4">
+                    {apt.service?.imageUrl && (
+                      <img
+                        src={apt.service.imageUrl}
+                        alt={apt.service.name}
+                        className="h-12 w-12 rounded-lg object-cover"
+                      />
+                    )}
+                    <div className="space-y-2 flex-1">
+                      <h3 className="font-semibold">{apt.service?.name}</h3>
+                      <p className="text-sm text-gray-500">
+                        {apt.organization?.name}
+                      </p>
+                      <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+                        <span>{formatDate(apt.startTime)}</span>
+                        <span>{formatTime(apt.startTime)}</span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <Badge className={getStatusColor(apt.status)}>
+                        {apt.status?.replace("-", " ")}
+                      </Badge>
+                      {apt.status === "completed" && !apt.service?.rating && (
+                        <div className="mt-2">
+                          <StarRating
+                            rating={0}
+                            onRate={(rating) =>
+                              handleRateService(apt.service?.id, rating)
+                            }
+                            size="sm"
+                          />
+                        </div>
+                      )}
+                      {apt.service?.rating > 0 && (
+                        <div className="mt-2 flex items-center gap-1">
+                          <StarRating
+                            rating={apt.service.rating}
+                            readonly
+                            size="sm"
+                          />
+                          <span className="text-xs text-gray-500">
+                            ({apt.service.rating})
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </TabsContent>
+      </Tabs>
+
+      {/* Requirements Modal */}
+      <TaskRequirementsModal
+        task={selectedTask}
+        open={showRequirementsModal}
+        onClose={() => {
+          setShowRequirementsModal(false);
+          setSelectedTask(null);
+        }}
+        onComplete={handleCompleteTask}
+      />
+    </div>
   );
 }

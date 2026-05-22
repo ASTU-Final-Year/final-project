@@ -47,7 +47,6 @@ export const genderEnum = pgEnum("gender", ["M", "F", "U"]);
 
 export const appointmentStatusEnum = pgEnum("appointment_status", [
   "scheduled",
-  "assigned",
   "in-progress",
   "completed",
   "canceled",
@@ -153,6 +152,7 @@ export const pgOrganizations = pgTable("organizations", {
   email: varchar("email", { length: 30 }).unique().notNull(),
   phone: varchar("phone", { length: 16 }),
   rating: numeric("rating", { mode: "number", precision: 1 }),
+  total_ratings: integer("total_ratings").notNull().default(0),
   adminId: cpuuid("admin_id")
     .notNull()
     .references(() => pgUsers.id, {
@@ -244,6 +244,7 @@ export const pgOrganizationServices = pgTable("organization_services", {
     }),
   price: numeric("price", { mode: "number" }).notNull().default(0.0),
   rating: numeric("rating", { mode: "number" }).notNull().default(0.0),
+  total_ratings: integer("total_ratings").notNull().default(0),
   imageUrl: varchar("image_url", { length: 256 }),
   ...timestamps,
 });
@@ -301,6 +302,7 @@ export const pgTasks = pgTable("tasks", {
   id: cpuuid("id").primaryKey().notNull().$defaultFn(randomCUUID),
   isDone: boolean("is_done").default(false).notNull(),
   name: varchar("name", { length: 54 }).notNull(),
+  description: varchar("description", { length: 200 }).notNull().default(""),
   startTime: timestamp("start_time", { withTimezone: true }).notNull(),
   endTime: timestamp("end_time", { withTimezone: true }).notNull(),
   status: varchar("status", { length: 20 }).notNull(),
@@ -327,6 +329,7 @@ export const pgTasks = pgTable("tasks", {
     onUpdate: "cascade",
     onDelete: "no action",
   }),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
   ...timestamps,
 });
 

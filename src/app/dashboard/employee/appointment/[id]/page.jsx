@@ -142,48 +142,6 @@ export default function AppointmentDetailsPage() {
     if (id) fetchData();
   }, [id]);
 
-  const handleRateService = async (newRating) => {
-    setSubmittingRating(true);
-    try {
-      const res = await RequestHandler.Patch("/query/v1/organizationService", {
-        body: {
-          id: appointment.service.id,
-          rating: newRating,
-        },
-      });
-
-      if (res.ok) {
-        setRating(newRating);
-        toast.success("Thank you for your rating!");
-      }
-    } catch (error) {
-      console.error("Failed to rate service:", error);
-      toast.error("Failed to submit rating");
-    } finally {
-      setSubmittingRating(false);
-    }
-  };
-
-  const handleReschedule = () => {
-    toast.info("Reschedule functionality coming soon");
-  };
-
-  const handleCancel = async () => {
-    if (confirm("Are you sure you want to cancel this appointment?")) {
-      try {
-        const res = await RequestHandler.Delete(
-          `/query/v1/appointment?~id=${id}`,
-        );
-        if (res.ok) {
-          toast.success("Appointment cancelled successfully");
-          router.push("/dashboard/client");
-        }
-      } catch (error) {
-        toast.error("Failed to cancel appointment");
-      }
-    }
-  };
-
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto p-6 space-y-6">
@@ -416,52 +374,6 @@ export default function AppointmentDetailsPage() {
           </div>
         </CardContent>
       </Card>
-
-      {/* Rating Section (only for completed appointments) */}
-      {appointment.status === "completed" && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Rate Your Experience</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div>
-                <p className="font-medium">How was your service?</p>
-                <p className="text-sm text-gray-500">
-                  Your feedback helps us improve
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                <StarRating
-                  rating={rating}
-                  onRate={handleRateService}
-                  readonly={submittingRating}
-                />
-                {submittingRating && (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Action Buttons */}
-      <div className="flex gap-3 justify-end">
-        <Button variant="outline" onClick={() => router.back()}>
-          Back
-        </Button>
-        {/* {canReschedule && (
-          <Button variant="outline" onClick={handleReschedule}>
-            Reschedule
-          </Button>
-        )} */}
-        {appointment.status === "scheduled" && (
-          <Button variant="destructive" onClick={handleCancel}>
-            Cancel Appointment
-          </Button>
-        )}
-      </div>
     </div>
   );
 }

@@ -35,7 +35,6 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { useSessionStore } from "@/store";
 import Auth from "@/lib/auth";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";

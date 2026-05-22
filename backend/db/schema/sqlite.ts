@@ -37,7 +37,6 @@ const randomCUUID = (): string => {
 export const genderEnum = ["M", "F", "U"] as const;
 export const appointmentStatusEnum = [
   "scheduled",
-  "assigned",
   "in-progress",
   "completed",
   "canceled",
@@ -152,6 +151,7 @@ export const sqOrganizations = sqliteTable(
     email: text("email", { length: 30 }).unique().notNull(),
     phone: text("phone", { length: 16 }),
     rating: real("rating"),
+    total_ratings: integer("total_ratings").notNull().default(0),
     adminId: cpuuid("admin_id")
       .notNull()
       .references(() => sqUsers.id, {
@@ -231,6 +231,7 @@ export const sqOrganizationServices = sqliteTable("organization_services", {
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
   price: numeric("price", { mode: "number" }).notNull().default(0.0),
   rating: numeric("rating", { mode: "number" }).notNull().default(0.0),
+  total_ratings: integer("total_ratings").notNull().default(0),
   imageUrl: text("image_url", { length: 256 }),
   calendarId: cpuuid("calendar_id").references(
     () => sqOrganizationCalendars.id,
@@ -308,6 +309,7 @@ export const sqTasks = sqliteTable("tasks", {
   id: cpuuid("id").primaryKey().notNull().$defaultFn(randomCUUID),
   isDone: integer("is_done", { mode: "boolean" }).notNull().default(false),
   name: text("name", { length: 54 }).notNull(),
+  description: text("description", { length: 200 }).notNull().default(""),
   startTime: integer("start_time", { mode: "timestamp" }).notNull(),
   endTime: integer("end_time", { mode: "timestamp" }).notNull(),
   status: text("status", { length: 20 }).notNull(),
@@ -334,6 +336,7 @@ export const sqTasks = sqliteTable("tasks", {
     onUpdate: "no action",
     onDelete: "no action",
   }),
+  completedAt: integer("completed_at", { mode: "timestamp" }),
   ...timestamps,
 });
 

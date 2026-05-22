@@ -82,7 +82,7 @@ export default function ClientProfilePage() {
 
         // Fetch appointment stats (adjust endpoint if needed)
         const aptRes = await RequestHandler.Get(
-          "/query/v1/appointment?mine&select={\"\":[\"status\"]}"
+          '/query/v1/appointment?mine&select={"":["status"]}',
         );
         if (aptRes.ok) {
           const { appointments } = await aptRes.json();
@@ -171,7 +171,10 @@ export default function ClientProfilePage() {
       if (!res.ok) throw new Error("Upload failed");
       const data = await res.json();
       if (data.profile_picture?.[0]?.profile) {
-        setProfile((prev) => ({ ...prev, profile: data.profile_picture[0].profile }));
+        setProfile((prev) => ({
+          ...prev,
+          profile: data.profile_picture[0].profile,
+        }));
       }
       toast.success("Photo updated");
       setProfileUpdateHash((h) => h + 1);
@@ -208,7 +211,10 @@ export default function ClientProfilePage() {
 
   const fullName = `${profile.firstname || ""} ${profile.lastname || ""}`;
   const memberSince = profile.createdAt
-    ? new Date(profile.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" })
+    ? new Date(profile.createdAt).toLocaleDateString("en-US", {
+        month: "long",
+        year: "numeric",
+      })
     : "Unknown";
 
   return (
@@ -220,19 +226,20 @@ export default function ClientProfilePage() {
           <div className="flex flex-col md:flex-row gap-6 items-start md:items-end justify-between">
             <div className="flex gap-6 items-end">
               <div className="relative group">
-                <Avatar className="w-28 h-28 border-4 border-white shadow-lg">
+                <Avatar className="w-28 h-28 border-4 shadow-lg rounded-[12px] border-border/40 ring-1 ring-primary/10 overflow-clip">
                   <AvatarImage
+                    className="rounded"
                     src={`/api/v1/user/profile_picture?${profileUpdateHash}`}
                     alt={fullName}
                   />
-                  <AvatarFallback className="bg-indigo-500 text-white text-2xl">
+                  <AvatarFallback className="bg-indigo-500 text-white text-2xl rounded">
                     {profile.firstname?.[0]}
                     {profile.lastname?.[0]}
                   </AvatarFallback>
                 </Avatar>
                 <label
                   htmlFor="client-photo-upload"
-                  className="absolute bottom-0 right-0 p-1.5 bg-white rounded-full shadow-md cursor-pointer hover:bg-gray-100 transition-colors"
+                  className="absolute -bottom-2 -right-2 border-2 border-primary/10 p-1.5 bg-white rounded-full shadow-md cursor-pointer hover:bg-gray-100 transition-colors"
                 >
                   <ArrowUp className="w-4 h-4 text-gray-600" />
                   <input
@@ -240,7 +247,10 @@ export default function ClientProfilePage() {
                     type="file"
                     accept="image/jpeg,image/png"
                     className="hidden"
-                    onChange={(e) => e.target.files?.[0] && handlePhotoUpload(e.target.files[0])}
+                    onChange={(e) =>
+                      e.target.files?.[0] &&
+                      handlePhotoUpload(e.target.files[0])
+                    }
                     disabled={uploadingPhoto}
                   />
                 </label>
@@ -284,7 +294,9 @@ export default function ClientProfilePage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Total Appointments</p>
+                <p className="text-sm text-muted-foreground">
+                  Total Appointments
+                </p>
                 <p className="text-2xl font-bold">{stats.totalAppointments}</p>
               </div>
               <Calendar className="w-8 h-8 text-indigo-500" />
@@ -295,7 +307,9 @@ export default function ClientProfilePage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Completed Services</p>
+                <p className="text-sm text-muted-foreground">
+                  Completed Services
+                </p>
                 <p className="text-2xl font-bold">{stats.completedServices}</p>
               </div>
               <CheckCircle className="w-8 h-8 text-green-500" />
@@ -326,7 +340,9 @@ export default function ClientProfilePage() {
                   {editing ? (
                     <Input
                       value={editForm.firstname}
-                      onChange={(e) => setEditForm({ ...editForm, firstname: e.target.value })}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, firstname: e.target.value })
+                      }
                     />
                   ) : (
                     <p className="text-foreground">{profile.firstname}</p>
@@ -340,7 +356,9 @@ export default function ClientProfilePage() {
                   {editing ? (
                     <Input
                       value={editForm.lastname}
-                      onChange={(e) => setEditForm({ ...editForm, lastname: e.target.value })}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, lastname: e.target.value })
+                      }
                     />
                   ) : (
                     <p className="text-foreground">{profile.lastname}</p>
@@ -354,7 +372,9 @@ export default function ClientProfilePage() {
                   {editing ? (
                     <select
                       value={editForm.gender}
-                      onChange={(e) => setEditForm({ ...editForm, gender: e.target.value })}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, gender: e.target.value })
+                      }
                       className="w-full p-2 border rounded-md bg-background"
                     >
                       <option value="U">Prefer not to say</option>
@@ -363,7 +383,11 @@ export default function ClientProfilePage() {
                     </select>
                   ) : (
                     <p className="text-foreground">
-                      {profile.gender === "M" ? "Male" : profile.gender === "F" ? "Female" : "Prefer not to say"}
+                      {profile.gender === "M"
+                        ? "Male"
+                        : profile.gender === "F"
+                          ? "Female"
+                          : "Prefer not to say"}
                     </p>
                   )}
                 </div>
@@ -375,10 +399,14 @@ export default function ClientProfilePage() {
                   {editing ? (
                     <Input
                       value={editForm.phone}
-                      onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, phone: e.target.value })
+                      }
                     />
                   ) : (
-                    <p className="text-foreground">{profile.phone || "Not provided"}</p>
+                    <p className="text-foreground">
+                      {profile.phone || "Not provided"}
+                    </p>
                   )}
                 </div>
                 <div className="space-y-2 md:col-span-2">
@@ -393,13 +421,17 @@ export default function ClientProfilePage() {
                       Verified
                     </Badge>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">Email cannot be changed</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Email cannot be changed
+                  </p>
                 </div>
               </div>
               {editing && (
                 <div className="flex gap-3 pt-4">
                   <Button onClick={handleUpdateProfile}>Save Changes</Button>
-                  <Button variant="outline" onClick={() => setEditing(false)}>Cancel</Button>
+                  <Button variant="outline" onClick={() => setEditing(false)}>
+                    Cancel
+                  </Button>
                 </div>
               )}
             </CardContent>
@@ -419,44 +451,60 @@ export default function ClientProfilePage() {
               <div className="flex items-center justify-between py-3">
                 <div>
                   <p className="font-medium">Email Notifications</p>
-                  <p className="text-sm text-muted-foreground">Receive service updates and billing reports via email</p>
+                  <p className="text-sm text-muted-foreground">
+                    Receive service updates and billing reports via email
+                  </p>
                 </div>
                 <Switch
                   checked={notifications.emailNotifications}
-                  onCheckedChange={(val) => handleNotificationChange("emailNotifications", val)}
+                  onCheckedChange={(val) =>
+                    handleNotificationChange("emailNotifications", val)
+                  }
                 />
               </div>
               <Separator />
               <div className="flex items-center justify-between py-3">
                 <div>
                   <p className="font-medium">SMS Alerts</p>
-                  <p className="text-sm text-muted-foreground">Get real‑time booking alerts on your mobile phone</p>
+                  <p className="text-sm text-muted-foreground">
+                    Get real‑time booking alerts on your mobile phone
+                  </p>
                 </div>
                 <Switch
                   checked={notifications.smsAlerts}
-                  onCheckedChange={(val) => handleNotificationChange("smsAlerts", val)}
+                  onCheckedChange={(val) =>
+                    handleNotificationChange("smsAlerts", val)
+                  }
                 />
               </div>
               <Separator />
               <div className="flex items-center justify-between py-3">
                 <div>
                   <p className="font-medium">Appointment Reminders</p>
-                  <p className="text-sm text-muted-foreground">Receive reminders before your upcoming appointments</p>
+                  <p className="text-sm text-muted-foreground">
+                    Receive reminders before your upcoming appointments
+                  </p>
                 </div>
                 <Switch
                   checked={notifications.appointmentReminders}
-                  onCheckedChange={(val) => handleNotificationChange("appointmentReminders", val)}
+                  onCheckedChange={(val) =>
+                    handleNotificationChange("appointmentReminders", val)
+                  }
                 />
               </div>
               <Separator />
               <div className="flex items-center justify-between py-3">
                 <div>
                   <p className="font-medium">Promotional Offers</p>
-                  <p className="text-sm text-muted-foreground">Be the first to hear about seasonal discounts</p>
+                  <p className="text-sm text-muted-foreground">
+                    Be the first to hear about seasonal discounts
+                  </p>
                 </div>
                 <Switch
                   checked={notifications.promotionalOffers}
-                  onCheckedChange={(val) => handleNotificationChange("promotionalOffers", val)}
+                  onCheckedChange={(val) =>
+                    handleNotificationChange("promotionalOffers", val)
+                  }
                 />
               </div>
             </CardContent>

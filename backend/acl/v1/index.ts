@@ -34,7 +34,7 @@ import { JWT } from "@bepalo/jwt";
 const clientUser = aliasedTable(tables.user, "client");
 const employeeUser = aliasedTable(tables.user, "employee");
 const service = aliasedTable(tables.organizationService, "service");
-const employement = aliasedTable(tables.employee, "employment");
+const employment = aliasedTable(tables.employee, "employment");
 
 // Helper function to check calendar availability
 async function checkCalendarAvailability(
@@ -167,6 +167,17 @@ export const queryAuth = {
             eq(tables.organizationService.id, tables.appointment.serviceId),
             "organizationService",
           ],
+          organization: [
+            omit(tables.organization, [
+              "adminId",
+              "billingStart",
+              "billingEnd",
+              "billingPeriod",
+              "updatedAt",
+            ]),
+            eq(tables.organization.id, tables.appointment.organizationId),
+            tables.organization,
+          ],
         },
         where: (req, { session }) =>
           eq(
@@ -187,6 +198,17 @@ export const queryAuth = {
             tables.organizationService,
             eq(tables.organizationService.id, tables.appointment.serviceId),
             "organizationService",
+          ],
+          organization: [
+            omit(tables.organization, [
+              "adminId",
+              "billingStart",
+              "billingEnd",
+              "billingPeriod",
+              "updatedAt",
+            ]),
+            eq(tables.organization.id, tables.appointment.organizationId),
+            tables.organization,
           ],
           task: [
             tables.task,
@@ -370,6 +392,24 @@ export const queryAuth = {
           ),
       },
 
+      employee: {
+        select: tables.appointment,
+        validateBody: genArkSchemaValidator(
+          pick(tables.appointment, ["status"]),
+          true,
+        ),
+        where: (req, { session }) =>
+          or(
+            ...(session as EmployeeSession).employments.map((employment) =>
+              eq(tables.appointment.organizationId, employment.organizationId),
+            ),
+          ),
+        // and(
+        //   eq(tables.appointment.clientId, .userId),
+        //   eq(tables.appointment.isActive, true),
+        // ),
+      },
+
       organization_admin: {
         select: tables.appointment,
         validateBody: genArkSchemaValidator(
@@ -463,24 +503,83 @@ export const queryAuth = {
             eq(service.id, tables.appointment.serviceId),
             service,
           ],
+          organization: [
+            omit(tables.organization, [
+              "adminId",
+              "billingStart",
+              "billingEnd",
+              "billingPeriod",
+              "updatedAt",
+            ]),
+            eq(tables.organization.id, tables.appointment.organizationId),
+            tables.organization,
+          ],
           client: [
             omit(clientUser, ["password"]),
             eq(clientUser.id, tables.appointment.clientId),
             clientUser,
           ],
           employment: [
-            omit(employement, []),
-            eq(employement.id, tables.task.employeeId),
-            employement,
+            omit(employment, []),
+            eq(employment.id, tables.task.employeeId),
+            employment,
           ],
           employee: [
             omit(employeeUser, ["password"]),
-            eq(employeeUser.id, tables.employee.userId),
+            eq(employeeUser.id, employment.userId),
             employeeUser,
           ],
         },
         where: (req, { session }) =>
           eq(tables.appointment.clientId, session.userId),
+      },
+      mine: {
+        select: tables.task,
+        include: {
+          appointment: [
+            tables.appointment,
+            eq(tables.appointment.id, tables.task.appointmentId),
+          ],
+          service: [
+            service,
+            eq(service.id, tables.appointment.serviceId),
+            service,
+          ],
+          organization: [
+            omit(tables.organization, [
+              "adminId",
+              "billingStart",
+              "billingEnd",
+              "billingPeriod",
+              "updatedAt",
+            ]),
+            eq(tables.organization.id, tables.appointment.organizationId),
+            tables.organization,
+          ],
+          client: [
+            omit(clientUser, ["password"]),
+            eq(clientUser.id, tables.appointment.clientId),
+            clientUser,
+          ],
+          employment: [
+            omit(employment, []),
+            eq(employment.id, tables.task.employeeId),
+            employment,
+          ],
+          employee: [
+            omit(employeeUser, ["password"]),
+            eq(employeeUser.id, employment.userId),
+            employeeUser,
+          ],
+        },
+        where: (req, { auth, session }) =>
+          auth.role === "employee"
+            ? or(
+                ...(session as EmployeeSession).employments.map((employment) =>
+                  eq(tables.task.employeeId, employment.id),
+                ),
+              )
+            : eq(tables.appointment.clientId, session.userId),
       },
       employee: {
         select: tables.task,
@@ -494,26 +593,37 @@ export const queryAuth = {
             eq(service.id, tables.appointment.serviceId),
             service,
           ],
+          organization: [
+            omit(tables.organization, [
+              "adminId",
+              "billingStart",
+              "billingEnd",
+              "billingPeriod",
+              "updatedAt",
+            ]),
+            eq(tables.organization.id, tables.appointment.organizationId),
+            tables.organization,
+          ],
           client: [
             omit(clientUser, ["password"]),
             eq(clientUser.id, tables.appointment.clientId),
             clientUser,
           ],
           employment: [
-            omit(employement, []),
-            eq(employement.id, tables.task.employeeId),
-            employement,
+            omit(employment, []),
+            eq(employment.id, tables.task.employeeId),
+            employment,
           ],
           employee: [
             omit(employeeUser, ["password"]),
-            eq(employeeUser.id, employement.userId),
+            eq(employeeUser.id, employment.userId),
             employeeUser,
           ],
         },
         where: (req, { session }) =>
           or(
             ...(session as EmployeeSession).employments.map((employment) =>
-              eq(tables.task.employeeId, employment.id),
+              eq(service.organizationId, employment.organizationId),
             ),
           ),
       },
