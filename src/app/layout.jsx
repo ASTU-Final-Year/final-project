@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Chatbot } from "@/components/chatbot/chatbot";
+import { Toaster } from "@/components/ui/sonner";
 
 const notoSans = Noto_Sans({ variable: "--font-sans" });
 
@@ -30,6 +31,7 @@ export default function RootLayout({ children }) {
       >
         <TooltipProvider>
           {children}
+          <Toaster />
           <Chatbot />
         </TooltipProvider>
       </body>

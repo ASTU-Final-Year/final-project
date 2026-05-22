@@ -11,6 +11,7 @@ import type {
   CTXAuth,
   HandlerType,
   HttpMethod,
+  Pipeline,
 } from "@bepalo/router";
 import { Status } from "@bepalo/router";
 import type { AnyColumn, BinaryOperator, Column, Table } from "drizzle-orm";
@@ -35,10 +36,11 @@ import {
   DrizzleQueryError,
   sql,
   or,
+  getTableName,
+  aliasedTable,
 } from "drizzle-orm";
 import { type, ArkErrors, type Type } from "arktype";
 
-import { db } from "~/db";
 import { parseAuth, parseSession } from "~/middleware";
 import {
   HttpError,
@@ -112,17 +114,25 @@ const join = (
   cur: number,
 ) => {
   if (cur >= include.length) return query;
-  let [alias, [, filter, tableId, joinType]] = include[cur];
+  let [alias, [, filterRes, tableId, joinType]] = include[cur];
   if (!tableId) tableId = alias;
-  const table = tables[tableId as keyof typeof tables];
+  // const isAliased = alias != tableId;
+  const table =
+    typeof tableId === "string"
+      ? tables[tableId as keyof typeof tables]
+      : tableId;
+  // const tableOriginal = tables[tableId as keyof typeof tables];
+  // const table = isAliased ? aliasedTable(tableOriginal, alias) : tableOriginal;
+  // const filterRes = filter(table);
+  // const filterRes = filter(table);
   switch (joinType) {
     case "middle":
-      return join(tables, query.middleJoin(table, filter), include, cur + 1);
+      return join(tables, query.middleJoin(table, filterRes), include, cur + 1);
     case "right":
-      return join(tables, query.rightJoin(table, filter), include, cur + 1);
+      return join(tables, query.rightJoin(table, filterRes), include, cur + 1);
     default:
     case "left":
-      return join(tables, query.leftJoin(table, filter), include, cur + 1);
+      return join(tables, query.leftJoin(table, filterRes), include, cur + 1);
   }
 };
 
@@ -160,23 +170,36 @@ const parseBoolean = (input?: string | null) => {
 
 export const getBepaloQueryRouter = <
   S extends Record<string, Table>,
+  DB = BEPALO_Database,
+  TX = BEPALO_Transaction,
   XContext = {},
->({
-  tables,
-  pathPrefix,
-  queryAuth,
-  isProduction,
-  currentTableSelectorId = "",
-}: {
-  tables: S;
-  pathPrefix: string;
-  queryAuth: QueryAuth<S, XContext>;
-  isProduction?: boolean;
-  currentTableSelectorId?: string;
-}) => {
+>(
+  database: DB,
+  {
+    tables,
+    pathPrefix,
+    queryAuth,
+    isProduction,
+    currentTableSelectorId = "",
+    routeFilters,
+  }: {
+    tables: S;
+    pathPrefix: string;
+    queryAuth: QueryAuth<S, TX, XContext>;
+    isProduction?: boolean;
+    currentTableSelectorId?: string;
+    routeFilters?: Pipeline<XContext>;
+  },
+) => {
   const IS_PRODUCTION = isProduction;
   const QUERY_PREFIX_LEN = pathPrefix.length;
   const MAIN_TABLE_SELECT_ID = currentTableSelectorId;
+
+  type Transaction = TX;
+  type CTXTransaction = {
+    transaction: Transaction;
+    dontRollback?: boolean;
+  };
 
   const select = <
     T extends Table | Record<string, unknown>,
@@ -265,10 +288,23 @@ export const getBepaloQueryRouter = <
       k = t;
       selectTable = table;
     } else {
-      selectTable = tables[t];
+      const aliased =
+        authProtected.include[t] &&
+        typeof authProtected.include[t][2] === "object";
+      selectTable = aliased ? authProtected.include[t][2] : tables[t];
+      if (aliased) t = getTableName(selectTable);
     }
     if (selectTable == null) {
-      throw new HttpError("Invalid table", Status._400_BadRequest);
+      throw new HttpError(
+        `Invalid table '${t}'->'${p}'`,
+        Status._400_BadRequest,
+      );
+    }
+    if (selectTable[k] == null) {
+      throw new HttpError(
+        `Invalid column '${k}'->'${p}'`,
+        Status._400_BadRequest,
+      );
     }
     const operator = operatorMap[op];
     if (!operator) {
@@ -296,7 +332,10 @@ export const getBepaloQueryRouter = <
             t = tableId;
             refTable = table;
           } else {
-            refTable = tables[t];
+            const aliased =
+              authProtected.include[t] &&
+              typeof authProtected.include[t][2] !== "string";
+            refTable = aliased ? authProtected.include[t][2] : tables[t];
           }
           if (refTable == null) {
             throw new HttpError(`Invalid table ${t}`, Status._400_BadRequest);
@@ -335,12 +374,12 @@ export const getBepaloQueryRouter = <
     async (req, ctx) => {
       const { url, auth } = ctx;
       const queryGuest = parseBoolean(url.searchParams.get("guest"));
-      const queryThisSession = parseBoolean(url.searchParams.get("mine"));
+      const queryMine = parseBoolean(url.searchParams.get("mine"));
       if (!ctx.query) {
-        ctx.query = { guest: queryGuest, mine: queryThisSession };
+        ctx.query = { guest: queryGuest, mine: queryMine };
       } else {
         ctx.query.guest = queryGuest;
-        ctx.query.mine = queryThisSession;
+        ctx.query.mine = queryMine;
       }
       const resId = url.pathname.slice(QUERY_PREFIX_LEN);
       ctx.resId = resId;
@@ -361,7 +400,9 @@ export const getBepaloQueryRouter = <
       }
       if (req.method !== "OPTIONS") {
         const queryAuthEntry = tablePermissions[
-          (req.method === "HEAD" ? "GET" : req.method) as HttpMethod
+          (req.method === "HEAD"
+            ? "GET"
+            : req.method) as keyof typeof tablePermissions
         ] as QueryAuthEntries<S, keyof S>;
         if (queryAuthEntry == null) {
           return req.method === "OPTIONS" || req.method === "HEAD"
@@ -386,7 +427,7 @@ export const getBepaloQueryRouter = <
         const authProtected =
           queryGuest || auth?.role == null
             ? queryAuthEntry.guest
-            : queryThisSession
+            : queryMine
               ? (queryAuthEntry.mine ??
                 queryAuthEntry[auth.role as keyof typeof queryAuthEntry] ??
                 queryAuthEntry.allUsers ??
@@ -421,6 +462,7 @@ export const getBepaloQueryRouter = <
       }
   >[] = [
     // auth
+    ...(routeFilters || []),
     parseCookie(),
     authenticate({
       parseAuth,
@@ -433,16 +475,35 @@ export const getBepaloQueryRouter = <
   const route = {
     OPTIONS: {
       FILTER: [
+        ...(routeFilters || []),
+        parseCookie(),
         authenticate({
           parseAuth,
           checkOnly: true,
         }),
         parseTableAuth(),
+        (req, ctx) => {
+          const q = TOptionsQuery(
+            Object.fromEntries(
+              ctx.url.searchParams
+                .entries()
+                .map(([k, v]) => [k, v.replace(/\%\%/g, "%")]),
+            ),
+          );
+          if (q instanceof ArkErrors) {
+            return json(
+              { error: q.toString() },
+              { status: Status._400_BadRequest },
+            );
+          }
+          ctx.query = q;
+          console.log(ctx.url.searchParams, ctx.query);
+        },
       ],
       HANDLER: [
         async (req, ctx) => {
           const { query, auth, resId } = ctx;
-          const { mine: queryThisSession, guest: queryGuest } = query;
+          const { mine: queryMine, guest: queryGuest } = query;
           const tableId = resId as keyof S;
           const table = tables[tableId] as Table;
           if (table == null) {
@@ -450,24 +511,27 @@ export const getBepaloQueryRouter = <
           }
           const tablePermissions = queryAuth[tableId];
           let allowedMethods;
-          if (queryGuest && queryThisSession) {
-            allowedMethods = Object.entries(tablePermissions)
-              .filter(([method, perm]) => perm.mine || perm.guest)
-              .map(([method]) => method);
-          } else if (queryGuest) {
+          if (queryGuest) {
             allowedMethods = Object.entries(tablePermissions)
               .filter(([method, perm]) => perm.guest)
               .map(([method]) => method);
-          } else if (queryThisSession) {
-            allowedMethods = Object.entries(tablePermissions)
-              .filter(([method, perm]) => perm.mine)
-              .map(([method]) => method);
-          } else {
+          } else if (queryMine) {
             allowedMethods = Object.entries(tablePermissions)
               .filter(
                 ([method, perm]) =>
-                  (auth?.role && perm[auth.role]) || perm.allUsers,
+                  perm.mine || (auth.role && perm[auth.role]) || perm.allUsers,
               )
+              .map(([method]) => method);
+          } else if (auth?.role) {
+            allowedMethods = Object.entries(tablePermissions)
+              .filter(
+                ([method, perm]) =>
+                  (auth.role && perm[auth.role]) || perm.allUsers || perm.mine,
+              )
+              .map(([method]) => method);
+          } else {
+            allowedMethods = Object.entries(tablePermissions)
+              .filter(([method, perm]) => perm.guest)
               .map(([method]) => method);
           }
           if (allowedMethods.length > 0) {
@@ -517,7 +581,7 @@ export const getBepaloQueryRouter = <
         async (req, ctx) => {
           const { authProtected, query, resId } = ctx;
           const {
-            mine: queryThisSession,
+            mine: queryMine,
             guest: queryGuest,
             countOnly: queryCountOnly,
             order: queryOrder,
@@ -620,10 +684,10 @@ export const getBepaloQueryRouter = <
                   : undefined,
                 ...qFilter,
               );
-              if (authProtected.beforeQuery) {
-                await authProtected.beforeQuery(req, ctx);
-              }
               try {
+                if (authProtected.beforeQuery) {
+                  await authProtected.beforeQuery(req, ctx);
+                }
                 const includeEntries =
                   authProtected?.include &&
                   Object.entries(authProtected.include);
@@ -633,7 +697,7 @@ export const getBepaloQueryRouter = <
                       filter(
                         join(
                           tables,
-                          db.select(selector).from(table),
+                          database.select(selector).from(table),
                           includeEntries,
                           0,
                         ),
@@ -642,7 +706,7 @@ export const getBepaloQueryRouter = <
                       { offset, limit },
                     )
                   : await offsetLimit(
-                      filter(db.select(selector).from(table), where),
+                      filter(database.select(selector).from(table), where),
                       { offset, limit },
                     );
                 ctx.result = { count: result[0].count };
@@ -838,10 +902,10 @@ export const getBepaloQueryRouter = <
                   : undefined,
                 ...qFilter,
               );
-              if (authProtected.beforeQuery) {
-                await authProtected.beforeQuery(req, ctx);
-              }
               try {
+                if (authProtected.beforeQuery) {
+                  await authProtected.beforeQuery(req, ctx);
+                }
                 const result =
                   selector && includeEntries
                     ? await offsetLimit(
@@ -849,7 +913,7 @@ export const getBepaloQueryRouter = <
                           filter(
                             join(
                               tables,
-                              db.select(selector).from(table),
+                              database.select(selector).from(table),
                               includeEntries,
                               0,
                             ),
@@ -862,7 +926,10 @@ export const getBepaloQueryRouter = <
                     : selector
                       ? await offsetLimit(
                           order(
-                            filter(db.select(selector).from(table), where),
+                            filter(
+                              database.select(selector).from(table),
+                              where,
+                            ),
                             orderRules,
                           ),
                           { offset, limit },
@@ -873,7 +940,7 @@ export const getBepaloQueryRouter = <
                               filter(
                                 join(
                                   tables,
-                                  db.select().from(table),
+                                  database.select().from(table),
                                   includeEntries,
                                   0,
                                 ),
@@ -885,7 +952,7 @@ export const getBepaloQueryRouter = <
                           )
                         : await offsetLimit(
                             order(
-                              filter(db.select().from(table), where),
+                              filter(database.select().from(table), where),
                               orderRules,
                             ),
                             { offset, limit },
@@ -977,7 +1044,7 @@ export const getBepaloQueryRouter = <
         async (req, ctx) => {
           const { query, resId, authProtected } = ctx;
           const {
-            mine: queryThisSession,
+            mine: queryMine,
             guest: queryGuest,
             countOnly: queryCountOnly,
             select: querySelect,
@@ -996,40 +1063,6 @@ export const getBepaloQueryRouter = <
             );
           }
           try {
-            let body = ctx.body;
-            if (authProtected.validateBody != null) {
-              if (Array.isArray(body)) {
-                for (let i = 0; i < body.length; i++) {
-                  const vb = await authProtected.validateBody(
-                    body[i],
-                    req,
-                    ctx,
-                  );
-                  if (vb instanceof ArkErrors) {
-                    throw new HttpError(vb.toString(), Status._400_BadRequest);
-                  }
-                  body[i] = vb;
-                }
-              } else {
-                const vb = await authProtected.validateBody(body, req, ctx);
-                if (vb instanceof ArkErrors) {
-                  throw new HttpError(vb.toString(), Status._400_BadRequest);
-                }
-                body = vb;
-              }
-            }
-            if (authProtected.injectBody != null) {
-              if (Array.isArray(body)) {
-                for (let i = 0; i < body.length; i++) {
-                  const vb = await authProtected.injectBody(body[i], req, ctx);
-                  if (vb != null) body[i] = vb;
-                }
-              } else {
-                const vb = await authProtected.injectBody(body, req, ctx);
-                if (vb != null) body = vb;
-              }
-            }
-            ctx.body = body;
             const qSelect =
               querySelect &&
               Object.entries(querySelect).map(([a, fields]) => {
@@ -1112,30 +1145,77 @@ export const getBepaloQueryRouter = <
                     }),
                   }
                 : undefined;
-            if (authProtected.beforeQuery) {
-              await authProtected.beforeQuery(req, ctx);
-            }
-            try {
-              const result = await db
-                .insert(table)
-                .values(ctx.body)
-                .returning(selector);
-              ctx.result = queryCountOnly
-                ? { count: result?.length ?? 0 }
-                : {
-                    count: result?.length ?? 0,
-                    [`${tableId}s`]: result,
-                  };
-            } catch (error) {
-              if (authProtected.onQueryError) {
-                ctx.error = error as Error;
-                await authProtected.onQueryError(req, ctx);
+            await database.transaction(async (transaction) => {
+              ctx.transaction = transaction;
+              let body = ctx.body;
+              if (authProtected.validateBody != null) {
+                if (Array.isArray(body)) {
+                  for (let i = 0; i < body.length; i++) {
+                    const vb = await authProtected.validateBody(
+                      body[i],
+                      req,
+                      ctx,
+                    );
+                    if (vb instanceof ArkErrors) {
+                      throw new HttpError(
+                        vb.toString(),
+                        Status._400_BadRequest,
+                      );
+                    }
+                    body[i] = vb;
+                  }
+                } else {
+                  const vb = await authProtected.validateBody(body, req, ctx);
+                  if (vb instanceof ArkErrors) {
+                    throw new HttpError(vb.toString(), Status._400_BadRequest);
+                  }
+                  body = vb;
+                }
               }
-              throw error;
-            }
-            if (authProtected.afterQuery) {
-              await authProtected.afterQuery(req, ctx);
-            }
+              if (authProtected.injectBody != null) {
+                if (Array.isArray(body)) {
+                  for (let i = 0; i < body.length; i++) {
+                    const vb = await authProtected.injectBody(
+                      body[i],
+                      req,
+                      ctx,
+                    );
+                    if (vb != null) body[i] = vb;
+                  }
+                } else {
+                  const vb = await authProtected.injectBody(body, req, ctx);
+                  if (vb != null) body = vb;
+                }
+              }
+              ctx.body = body;
+              try {
+                if (authProtected.beforeQuery) {
+                  await authProtected.beforeQuery(req, ctx);
+                }
+                const result = await transaction
+                  .insert(table)
+                  .values(ctx.body)
+                  .returning(selector);
+                ctx.result = queryCountOnly
+                  ? { count: result?.length ?? 0 }
+                  : {
+                      count: result?.length ?? 0,
+                      [`${tableId}s`]: result,
+                    };
+
+                if (authProtected.afterQuery) {
+                  await authProtected.afterQuery(req, ctx);
+                }
+              } catch (error) {
+                if (authProtected.onQueryError) {
+                  ctx.error = error as Error;
+                  await authProtected.onQueryError(req, ctx);
+                }
+                if (ctx.dontRollback !== undefined && !ctx.dontRollback)
+                  transaction.rollback();
+                if (ctx.dontThrow !== undefined && !ctx.dontThrow) throw error;
+              }
+            });
             return json(ctx.result, { status: Status._201_Created });
           } catch (error) {
             if (error instanceof DrizzleQueryError) {
@@ -1218,7 +1298,7 @@ export const getBepaloQueryRouter = <
         async (req, ctx) => {
           const { query, resId, authProtected } = ctx;
           const {
-            mine: queryThisSession,
+            mine: queryMine,
             guest: queryGuest,
             countOnly: queryCountOnly,
             select: querySelect,
@@ -1238,36 +1318,6 @@ export const getBepaloQueryRouter = <
             );
           }
           try {
-            let body = ctx.body;
-            if (authProtected.validateBody != null) {
-              if (Array.isArray(body)) {
-                body.map(async (b) => {
-                  const vb = await authProtected.validateBody(b, req, ctx);
-                  if (vb instanceof ArkErrors) {
-                    throw new HttpError(vb.toString(), Status._400_BadRequest);
-                  }
-                  return vb;
-                });
-              } else {
-                const vb = await authProtected.validateBody(body, req, ctx);
-                if (vb instanceof ArkErrors) {
-                  throw new HttpError(vb.toString(), Status._400_BadRequest);
-                }
-                body = vb;
-              }
-            }
-            if (authProtected.injectBody != null) {
-              if (Array.isArray(body)) {
-                body.map(async (b) => {
-                  const vb = await authProtected.injectBody(b, req, ctx);
-                  return vb == null ? b : vb;
-                });
-              } else {
-                const vb = await authProtected.injectBody(body, req, ctx);
-                if (vb != null) body = vb;
-              }
-            }
-            ctx.body = body;
             const parsedQueryFiltersEntries: (
               | [string, string]
               | [string, string][]
@@ -1428,52 +1478,93 @@ export const getBepaloQueryRouter = <
               authProtected?.where ? authProtected.where(req, ctx) : undefined,
               ...qFilter,
             );
-            if (authProtected.beforeQuery) {
-              await authProtected.beforeQuery(req, ctx);
-            }
-            try {
-              const includeJ = authProtected.include;
-              const includeEntries = includeJ && Object.entries(includeJ);
-              const result =
-                selector && includeEntries
-                  ? await filter(
-                      join(
-                        tables,
-                        db.update(table).set(ctx.body),
-                        includeEntries,
-                        0,
-                      ),
-                      where,
-                    ).returning(selector)
-                  : selector
+            await database.transaction(async (transaction) => {
+              ctx.transaction = transaction;
+              let body = ctx.body;
+              if (authProtected.validateBody != null) {
+                if (Array.isArray(body)) {
+                  body.map(async (b) => {
+                    const vb = await authProtected.validateBody(b, req, ctx);
+                    if (vb instanceof ArkErrors) {
+                      throw new HttpError(
+                        vb.toString(),
+                        Status._400_BadRequest,
+                      );
+                    }
+                    return vb;
+                  });
+                } else {
+                  const vb = await authProtected.validateBody(body, req, ctx);
+                  if (vb instanceof ArkErrors) {
+                    throw new HttpError(vb.toString(), Status._400_BadRequest);
+                  }
+                  body = vb;
+                }
+              }
+              if (authProtected.injectBody != null) {
+                if (Array.isArray(body)) {
+                  body.map(async (b) => {
+                    const vb = await authProtected.injectBody(b, req, ctx);
+                    return vb == null ? b : vb;
+                  });
+                } else {
+                  const vb = await authProtected.injectBody(body, req, ctx);
+                  if (vb != null) body = vb;
+                }
+              }
+              ctx.body = body;
+              try {
+                if (authProtected.beforeQuery) {
+                  await authProtected.beforeQuery(req, ctx);
+                }
+                const includeJ = authProtected.include;
+                const includeEntries = includeJ && Object.entries(includeJ);
+                const result =
+                  selector && includeEntries
                     ? await filter(
-                        db.update(table).set(ctx.body),
-                        where,
-                      ).returning(selector)
-                    : includeEntries
-                      ? await join(
+                        join(
                           tables,
-                          filter(db.update(table).set(ctx.body), where),
+                          transaction.update(table).set(ctx.body),
                           includeEntries,
                           0,
-                        ).returning()
-                      : filter(db.delete(table), where);
-              ctx.result = queryCountOnly
-                ? { count: result?.length ?? 0 }
-                : {
-                    count: result?.length ?? 0,
-                    [`${tableId}s`]: result,
-                  };
-              if (authProtected.afterQuery) {
-                await authProtected.afterQuery(req, ctx);
+                        ),
+                        where,
+                      ).returning(selector)
+                    : selector
+                      ? await filter(
+                          transaction.update(table).set(ctx.body),
+                          where,
+                        ).returning(selector)
+                      : includeEntries
+                        ? await join(
+                            tables,
+                            filter(
+                              transaction.update(table).set(ctx.body),
+                              where,
+                            ),
+                            includeEntries,
+                            0,
+                          ).returning()
+                        : filter(transaction.delete(table), where);
+                ctx.result = queryCountOnly
+                  ? { count: result?.length ?? 0 }
+                  : {
+                      count: result?.length ?? 0,
+                      [`${tableId}s`]: result,
+                    };
+                if (authProtected.afterQuery) {
+                  await authProtected.afterQuery(req, ctx);
+                }
+              } catch (error) {
+                if (authProtected.onQueryError) {
+                  ctx.error = error as Error;
+                  await authProtected.onQueryError(req, ctx);
+                }
+                if (ctx.dontRollback !== undefined && !ctx.dontRollback)
+                  transaction.rollback();
+                if (ctx.dontThrow !== undefined && !ctx.dontThrow) throw error;
               }
-            } catch (error) {
-              if (authProtected.onQueryError) {
-                ctx.error = error as Error;
-                await authProtected.onQueryError(req, ctx);
-              }
-              throw error;
-            }
+            });
             return json(ctx.result);
           } catch (error) {
             if (!IS_PRODUCTION) {
@@ -1511,7 +1602,7 @@ export const getBepaloQueryRouter = <
         async (req, ctx) => {
           const { query, resId, authProtected } = ctx;
           const {
-            mine: queryThisSession,
+            mine: queryMine,
             guest: queryGuest,
             countOnly: queryCountOnly,
             select: querySelect,
@@ -1691,52 +1782,65 @@ export const getBepaloQueryRouter = <
               authProtected?.where ? authProtected.where(req, ctx) : undefined,
               ...qFilter,
             );
-            if (authProtected.beforeQuery) {
-              await authProtected.beforeQuery(req, ctx);
-            }
-            try {
-              const includeJ = authProtected.include;
-              const includeEntries = includeJ && Object.entries(includeJ);
-              // const include = includeEntries
-              //   ? Object.fromEntries(
-              //       includeEntries.map(([alias, [fields, , tableId]]) => [
-              //         alias,
-              //         fields,
-              //       ]),
-              //     )
-              //   : {};
-              const result =
-                selector && includeEntries
-                  ? await filter(
-                      join(tables, db.delete(table), includeEntries, 0),
-                      where,
-                    ).returning(selector)
-                  : selector
-                    ? await filter(db.delete(table), where).returning(selector)
-                    : includeEntries
-                      ? await join(
+            await database.transaction(async (transaction) => {
+              ctx.transaction = transaction;
+              try {
+                if (authProtected.beforeQuery) {
+                  await authProtected.beforeQuery(req, ctx);
+                }
+                const includeJ = authProtected.include;
+                const includeEntries = includeJ && Object.entries(includeJ);
+                // const include = includeEntries
+                //   ? Object.fromEntries(
+                //       includeEntries.map(([alias, [fields, , tableId]]) => [
+                //         alias,
+                //         fields,
+                //       ]),
+                //     )
+                //   : {};
+                const result =
+                  selector && includeEntries
+                    ? await filter(
+                        join(
                           tables,
-                          filter(db.delete(table), where),
+                          transaction.delete(table),
                           includeEntries,
                           0,
-                        ).returning()
-                      : filter(db.delete(table), where);
-              ctx.result = queryCountOnly
-                ? { count: result?.length ?? 0 }
-                : {
-                    count: result?.length ?? 0,
-                    [`${tableId}s`]: result,
-                  };
-              if (authProtected.afterQuery) {
-                await authProtected.afterQuery(req, ctx);
+                        ),
+                        where,
+                      ).returning(selector)
+                    : selector
+                      ? await filter(
+                          transaction.delete(table),
+                          where,
+                        ).returning(selector)
+                      : includeEntries
+                        ? await join(
+                            tables,
+                            filter(transaction.delete(table), where),
+                            includeEntries,
+                            0,
+                          ).returning()
+                        : filter(transaction.delete(table), where);
+                ctx.result = queryCountOnly
+                  ? { count: result?.length ?? 0 }
+                  : {
+                      count: result?.length ?? 0,
+                      [`${tableId}s`]: result,
+                    };
+                if (authProtected.afterQuery) {
+                  await authProtected.afterQuery(req, ctx);
+                }
+              } catch (error) {
+                if (authProtected.onQueryError) {
+                  ctx.error = error as Error;
+                  await authProtected.onQueryError(req, ctx);
+                }
+                if (ctx.dontRollback !== undefined && !ctx.dontRollback)
+                  transaction.rollback();
+                if (ctx.dontThrow !== undefined && !ctx.dontThrow) throw error;
               }
-            } catch (error) {
-              if (authProtected.onQueryError) {
-                ctx.error = error as Error;
-                await authProtected.onQueryError(req, ctx);
-              }
-              throw error;
-            }
+            });
             return json(ctx.result);
           } catch (error) {
             if (!IS_PRODUCTION) {
@@ -1758,20 +1862,22 @@ export const getBepaloQueryRouter = <
     CTXAddress &
       CTXCookie &
       CTXAuth &
-      CTXSession & { query: { guest: boolean; mine: boolean } } & {
+      XContext &
+      BEPALO_CTXSession & { query: { guest: boolean; mine: boolean } } & {
         resId: string;
         queryAuthEntry: QueryAuthEntries<S, keyof S>;
         authProtected: QueryAuthEntry<S, keyof S>;
         result: any;
+        dontThrow?: boolean;
       },
     {
       OPTIONS: CTXGetQuery;
       HEAD: CTXGetQuery;
       GET: CTXGetQuery;
-      POST: CTXPostQuery & CTXBody & CTXPostBody;
-      PUT: CTXPutQuery & CTXBody & CTXPutBody;
-      PATCH: CTXPatchQuery & CTXBody & CTXPatchBody;
-      DELETE: CTXDeleteQuery;
+      POST: CTXPostQuery & CTXBody & CTXPostBody & CTXTransaction;
+      PUT: CTXPutQuery & CTXBody & CTXPutBody & CTXTransaction;
+      PATCH: CTXPatchQuery & CTXBody & CTXPatchBody & CTXTransaction;
+      DELETE: CTXDeleteQuery & CTXTransaction;
     }
   >;
 
@@ -1789,6 +1895,21 @@ export const getBepaloQueryRouter = <
     }
   }
   return router;
+};
+
+export const TOptionsQuery = type({
+  "mine?": "string.integer|'true'|'false'|''",
+  "guest?": "string.integer|'true'|'false'|''",
+  "countOnly?": "string.integer|'true'|'false'|''",
+}).pipe(({ mine, guest, countOnly, ...rest }) => ({
+  mine: mine ? parseBoolean(mine) : undefined,
+  guest: guest ? parseBoolean(guest) : undefined,
+  countOnly: countOnly ? parseBoolean(countOnly) : undefined,
+  ...rest,
+}));
+
+export type CTXOptionsQuery = {
+  query: typeof TOptionsQuery.infer;
 };
 
 export const TGetQuery = type({

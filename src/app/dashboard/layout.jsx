@@ -14,7 +14,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useMemo, useState } from "react";
 import { useSessionStore } from "@/store";
 import { AppSidebarEmployee } from "@/components/app-sidebar-employee";
@@ -31,6 +31,7 @@ export default function OrganizationDashboardLayout({ children }) {
   const hasHydrated = useSessionStore((s) => s.hasHydrated);
   const role = session?.user?.role;
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const pathSegments = pathname.split("/").filter(Boolean).slice(2); // Skip 'dashboard' and 'organization'
   const userDashboardPathname = (() => {
     switch (role) {
@@ -58,13 +59,14 @@ export default function OrganizationDashboardLayout({ children }) {
         Auth.isLoggedIn().then(async (isLoggedIn) => {
           setIsLoggedIn(isLoggedIn);
           if (!isLoggedIn) {
-            router.push("/login");
+            const redirectQuery = `?r=${encodeURIComponent(`${pathname}?${searchParams.toString()}`)}`;
+            router.push(`/login${redirectQuery}`);
           }
         });
         _setLoaded(true);
       })();
     }
-  }, [router, _loaded, session?.user]);
+  }, [router, _loaded, session?.user, pathname, searchParams]);
 
   if (!isLoggedIn) return null;
 

@@ -279,7 +279,7 @@ export default function ServicesPage() {
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[150px] bg-background">
+              <SelectTrigger className="w-[160px] bg-background">
                 <Filter className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -348,7 +348,9 @@ export default function ServicesPage() {
                     </div>
                   </TableCell>
                   <TableCell className="">{service.price} Birr</TableCell>
-                  <TableCell className="">{service.calendar?.name || "-"}</TableCell>
+                  <TableCell className="">
+                    {service.calendar?.name || "-"}
+                  </TableCell>
                   <TableCell className="">
                     <AcriveBadge isActive={service.isActive} />
                   </TableCell>
@@ -463,10 +465,10 @@ export default function ServicesPage() {
               value={limit.toFixed()}
               onValueChange={(v) => {
                 setLimit(Number(v));
-                setPage(2); // Reset to page 1 on limit change
+                setPage(1); // Reset to page 1 on limit change
               }}
             >
-              <SelectTrigger className="h-8 w-[70px]">
+              <SelectTrigger className="h-8 w-[80px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

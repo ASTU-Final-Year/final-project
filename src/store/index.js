@@ -28,9 +28,11 @@ export const useSessionStore = create(
   persist(
     (set) => ({
       session: null,
+      profileUpdateHash: 0,
       hasHydrated: false,
 
       setSession: (session) => set({ session }),
+      setProfileUpdateHash: (hash) => set({ profileUpdateHash: hash }),
       setHasHydrated: (state) => set({ hasHydrated: state }),
     }),
     {

@@ -1,7 +1,7 @@
 // src/app/service/[service_id]/page.jsx
 "use client";
 
-import PublicOrganizationService from "@/components/public/service";
+import PublicOrganizationServiceDisplay from "@/components/public/service-display";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import RequestHandler from "@/lib/request-handler";
@@ -12,27 +12,30 @@ import { useCallback, useEffect, useState } from "react";
 export default function OrganizationServicePublicPage() {
   const { service_id } = useParams();
   const [service, setService] = useState(null);
-
-  const [isLoading, setIsLoading] = useState(service == null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const fetchService = useCallback(async () => {
-    // (async () => setIsLoading(true))();
+    try {
+      // Fetch service with organization and calendar data
+      const dataRes = await RequestHandler.Get(
+        `/query/v1/organizationService?guest&~id='${service_id}'&select={"":true,"organization":["name","address","email","phone","sector","isGovernment"],"calendar":["available"]}`,
+      );
 
-    const dataRes = await RequestHandler.Get(
-      `/query/v1/organizationService?guest&~id='${service_id}'`,
-    );
-
-    if (dataRes.ok) {
-      const {
-        organizationServices: [organizationService],
-      } = await dataRes.json();
-      setService(organizationService);
+      if (dataRes.ok) {
+        const {
+          organizationServices: [organizationService],
+        } = await dataRes.json();
+        setService(organizationService);
+      }
+    } catch (error) {
+      console.error("Failed to fetch service:", error);
+    } finally {
+      setIsLoading(false);
     }
-    (async () => setIsLoading(false))();
-  }, [setService, service_id]);
+  }, [service_id]);
 
   useEffect(() => {
-    (() => fetchService())();
+    (async () => fetchService())();
   }, [fetchService]);
 
   if (isLoading) {
@@ -42,13 +45,27 @@ export default function OrganizationServicePublicPage() {
       </div>
     );
   }
-  if (service == null) return <h2>Service Not Found</h2>;
+
+  if (service == null) {
+    return (
+      <div>
+        <SiteHeader />
+        <main className="container mx-auto px-4 py-16 text-center">
+          <h2 className="text-2xl font-bold mb-2">Service Not Found</h2>
+          <p className="text-muted-foreground">
+            The service you're looking for doesn't exist or has been removed.
+          </p>
+        </main>
+        <SiteFooter />
+      </div>
+    );
+  }
 
   return (
     <div>
       <SiteHeader />
       <main>
-        <PublicOrganizationService service={service} />
+        <PublicOrganizationServiceDisplay service={service} />
       </main>
       <SiteFooter />
     </div>

@@ -4,6 +4,7 @@
 .local
 .logs
 *dev.db
+uploads
 drizzle
 
 # dependencies

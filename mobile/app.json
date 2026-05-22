@@ -1,0 +1,21 @@
+{
+  "expo": {
+    "name": "ServeSync",
+    "slug": "servesync",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "backgroundColor": "#ffffff"
+    },
+    "web": {
+      "backgroundColor": "#ffffff"
+    }
+  }
+}

@@ -63,6 +63,7 @@ import AcriveBadge from "@/components/ui/active-badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import SearchComponent from "@/components/public/search";
 import { useClientStore } from "@/store";
+import Link from "next/link";
 
 export default function AppointmentsPage() {
   const client = useClientStore(({ client }) => client);
@@ -128,6 +129,7 @@ export default function AppointmentsPage() {
       (async () => setTotalCount(count))();
       let results = appointments || [];
 
+      console.log(results);
       if (statusFilter !== "all") {
         results = results.filter(
           (s) => s.isActive === (statusFilter === "active"),
@@ -136,8 +138,10 @@ export default function AppointmentsPage() {
       if (searchQuery) {
         results = results.filter(
           (s) =>
-            s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            s.description.toLowerCase().includes(searchQuery.toLowerCase()),
+            s.service.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            s.service.description
+              .toLowerCase()
+              .includes(searchQuery.toLowerCase()),
         );
       }
       (async () => setAppointments(results))();
@@ -196,7 +200,7 @@ export default function AppointmentsPage() {
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[150px] bg-background">
+              <SelectTrigger className="w-[160px] bg-background">
                 <Filter className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -256,18 +260,24 @@ export default function AppointmentsPage() {
                     />
                   </TableCell>
                   <TableCell>
-                    <div className="font-semibold text-primary">
-                      {appointment.service.name}
-                    </div>
-                    <div className="text-xs text-muted-foreground truncate max-w-[400px]">
-                      {appointment.service.description}
-                    </div>
+                    <Link href={`/dashboard/client/appointment/${appointment.id}`}>
+                      <div className="font-semibold text-primary">
+                        {appointment.service.name}
+                      </div>
+                      <div className="text-xs text-muted-foreground truncate max-w-[400px]">
+                        {appointment.service.description}
+                      </div>
+                    </Link>
                   </TableCell>
                   <TableCell className="">
-                    {new Date(appointment.startTime).toUTCString()}
+                    {new Date(appointment.startTime).toLocaleString("en", {
+                      dateStyle: "full",
+                      timeStyle: "short",
+                    })}
                   </TableCell>
                   <TableCell>
-                    <AcriveBadge isActive={appointment.isActive} />
+                    {appointment.status}
+                    {/* <AcriveBadge isActive={appointment.isActive} /> */}
                   </TableCell>
                   <TableCell className="text-right">
                     {/* <Button
@@ -355,10 +365,10 @@ export default function AppointmentsPage() {
               value={limit.toFixed()}
               onValueChange={(v) => {
                 setLimit(Number(v));
-                setPage(2); // Reset to page 1 on limit change
+                setPage(1); // Reset to page 1 on limit change
               }}
             >
-              <SelectTrigger className="h-8 w-[70px]">
+              <SelectTrigger className="h-8 w-[80px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

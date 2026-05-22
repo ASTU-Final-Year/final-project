@@ -9,7 +9,7 @@
     "db:push": "NODE_ENV=production PROD_DATABASE=1 drizzle-kit push --config=drizzle.config.ts",
     "db:push:sqlite": "drizzle-kit push --config=drizzle.config.sqlite.ts",
     "db:studio": "NODE_ENV=production PROD_DATABASE=1 drizzle-kit studio --config=drizzle.config.ts",
-    "db:studio:sqlite": "drizzle-kit studio --config=drizzle.config.sqlite.ts",
+    "db:studio:sqlite": "PROD_DATABASE= drizzle-kit studio --config=drizzle.config.sqlite.ts",
     "dev": "bun db:push:sqlite && bun --watch ./index.ts",
     "dev:prod": "PROD_DATABASE=1 bun db:push:sqlite && bun --watch ./index.ts",
     "start": "NODE_ENV=production bun db:push && bun ./index.ts",
