@@ -791,7 +791,8 @@ export const sampleData = {
       "price": 150,
       "organizationId": fromDriverUUID("4bd16724-94c7-428b-b8ed-ae02a6b62a04"),
       "calendarId": fromDriverUUID("c8daca93-0603-41ce-ba51-324d6b081e1e"),
-      "isActive": true
+      "isActive": true,
+      "imageUrl": "https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=800&auto=format"
     },
     {
       "id": fromDriverUUID("073598c8-bd74-409f-8ca1-e3b2fbc7a4de"),
@@ -800,7 +801,8 @@ export const sampleData = {
       "price": 200,
       "organizationId": fromDriverUUID("4bd16724-94c7-428b-b8ed-ae02a6b62a04"),
       "calendarId": fromDriverUUID("c8daca93-0603-41ce-ba51-324d6b081e1e"),
-      "isActive": true
+      "isActive": true,
+      "imageUrl": "https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=800&auto=format"
     },
     {
       "id": fromDriverUUID("9cef6cc2-ec9e-4e0c-99b7-a13e94eb5117"),
@@ -809,7 +811,8 @@ export const sampleData = {
       "price": 100,
       "organizationId": fromDriverUUID("4bd16724-94c7-428b-b8ed-ae02a6b62a04"),
       "calendarId": fromDriverUUID("c8daca93-0603-41ce-ba51-324d6b081e1e"),
-      "isActive": true
+      "isActive": true,
+      "imageUrl": "https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=800&auto=format"
     },
     
     // Premium Salon & Spa services
@@ -820,7 +823,8 @@ export const sampleData = {
       "price": 800,
       "organizationId": fromDriverUUID("83824481-00e1-4b05-b7e3-de54026b1f47"),
       "calendarId": fromDriverUUID("895baf0f-7269-41b7-96bc-2624b51813dd"),
-      "isActive": true
+      "isActive": true,
+      "imageUrl": "https://images.unsplash.com/photo-1560869713-7d0a29430803?w=800&auto=format"
     },
     
     // City Medical Center services
@@ -831,7 +835,8 @@ export const sampleData = {
       "price": 300,
       "organizationId": fromDriverUUID("976e9b87-f6c3-416a-9e1a-e0350e359697"),
       "calendarId": fromDriverUUID("c2837034-512f-4788-b1f9-c1516907b6c4"),
-      "isActive": true
+      "isActive": true,
+      "imageUrl": "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800&auto=format"
     },
     
     // Government Dental Clinic services
@@ -842,7 +847,8 @@ export const sampleData = {
       "price": 500,
       "organizationId": fromDriverUUID("0b7ab6df-13c0-4e29-885c-7ac5631588f6"),
       "calendarId": fromDriverUUID("33a8c73c-ebd4-4445-8f38-6c25423aeedd"),
-      "isActive": true
+      "isActive": true,
+      "imageUrl": "https://images.unsplash.com/photo-1609840114035-3c981b782dfe?w=800&auto=format"
     },
     
     // Elite Fitness Gym services
@@ -853,7 +859,8 @@ export const sampleData = {
       "price": 400,
       "organizationId": fromDriverUUID("f15e3b68-2bd4-4070-8377-1ca6dba659c5"),
       "calendarId": fromDriverUUID("e20446fc-6b34-4820-b3e5-35848b9bce5d"),
-      "isActive": true
+      "isActive": true,
+      "imageUrl": "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=800&auto=format"
     },
     
     // AutoCare Plus services
@@ -864,7 +871,8 @@ export const sampleData = {
       "price": 800,
       "organizationId": fromDriverUUID("fc53bec0-736f-4b93-adf5-c3ac25dbc1be"),
       "calendarId": fromDriverUUID("7f9b9b3e-26e3-4f72-916f-cc668d5c696a"),
-      "isActive": true
+      "isActive": true,
+      "imageUrl": "https://images.unsplash.com/photo-1487754180451-c456f719a1fc?w=800&auto=format"
     },
     
     // Bethzatha Hospital services
@@ -875,7 +883,8 @@ export const sampleData = {
       "price": 500,
       "organizationId": fromDriverUUID("81e054ac-aafc-4fa3-8d22-f261432518da"),
       "calendarId": fromDriverUUID("7c3554db-a0ff-4dcd-aace-f57c5e19018f"),
-      "isActive": true
+      "isActive": true,
+      "imageUrl": "https://images.unsplash.com/photo-1666214280557-f1b5022eb634?w=800&auto=format"
     },
     {
       "id": fromDriverUUID("5da92f8e-6abd-4eeb-a8e4-b8719d2b48ba"),
@@ -884,7 +893,8 @@ export const sampleData = {
       "price": 1000,
       "organizationId": fromDriverUUID("81e054ac-aafc-4fa3-8d22-f261432518da"),
       "calendarId": fromDriverUUID("22860e92-e9a0-4542-a143-6776780bdb1a"),
-      "isActive": true
+      "isActive": true,
+      "imageUrl": "https://images.unsplash.com/photo-1554734867-bf3c00a49371?w=800&auto=format"
     },
     
     // Yekatit 12 Hospital services
@@ -895,7 +905,8 @@ export const sampleData = {
       "price": 800,
       "organizationId": fromDriverUUID("d38848d7-437e-4275-a765-9b6b2eb46944"),
       "calendarId": fromDriverUUID("587b1268-4162-49f5-8f9e-2bde50c3b186"),
-      "isActive": true
+      "isActive": true,
+      "imageUrl": "https://images.unsplash.com/photo-1584036561566-baf8f5f1b144?w=800&auto=format"
     },
     {
       "id": fromDriverUUID("e20446fc-6b34-4820-b3e5-35848b9bce5d"),
@@ -904,7 +915,8 @@ export const sampleData = {
       "price": 400,
       "organizationId": fromDriverUUID("d38848d7-437e-4275-a765-9b6b2eb46944"),
       "calendarId": fromDriverUUID("06dda58f-4538-41b3-830e-f65580809b64"),
-      "isActive": true
+      "isActive": true,
+      "imageUrl": "https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?w=800&auto=format"
     },
     {
       "id": fromDriverUUID("7f9b9b3e-26e3-4f72-916f-cc668d5c696a"),
@@ -913,7 +925,8 @@ export const sampleData = {
       "price": 1500,
       "organizationId": fromDriverUUID("d38848d7-437e-4275-a765-9b6b2eb46944"),
       "calendarId": fromDriverUUID("587b1268-4162-49f5-8f9e-2bde50c3b186"),
-      "isActive": true
+      "isActive": true,
+      "imageUrl": "https://images.unsplash.com/photo-1579684947550-22e945225d9a?w=800&auto=format"
     },
     {
       "id": fromDriverUUID("22860e92-e9a0-4542-a143-6776780bdb1a"),
@@ -922,7 +935,8 @@ export const sampleData = {
       "price": 0,
       "organizationId": fromDriverUUID("d38848d7-437e-4275-a765-9b6b2eb46944"),
       "calendarId": fromDriverUUID("06dda58f-4538-41b3-830e-f65580809b64"),
-      "isActive": true
+      "isActive": true,
+      "imageUrl": "https://images.unsplash.com/photo-1587854692152-cbe660dbde88?w=800&auto=format"
     },
     
     // St. Paul Hospital services
@@ -933,7 +947,8 @@ export const sampleData = {
       "price": 1000,
       "organizationId": fromDriverUUID("53d7a49a-93f0-4b3b-ae46-956bb2d5403d"),
       "calendarId": fromDriverUUID("35ebd79b-4033-49c8-8b80-d91c847b4f65"),
-      "isActive": true
+      "isActive": true,
+      "imageUrl": "https://images.unsplash.com/photo-1516549655169-df83a0774514?w=800&auto=format"
     },
     {
       "id": fromDriverUUID("587b1268-4162-49f5-8f9e-2bde50c3b186"),
@@ -942,7 +957,8 @@ export const sampleData = {
       "price": 800,
       "organizationId": fromDriverUUID("53d7a49a-93f0-4b3b-ae46-956bb2d5403d"),
       "calendarId": fromDriverUUID("570c7cf6-0337-4334-89a1-e8b4738b5f94"),
-      "isActive": true
+      "isActive": true,
+      "imageUrl": "https://images.unsplash.com/photo-1631815588090-d4bfec5b1ccb?w=800&auto=format"
     },
     {
       "id": fromDriverUUID("06dda58f-4538-41b3-830e-f65580809b64"),
@@ -951,7 +967,8 @@ export const sampleData = {
       "price": 5000,
       "organizationId": fromDriverUUID("53d7a49a-93f0-4b3b-ae46-956bb2d5403d"),
       "calendarId": fromDriverUUID("35ebd79b-4033-49c8-8b80-d91c847b4f65"),
-      "isActive": true
+      "isActive": true,
+      "imageUrl": "https://images.unsplash.com/photo-1516574187841-cb9cc2ca948b?w=800&auto=format"
     },
     
     // Myungsung Hospital services
@@ -962,7 +979,8 @@ export const sampleData = {
       "price": 600,
       "organizationId": fromDriverUUID("13485662-824f-4a1a-9c14-c50fe68e91d6"),
       "calendarId": fromDriverUUID("08ab728c-a2f3-4417-8a84-88d171baaafd"),
-      "isActive": true
+      "isActive": true,
+      "imageUrl": "https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=800&auto=format"
     },
     {
       "id": fromDriverUUID("570c7cf6-0337-4334-89a1-e8b4738b5f94"),
@@ -971,7 +989,8 @@ export const sampleData = {
       "price": 700,
       "organizationId": fromDriverUUID("13485662-824f-4a1a-9c14-c50fe68e91d6"),
       "calendarId": fromDriverUUID("01a12379-6f9a-432c-8252-a30c19893c52"),
-      "isActive": true
+      "isActive": true,
+      "imageUrl": "https://images.unsplash.com/photo-1597764690523-15bea4c581c9?w=800&auto=format"
     },
     {
       "id": fromDriverUUID("08ab728c-a2f3-4417-8a84-88d171baaafd"),
@@ -980,8 +999,10 @@ export const sampleData = {
       "price": 500,
       "organizationId": fromDriverUUID("13485662-824f-4a1a-9c14-c50fe68e91d6"),
       "calendarId": fromDriverUUID("08ab728c-a2f3-4417-8a84-88d171baaafd"),
-      "isActive": true
+      "isActive": true,
+      "imageUrl": "https://images.unsplash.com/photo-1590502593747-42a996133562?w=800&auto=format"
     },
+    
     
     // Ethiopian Revenue Authority services
     {
@@ -991,7 +1012,8 @@ export const sampleData = {
       "price": 0,
       "organizationId": fromDriverUUID("5a31b145-0992-4e12-b6d0-b9917c0f7cfd"),
       "calendarId": fromDriverUUID("83ff2216-4fe6-47b2-9723-842d50c4d2e2"),
-      "isActive": true
+      "isActive": true,
+      "imageUrl": "https://images.unsplash.com/photo-1709880945165-d2208c6ad2ec?w=800&auto=format"
     },
     
     // Ethio Telecom services
@@ -1002,7 +1024,8 @@ export const sampleData = {
       "price": 50,
       "organizationId": fromDriverUUID("d9940d5b-7158-475f-bd97-22c6dec23350"),
       "calendarId": fromDriverUUID("37a47691-d55a-4124-9ff4-6aa4cd714bcd"),
-      "isActive": true
+      "isActive": true,
+      "imageUrl": "https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format"
     },
     
     // Habesha Bank services
@@ -1013,7 +1036,8 @@ export const sampleData = {
       "price": 0,
       "organizationId": fromDriverUUID("9ed5e12e-7de5-4dd8-bb97-7b0031f10979"),
       "calendarId": fromDriverUUID("287111d6-87c8-4380-80b7-440bd2af3cd9"),
-      "isActive": true
+      "isActive": true,
+      "imageUrl": "https://images.unsplash.com/photo-1501167786227-4cba60f6d58f?w=800&auto=format"
     },
     
     // Sheger Cafe services
@@ -1024,7 +1048,8 @@ export const sampleData = {
       "price": 250,
       "organizationId": fromDriverUUID("47a0016c-008f-497b-a906-3f2317b1c9e1"),
       "calendarId": fromDriverUUID("d3704081-1ddb-4062-b4b5-ad1c5ccd5573"),
-      "isActive": true
+      "isActive": true,
+      "imageUrl": "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&auto=format"
     },
     
     // Addis Tech Hub services
@@ -1035,7 +1060,8 @@ export const sampleData = {
       "price": 5000,
       "organizationId": fromDriverUUID("e24dfabc-07c1-428c-85fb-a7503068136b"),
       "calendarId": fromDriverUUID("b93537b9-842c-4f75-9e08-bdfef28a858f"),
-      "isActive": true
+      "isActive": true,
+      "imageUrl": "https://images.unsplash.com/photo-1547658719-da2b51169166?w=800&auto=format"
     }
   ],
   

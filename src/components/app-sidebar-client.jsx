@@ -51,6 +51,11 @@ const navData = [
     url: "/dashboard/client/appointments",
     icon: CalendarDays,
   },
+  {
+    title: "Browse Services",
+    url: "/services",
+    icon: CalendarDays,
+  },
   // {
   //   title: "Analytics",
   //   url: "/dashboard/employee/analytics",

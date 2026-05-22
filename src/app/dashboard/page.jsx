@@ -37,11 +37,11 @@ export default function PortalDashboard() {
     return <div>Loading...</div>;
   }
   if (session.user?.role === "employee") {
-    return redirect("/dashboard/employee", RedirectType.push);
+    return redirect("/dashboard/employee", RedirectType.replace);
   } else if (session.user?.role === "organization_admin") {
-    return redirect("/dashboard/organization", RedirectType.push);
+    return redirect("/dashboard/organization", RedirectType.replace);
   } else if (session.user?.role === "client") {
-    return redirect("/dashboard/client", RedirectType.push);
+    return redirect("/dashboard/client", RedirectType.replace);
   }
   return (
     <div className="min-h-dvh flex flex-col p-4 bg-accent">

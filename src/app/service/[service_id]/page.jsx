@@ -18,7 +18,7 @@ export default function OrganizationServicePublicPage() {
     try {
       // Fetch service with organization and calendar data
       const dataRes = await RequestHandler.Get(
-        `/query/v1/organizationService?guest&~id='${service_id}'&select={"":true,"organization":["name","address","email","phone","sector","isGovernment"],"calendar":["available"]}`,
+        `/query/v1/organizationService?guest&~id='${service_id}'&select={"":true,"organization":["id","name","address","email","phone","sector","isGovernment"],"calendar":["available"]}`,
       );
 
       if (dataRes.ok) {

@@ -52,6 +52,7 @@ import RequestHandler from "@/lib/request-handler";
 import { CalendarDatePicker } from "../calendar-date-picker";
 import { redirect, useRouter } from "next/navigation";
 import { useSessionStore } from "@/store";
+import Link from "next/link";
 
 const sectorIcons = {
   Beauty: Scissors,
@@ -64,6 +65,9 @@ const sectorIcons = {
   Telecommunications: Wifi,
   Government: Building2,
 };
+
+const fallbackImage =
+  "https://images.unsplash.com/photo-1604076850742-4c7221f3101b?w=800&auto=format";
 
 export default function PublicOrganizationService({ service }) {
   const router = useRouter();
@@ -224,21 +228,30 @@ export default function PublicOrganizationService({ service }) {
   if (!service) return null;
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
+    <div className="container mx-auto px-4 pb-8 max-w-6xl">
       {/* Service Header */}
-      <div className="mb-8">
-        <Badge variant="secondary" className="mb-4 gap-2">
-          {service.isActive ? (
-            <>
-              <CheckCircle className="w-3 h-3" />
-              Available
-            </>
-          ) : (
-            "Unavailable"
-          )}
-        </Badge>
-        <h1 className="text-3xl md:text-4xl font-bold mb-4">{service.name}</h1>
-        <p className="text-muted-foreground text-lg">{service.description}</p>
+      <div
+        className="flex flex-col justify-end mb-8 h-[400px] rounded"
+        style={{
+          background: `url('${service.imageUrl || fallbackImage}') left / cover no-repeat`,
+        }}
+      >
+        <div className="p-4 text-white bg-black/50 rounded-[5px] backdrop-blur-md">
+          {/* <Badge variant="secondary" className="mb-4 gap-2">
+            {service.isActive ? (
+              <>
+                <CheckCircle className="w-3 h-3" />
+                Available
+              </>
+            ) : (
+              "Unavailable"
+            )}
+          </Badge> */}
+          <h1 className="text-3xl md:text-4xl font-bold mb-4">
+            {service.name}
+          </h1>
+          <p className="text-muted text-lg">{service.description}</p>
+        </div>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8">
@@ -284,14 +297,16 @@ export default function PublicOrganizationService({ service }) {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <SectorIcon className="w-5 h-5" />
+                  {/* <SectorIcon className="w-5 h-5" /> */}
                   Service Provider
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
                   <h3 className="font-semibold text-lg mb-2">
-                    {service.organization.name}
+                    <Link href={`/organization/${service.organization.id}`}>
+                      {service.organization.name}
+                    </Link>
                   </h3>
                   <div className="space-y-2 text-muted-foreground">
                     <div className="flex items-center gap-2">
@@ -321,7 +336,7 @@ export default function PublicOrganizationService({ service }) {
           )}
 
           {/* Additional Info */}
-          <Card>
+          {/* <Card>
             <CardHeader>
               <CardTitle>What to Expect</CardTitle>
             </CardHeader>
@@ -341,7 +356,7 @@ export default function PublicOrganizationService({ service }) {
                 </li>
               </ul>
             </CardContent>
-          </Card>
+          </Card> */}
         </div>
 
         {/* Booking Sidebar - Right Column */}

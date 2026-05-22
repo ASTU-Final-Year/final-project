@@ -19,9 +19,9 @@ export default function OrganizationOrganizationPublicPage() {
     // (async () => setIsLoading(true))();
 
     const [dataRes, servRes] = await Promise.all([
-      RequestHandler.Get(`/query/v1/organization?~id=${organization_id}`),
+      RequestHandler.Get(`/query/v1/organization?guest&~id=${organization_id}`),
       RequestHandler.Get(
-        `/query/v1/organizationService?~organizationId=${organization_id}`,
+        `/query/v1/organizationService?guest&~organizationId=${organization_id}`,
       ),
     ]);
 

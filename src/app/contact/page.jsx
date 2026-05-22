@@ -24,6 +24,9 @@ import {
   CheckCircle,
   Bot,
   Headphones,
+  X,
+  // LinkedIn,
+  // Instagram,
 } from "lucide-react";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
@@ -184,34 +187,34 @@ export default function ContactPage() {
                   Follow Us
                 </h3>
                 <div className="flex justify-center gap-4">
-                  <Button
+                  {/* <Button
                     variant="outline"
                     size="icon"
                     className="rounded-full border-indigo-200 text-indigo-600 hover:bg-indigo-50"
                   >
                     <Facebook className="h-4 w-4" />
-                  </Button>
+                  </Button> */}
                   <Button
                     variant="outline"
                     size="icon"
                     className="rounded-full border-indigo-200 text-indigo-600 hover:bg-indigo-50"
                   >
-                    <Twitter className="h-4 w-4" />
+                    <X className="h-4 w-4" />
                   </Button>
-                  <Button
+                  {/* <Button
                     variant="outline"
                     size="icon"
                     className="rounded-full border-indigo-200 text-indigo-600 hover:bg-indigo-50"
                   >
-                    <Linkedin className="h-4 w-4" />
-                  </Button>
-                  <Button
+                    <LinkedIn className="h-4 w-4" />
+                  </Button> */}
+                  {/* <Button
                     variant="outline"
                     size="icon"
                     className="rounded-full border-indigo-200 text-indigo-600 hover:bg-indigo-50"
                   >
                     <Instagram className="h-4 w-4" />
-                  </Button>
+                  </Button> */}
                 </div>
               </CardContent>
             </Card>

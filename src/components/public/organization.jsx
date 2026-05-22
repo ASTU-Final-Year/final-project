@@ -15,6 +15,7 @@ import {
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import Link from "next/link";
+import ServiceCard from "./service-card";
 
 export default function PublicOrganization({ organization, services }) {
   const rating = organization.rating || 0;
@@ -190,51 +191,52 @@ export default function PublicOrganization({ organization, services }) {
               {services.map(
                 (service) =>
                   service.isActive && (
-                    <div
-                      key={service.id}
-                      className="group relative bg-card text-card-foreground p-6 rounded border shadow-sm hover:shadow-md hover:border-primary/40 transition-all duration-300 flex flex-col h-full"
-                    >
-                      <div className="relative z-10 flex-1">
-                        {/* <div className="w-10 h-10 bg-muted text-muted-foreground rounded border border-border flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-colors duration-300">
-                          <CalendarDays className="w-5 h-5" />
-                        </div> */}
-                        <div className="flex gap-2 justify-between">
-                          <h3 className="text-base font-semibold mb-2 group-hover:text-primary transition-colors duration-300 line-clamp-1">
-                            {service.name}
-                          </h3>
+                    <ServiceCard key={service.id} service={service} />
+                    // <div
+                    //   key={service.id}
+                    //   className="group relative bg-card text-card-foreground p-6 rounded border shadow-sm hover:shadow-md hover:border-primary/40 transition-all duration-300 flex flex-col h-full"
+                    // >
+                    //   <div className="relative z-10 flex-1">
+                    //     {/* <div className="w-10 h-10 bg-muted text-muted-foreground rounded border border-border flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-colors duration-300">
+                    //       <CalendarDays className="w-5 h-5" />
+                    //     </div> */}
+                    //     <div className="flex gap-2 justify-between">
+                    //       <h3 className="text-base font-semibold mb-2 group-hover:text-primary transition-colors duration-300 line-clamp-1">
+                    //         {service.name}
+                    //       </h3>
 
-                          <Button
-                            variant="link"
-                            className="flex items-center gap-1.5 text-primary text-sm font-medium hover:underline underline-offset-4"
-                            asChild
-                          >
-                            <Link href={`/service/${service.id}`}>
-                              view
-                              <ArrowRight className="w-3.5 h-3.5" />
-                            </Link>
-                          </Button>
-                        </div>
+                    //       <Button
+                    //         variant="link"
+                    //         className="flex items-center gap-1.5 text-primary text-sm font-medium hover:underline underline-offset-4"
+                    //         asChild
+                    //       >
+                    //         <Link href={`/service/${service.id}`}>
+                    //           view
+                    //           <ArrowRight className="w-3.5 h-3.5" />
+                    //         </Link>
+                    //       </Button>
+                    //     </div>
 
-                        <p className="text-muted-foreground text-sm leading-relaxed mb-6 line-clamp-2">
-                          {service.description}
-                        </p>
-                      </div>
+                    //     <p className="text-muted-foreground text-sm leading-relaxed mb-6 line-clamp-2">
+                    //       {service.description}
+                    //     </p>
+                    //   </div>
 
-                      {/* <div className="relative z-10 mt-auto pt-2 border-t border-border/50 flex items-center justify-between">
-                        <span className="text-xs font-medium text-muted-foreground">
-                        </span>
-                        <Button
-                          variant="link"
-                          className="flex items-center gap-1.5 text-primary text-sm font-medium hover:underline underline-offset-4"
-                          asChild
-                        >
-                          <Link href={`/service/${service.id}`}>
-                            view
-                            <ArrowRight className="w-3.5 h-3.5" />
-                          </Link>
-                        </Button>
-                      </div> */}
-                    </div>
+                    //   <div className="relative z-10 mt-auto pt-2 border-t border-border/50 flex items-center justify-between">
+                    //     <span className="text-xs font-medium text-muted-foreground">
+                    //     </span>
+                    //     <Button
+                    //       variant="link"
+                    //       className="flex items-center gap-1.5 text-primary text-sm font-medium hover:underline underline-offset-4"
+                    //       asChild
+                    //     >
+                    //       <Link href={`/service/${service.id}`}>
+                    //         view
+                    //         <ArrowRight className="w-3.5 h-3.5" />
+                    //       </Link>
+                    //     </Button>
+                    //   </div>
+                    // </div>
                   ),
               )}
 

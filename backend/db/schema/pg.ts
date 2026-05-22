@@ -243,6 +243,8 @@ export const pgOrganizationServices = pgTable("organization_services", {
       onDelete: "cascade",
     }),
   price: numeric("price", { mode: "number" }).notNull().default(0.0),
+  rating: numeric("rating", { mode: "number" }).notNull().default(0.0),
+  imageUrl: varchar("image_url", { length: 256 }),
   ...timestamps,
 });
 

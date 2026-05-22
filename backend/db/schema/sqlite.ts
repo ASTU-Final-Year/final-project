@@ -230,6 +230,8 @@ export const sqOrganizationServices = sqliteTable("organization_services", {
   description: text("description", { length: 200 }).notNull().default(""),
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
   price: numeric("price", { mode: "number" }).notNull().default(0.0),
+  rating: numeric("rating", { mode: "number" }).notNull().default(0.0),
+  imageUrl: text("image_url", { length: 256 }),
   calendarId: cpuuid("calendar_id").references(
     () => sqOrganizationCalendars.id,
     {
