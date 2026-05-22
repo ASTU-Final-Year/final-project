@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Chatbot } from "@/components/chatbot/chatbot";
+import { Toaster } from "@/components/ui/sonner";
 
 const notoSans = Noto_Sans({ variable: "--font-sans" });
 
@@ -26,10 +27,11 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={cn("font-sans", notoSans.variable)}>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-dots`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-accent`}
       >
         <TooltipProvider>
           {children}
+          <Toaster />
           <Chatbot />
         </TooltipProvider>
       </body>

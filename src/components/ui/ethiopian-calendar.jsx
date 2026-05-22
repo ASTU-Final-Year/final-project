@@ -21,8 +21,10 @@ function EthiopianCalendar({
   buttonVariant = "ghost",
   formatters,
   components,
-  startMonth = new Date(Date.now() - 40 * 365.25 * 24 * 60 * 60 * 1000),
-  endMonth = new Date(Date.now() + 10 * 365.25 * 24 * 60 * 60 * 1000),
+  startMonth = new Date(
+    new Date().getTime() - 40 * 365.25 * 24 * 60 * 60 * 1000,
+  ),
+  endMonth = new Date(new Date().getTime() + 10 * 365.25 * 24 * 60 * 60 * 1000),
   ...props
 }) {
   const defaultClassNames = getDefaultClassNames();
@@ -32,6 +34,7 @@ function EthiopianCalendar({
       numerals="latn"
       startMonth={startMonth}
       endMonth={endMonth}
+      weekStartsOn={0}
       showOutsideDays={showOutsideDays}
       className={cn(
         "bg-background group/calendar p-3 [--cell-size:--spacing(8)] [[data-slot=card-content]_&]:bg-transparent [[data-slot=popover-content]_&]:bg-transparent",
@@ -78,7 +81,7 @@ function EthiopianCalendar({
           defaultClassNames.dropdowns,
         ),
         dropdown_root: cn(
-          "relative has-focus:border-ring border border-input shadow-xs has-focus:ring-ring/50 has-focus:ring-[3px] rounded-md",
+          "relative has-focus:border-ring border-none border-input shadow-xs has-focus:ring-ring/50 has-focus:ring-[3px] rounded-md",
           defaultClassNames.dropdown_root,
         ),
         dropdown: cn(
@@ -108,7 +111,7 @@ function EthiopianCalendar({
           defaultClassNames.week_number,
         ),
         day: cn(
-          "relative w-full h-full p-0 text-center group/day aspect-square select-none data-[selected=true]:rounded-full data-[selected=true]:bg-primary/15",
+          "relative w-full h-full p-0 text-center group/day aspect-square select-none data-[selected=true]:rounded-md data-[selected=true]:bg-primary/15",
           // "relative w-full h-full p-0 text-center [&:last-child[data-selected=true]_button]:rounded-r-md group/day aspect-square select-none",
           // props.showWeekNumber
           //   ? "[&:nth-child(2)[data-selected=true]_button]:rounded-l"
@@ -125,7 +128,7 @@ function EthiopianCalendar({
         ),
         range_end: cn("rounded-r-full bg-accent", defaultClassNames.range_end),
         today: cn(
-          "bg-primary/10 border border-primary/25 rounded-full text-primary data-[selected=true]:rounded-full",
+          "bg-primary/10 border border-primary/25 rounded-md text-primary data-[selected=true]:rounded-md",
           defaultClassNames.today,
         ),
         outside: cn(
@@ -212,7 +215,7 @@ function EthiopianCalendarDayButton({ className, day, modifiers, ...props }) {
       data-range-end={modifiers.range_end}
       data-range-middle={modifiers.range_middle}
       className={cn(
-        "relative isolate z-10 flex aspect-square size-auto w-full min-w-(--cell-size) flex-col gap-1 border-0 leading-none font-normal group-data-[focused=true]/day:relative group-data-[focused=true]/day:z-10 group-data-[focused=true]/day:border-ring group-data-[focused=true]/day:ring-[3px] group-data-[focused=true]/day:ring-ring/50 data-[range-end=true]:rounded data-[range-end=true]:rounded-r-full data-[range-end=true]:bg-primary data-[range-end=true]:text-primary-foreground data-[range-middle=true]:rounded-none data-[range-middle=true]:bg-primary/10 data-[range-middle=true]:text-foreground data-[range-start=true]:rounded data-[range-start=true]:rounded-l-full data-[range-start=true]:bg-primary data-[range-start=true]:text-primary-foreground data-[selected-single=true]:rounded-full hover:rounded-full data-[selected-single=true]:border data-[selected-single=true]:border-primary/75 data-[selected-single=true]:text-primary dark:hover:text-foreground [&>span]:text-xs [&>span]:opacity-70",
+        "relative isolate z-10 flex aspect-square size-auto w-full min-w-(--cell-size) flex-col gap-1 border-0 leading-none font-normal group-data-[focused=true]/day:relative group-data-[focused=true]/day:z-10 group-data-[focused=true]/day:border-ring group-data-[focused=true]/day:ring-[3px] group-data-[focused=true]/day:ring-ring/50 data-[range-end=true]:rounded data-[range-end=true]:rounded-r-full data-[range-end=true]:bg-primary data-[range-end=true]:text-primary-foreground data-[range-middle=true]:rounded-none data-[range-middle=true]:bg-primary/10 data-[range-middle=true]:text-foreground data-[range-start=true]:rounded data-[range-start=true]:rounded-l-full data-[range-start=true]:bg-primary data-[range-start=true]:text-primary-foreground data-[selected-single=true]:rounded-md hover:rounded-md data-[selected-single=true]:border data-[selected-single=true]:border-primary/75 data-[selected-single=true]:text-primary dark:hover:text-foreground [&>span]:text-xs [&>span]:opacity-70",
         defaultClassNames.day,
         className,
       )}

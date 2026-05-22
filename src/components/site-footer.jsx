@@ -26,14 +26,33 @@ export function SiteFooter() {
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-10">
           {/* Brand Col */}
           <div className="lg:col-span-1 md:col-span-3 space-y-6">
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col gap-3">
+              <div className="p-2 rounded-full text-primary">
+                {/* <Activity className="h-5 w-5" /> */}
+                <Image
+                  alt="logo"
+                  src="/images/logo.png"
+                  width={398 / 5}
+                  height={395 / 5}
+                  className="drop-shadow-slate-900/80 drop-shadow-lg"
+                />
+              </div>
+              <Link
+                href="/"
+                className="font-bold text-xl hidden sm:inline-block tracking-tight"
+              >
+                ServeSync<span className="text-blue-500">+</span>
+              </Link>
+            </div>
+
+            {/* <div className="flex items-center gap-3">
               <div className="bg-primary p-2 rounded-xl text-white shadow-sm">
                 <Activity className="h-5 w-5" />
               </div>
               <span className="font-bold text-xl tracking-tight">
                 ServeSync<span className="text-primary">+</span>
               </span>
-            </div>
+            </div> */}
             <div className="flex flex-col gap-2 pt-2">
               <div className="flex items-center gap-2 text-sm text-muted/75">
                 <Command className="h-4 w-4" /> v1.0.0 (Beta)

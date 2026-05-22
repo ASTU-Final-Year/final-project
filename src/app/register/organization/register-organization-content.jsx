@@ -27,12 +27,14 @@ import {
   EyeOff,
   CheckCircle2,
   MapPin,
+  HomeIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePricingPlanStore } from "@/store";
 import RequestHandler from "@/lib/request-handler";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Auth from "@/lib/auth";
+import Link from "next/link";
 
 export default function RegisterOrganizationContent({ searchParams }) {
   const router = useRouter();
@@ -66,7 +68,7 @@ export default function RegisterOrganizationContent({ searchParams }) {
     orgEmail: "",
     orgPhone: "",
     pricingPlanId: "",
-    billingPeriodAnnual: false,
+    billingPeriodYearly: false,
   });
 
   // Add these to your state declarations
@@ -204,13 +206,13 @@ export default function RegisterOrganizationContent({ searchParams }) {
       email: formData.orgEmail,
       phone: formData.orgPhone,
       pricingPlanId: formData.pricingPlanId,
-      billingPeriod: formData.billingPeriodAnnual ? "annually" : "monthly",
+      billingPeriod: formData.billingPeriodYearly ? "yearly" : "monthly",
       // billingStart:
       //   plan?.price > 0 ? new Date(Time.after(7).days.fromNow()._ms).toUTCString() : null,
       // billingEnd:
       //   plan?.price > 0
       //     ? new Date(
-      //         Time.after(formData.billingPeriodAnnual ? 365 : 30).days.fromNow()
+      //         Time.after(formData.billingPeriodYearly ? 365 : 30).days.fromNow()
       //           ._ms,
       //       ).toUTCString()
       //     : null,
@@ -234,10 +236,10 @@ export default function RegisterOrganizationContent({ searchParams }) {
   return (
     <div className="max-w-3xl mx-auto w-full">
       <div className="text-center mb-10">
-        <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-primary/10 mb-4">
+        {/* <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-primary/10 mb-4">
           <Building2 className="h-8 w-8 text-primary" />
-        </div>
-        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+        </div> */}
+        <h1 className="text-3xl font-extrabold text-slate-100 tracking-tight">
           Set up your workspace
         </h1>
       </div>
@@ -631,12 +633,12 @@ export default function RegisterOrganizationContent({ searchParams }) {
                     <Label className="text-base font-normal">
                       <Switch
                         size="default"
-                        checked={formData.billingPeriodAnnual}
+                        checked={formData.billingPeriodYearly}
                         onCheckedChange={(checked) =>
-                          handleChange("billingPeriodAnnual", checked)
+                          handleChange("billingPeriodYearly", checked)
                         }
                       />
-                      Annual Billing
+                      Yearly Billing
                     </Label>
                     <p className="text-sm text-slate-500 ml-10">
                       Billing will be calculated and done anually
@@ -705,6 +707,27 @@ export default function RegisterOrganizationContent({ searchParams }) {
             )}
           </div>
         </form>
+
+        {/* Footer */}
+        <div className="flex flex-col border-t p-6 bg-slate-50/50">
+          <p className="text-sm text-slate-500 text-center flex justify-center gap-3">
+            <Link
+              href="/"
+              className="font-semibold text-primary hover:underline flex"
+            >
+              <HomeIcon size={18} />
+            </Link>
+            <span>
+              <span> Already have an account? </span>
+              <Link
+                href="/login"
+                className="font-semibold text-primary hover:underline"
+              >
+                Sign in
+              </Link>
+            </span>
+          </p>
+        </div>
       </div>
     </div>
   );

@@ -9,6 +9,10 @@ const nextConfig = {
   async rewrites() {
     return [
       {
+        source: '/query/:path*',
+        destination: 'http://localhost:' + backendPort + '/query/:path*',
+      },
+      {
         source: '/api/:path*',
         destination: 'http://localhost:' + backendPort + '/api/:path*',
       },

@@ -93,7 +93,7 @@ export default function EmployeesPage() {
 
   // View & Filter States
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(5);
+  const [limit, setLimit] = useState(10);
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [view, setView] = useState("table");
@@ -132,20 +132,14 @@ export default function EmployeesPage() {
 
     const offset = (page - 1) * limit;
     const params = new URLSearchParams({
-      o: offset.toString(),
-      l: limit.toString(),
-      iuser: 1,
-      icalendar: 1,
+      offset: offset.toFixed(),
+      limit: limit.toFixed(),
     });
 
     const [countRes, dataRes, calRes] = await Promise.all([
-      RequestHandler.Get(
-        `/api/v1/organization/${organizationId}/employees/count`,
-      ),
-      RequestHandler.Get(
-        `/api/v1/organization/${organizationId}/employees?${params.toString()}`,
-      ),
-      RequestHandler.Get(`/api/v1/organization/${organizationId}/calendars`),
+      RequestHandler.Get(`/query/v1/employee?countOnly`),
+      RequestHandler.Get(`/query/v1/employee?${params.toString()}`),
+      RequestHandler.Get(`/query/v1/organizationCalendar?mine`),
     ]);
 
     if (countRes.ok) {
@@ -154,14 +148,13 @@ export default function EmployeesPage() {
     }
 
     if (dataRes.ok) {
-      const data = await dataRes.json();
-      let results = data.employees || [];
-
+      const { employees } = await dataRes.json();
+      let results = employees || [];
       setEmployees(results);
     }
 
     if (calRes.ok) {
-      const { calendars } = await calRes.json();
+      const { organizationCalendars: calendars } = await calRes.json();
       setCalendars(calendars);
     }
     (async () => setIsLoading(false))();
@@ -200,7 +193,7 @@ export default function EmployeesPage() {
   }, [fetchEmployees]);
 
   // --- CRUD Handlers ---
-  const handleAddEmployee = async () => {
+  const handleHireEmployee = async () => {
     setIsSubmitting(true);
     const res = await RequestHandler.Post(
       `/api/v1/organization/${organizationId}/employees`,
@@ -220,11 +213,30 @@ export default function EmployeesPage() {
     setIsSubmitting(false);
   };
 
+  const handleAddEmployee = async () => {
+    setIsSubmitting(true);
+    const res = await RequestHandler.Post(`/query/v1/employee`, {
+      body: [formData],
+    });
+    if (res.ok) {
+      setIsAddOpen(false);
+      setFormData({
+        email: "",
+        name: "",
+        description: "",
+        isActive: true,
+        calendarId: null,
+      });
+      fetchEmployees();
+    }
+    setIsSubmitting(false);
+  };
+
   const handleEditEmployee = async () => {
     setIsSubmitting(true);
     console.log(formData);
     const res = await RequestHandler.Patch(
-      `/api/v1/organization/${organizationId}/employee/${selectedEmployee.id}`,
+      `/query/v1/employee?~id=${selectedEmployee.id}`,
       { body: formData },
     );
     if (res.ok) {
@@ -238,7 +250,7 @@ export default function EmployeesPage() {
   const handleDeleteEmployee = async () => {
     setIsSubmitting(true);
     const res = await RequestHandler.Delete(
-      `/api/v1/organization/${organizationId}/employee/${selectedEmployee.id}`,
+      `/query/v1/employee?~id=${selectedEmployee.id}`,
     );
     if (res.ok) {
       setIsDeleteOpen(false);
@@ -295,7 +307,7 @@ export default function EmployeesPage() {
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[150px] bg-background">
+              <SelectTrigger className="w-[160px] bg-background">
                 <Filter className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -334,9 +346,7 @@ export default function EmployeesPage() {
                 <TableHead className="font-bold">Fullname</TableHead>
                 <TableHead className="font-bold">Job</TableHead>
                 <TableHead className="font-bold">Gender</TableHead>
-                <TableHead className="font-bold text-center">
-                  Calendar
-                </TableHead>
+                <TableHead className="font-bold">Calendar</TableHead>
                 <TableHead className="font-bold text-center">Status</TableHead>
                 <TableHead className="text-right font-bold">Actions</TableHead>
               </TableRow>
@@ -366,14 +376,14 @@ export default function EmployeesPage() {
                   </TableCell> */}
                   <TableCell>
                     <div className="font-semibold">
-                      {`${employee.user?.firstname} ${employee.user?.lastname}`}
+                      {`${employee.user.firstname} ${employee.user.lastname}`}
                     </div>
                     <div className="text-xs text-foreground/80">
                       <Link
-                        href={`mailto:${employee.user?.email}`}
+                        href={`mailto:${employee.user.email}`}
                         className="text-blue-800/90 hover:underline"
                       >
-                        {employee.user?.email}
+                        {employee.user.email}
                       </Link>
                     </div>
                   </TableCell>
@@ -386,8 +396,8 @@ export default function EmployeesPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="text-xs text-center text-muted-foreground truncate max-w-[400px]">
-                      {employee.user?.gender}
+                    <div className="text-xs text-muted-foreground truncate max-w-[400px]">
+                      {employee.user.gender}
                     </div>
                   </TableCell>
                   <TableCell>
@@ -451,7 +461,7 @@ export default function EmployeesPage() {
                     </div>
                     <div>
                       <div>
-                        {`${employee.user?.firstname} ${employee.user?.lastname}`}
+                        {`${employee.user.firstname} ${employee.user.lastname}`}
                       </div>
                       <p className="muted-foreground text-muted-foreground font-normal text-xs">
                         {employee.jobTitle}
@@ -511,13 +521,13 @@ export default function EmployeesPage() {
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Rows:</span>
             <Select
-              value={limit.toString()}
+              value={limit.toFixed()}
               onValueChange={(v) => {
                 setLimit(Number(v));
-                setPage(2); // Reset to page 1 on limit change
+                setPage(1); // Reset to page 1 on limit change
               }}
             >
-              <SelectTrigger className="h-8 w-[70px]">
+              <SelectTrigger className="h-8 w-[80px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -655,7 +665,7 @@ export default function EmployeesPage() {
               Cancel
             </Button>
             <Button
-              onClick={isEditOpen ? handleEditEmployee : handleAddEmployee}
+              onClick={isEditOpen ? handleEditEmployee : handleHireEmployee}
               disabled={isSubmitting}
             >
               {isSubmitting && (
@@ -663,6 +673,14 @@ export default function EmployeesPage() {
               )}
               {isEditOpen ? "Save Changes" : "Hire Employee"}
             </Button>
+            {!isEditOpen && (
+              <Button onClick={handleAddEmployee} disabled={isSubmitting}>
+                {isSubmitting && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                {"Add Employee"}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

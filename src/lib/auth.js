@@ -3,28 +3,52 @@ import RequestHandler from "./request-handler";
 
 const Auth = {
   async isLoggedIn() {
-    if (useSessionStore.getState().session) {
-      const res = await RequestHandler.Get("/api/v1/session")
-        .then(res => {
-          if (!res.ok) {
-            useSessionStore.setState({ session: null });
-            return false;
+    // if (!useSessionStore.getState().session) {
+      const res = await RequestHandler.Get("/query/v1/session")
+        .then(async (res) => {
+          if (res.ok) {
+            const { sessions: [session] } = await res.json();
+            if(session) {
+              const sessionState = useSessionStore.getState().session;
+              if(!sessionState) {
+                useSessionStore.setState((p) =>( {...p, session }));
+              }
+              return true;
+            }
           }
-          return true;
+          resetStores();
+          return false;
         });
       return res;
-    }
-    return false;
+  },
+
+  async checkSession() {
+    // if (!useSessionStore.getState().session) {
+      const res = await RequestHandler.Get("/query/v1/session")
+        .then(async (res) => {
+          if (res.ok) {
+            const { sessions: [session]} = await res.json();
+            if(!session) {
+              return false;
+            }
+            useSessionStore.setState((p) =>( {...p, session }));
+            return true;
+          }
+          return false;
+        });
+      return res;
+    // }
+    // return true;
   },
 
   login({ email, password }) {
     return new Promise((resolve, reject) => {
       const body = { email, password };
-      RequestHandler.Post("/api/v1/session", { body })
+      RequestHandler.Post("/query/v1/session", { body })
         .then(async (res) => {
           if (res.ok) {
-            const { session } = await res.json();
-            useSessionStore.setState({ session });
+            const { sessions: [session] } = await res.json();
+            useSessionStore.setState((p) =>( {...p, session }));
             return resolve({ session });
           } else {
             const status = {
@@ -45,7 +69,7 @@ const Auth = {
 
   logout() {
     return new Promise((resolve, reject) => {
-      RequestHandler.Delete("/api/v1/session")
+      RequestHandler.Delete("/query/v1/session")
         .then((res) => {
           if (res.ok) {
             // useSessionStore.setState({ session: null });
@@ -68,7 +92,7 @@ const Auth = {
 
   registerUser(body) {
     return new Promise((resolve, reject) => {
-      RequestHandler.Post("/api/v1/user", { body })
+      RequestHandler.Post("/query/v1/user", { body })
         .then(async (res) => {
           if (res.ok) {
             return resolve({ success: true });
@@ -91,7 +115,7 @@ const Auth = {
 
   registerOrganization(body) {
     return new Promise((resolve, reject) => {
-      RequestHandler.Post("/api/v1/organization", { body })
+      RequestHandler.Post("/query/v1/organization", { body })
         .then(async (res) => {
           console.log(res);
           if (res.ok) {

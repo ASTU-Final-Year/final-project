@@ -80,9 +80,8 @@ Finally open [http://localhost:3000](http://localhost:3000) with your browser.
 ## 🔐 Environment Variables
 
 ```env
-BUN_ENV=production
-URL=http://localhost
-
+# NODE_ENV=production
+# PROD_DATABASE=1
 # Server
 
 URL=http://localhost

@@ -15,6 +15,7 @@ import {
   Plus,
   Activity,
   User,
+  CalendarCheck,
 } from "lucide-react";
 
 import {
@@ -47,8 +48,18 @@ const navData = [
     icon: LayoutDashboard,
   },
   {
+    title: "Tasks",
+    url: "/dashboard/employee/tasks",
+    icon: CalendarCheck,
+  },
+  {
     title: "Employments",
     url: "/dashboard/employee/employments",
+    icon: Users,
+  },
+  {
+    title: "Profile",
+    url: "/dashboard/employee/profile",
     icon: User,
   },
   // {

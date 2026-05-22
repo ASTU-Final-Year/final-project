@@ -8,22 +8,40 @@ import PaymentService from "~/services/payment.service";
 import defaultPricingPlans from "@/data/default-pricing-plans";
 import { createClient } from "@libsql/client";
 import SessionService from "~/services/session.service";
+import { sampleData } from "../../sample.data";
+import { tables } from "./schema";
+import { router } from "..";
+import { sql } from "drizzle-orm";
+
+const prodDatabase = config.prodDatabase as false;
+if (prodDatabase) console.log("! USING PRODUCTION DATABASE !");
 
 const pool = new Pool({
   connectionString: dbConfig.pgDatabaseURL,
 });
 
 const sqlite = createClient({ url: "file:" + dbConfig.sqliteDatabaseURL });
-sqlite.execute("PRAGMA journal_mode = WAL;");
-sqlite.execute("PRAGMA synchronous = NORMAL;");
-sqlite.execute("PRAGMA foreign_keys = ON;");
+if (!prodDatabase) {
+  sqlite.execute("PRAGMA journal_mode = WAL;");
+  sqlite.execute("PRAGMA synchronous = NORMAL;");
+  sqlite.execute("PRAGMA foreign_keys = ON;");
+}
 export const dbPG = drizzlePG({ client: pool, schema: pgSchema });
 export const dbSQLite = drizzleSQLite(sqlite, { schema: sqliteSchema });
-// export const db = config.isProduction ? dbPG : dbSQLite;
-export const db = dbSQLite;
+export const db = (prodDatabase ? dbPG : dbSQLite) as typeof dbSQLite;
+
+export type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+export type Database = typeof db;
+
+declare global {
+  export type BEPALO_Database = Database;
+  export type BEPALO_Transaction = Parameters<
+    Parameters<typeof db.transaction>[0]
+  >[0];
+}
 
 export const checkDBConnection = async () => {
-  if (config.isProduction) {
+  if (prodDatabase) {
     try {
       const client = await pool.connect();
       try {
@@ -78,6 +96,39 @@ export const initDb = async () => {
       for (const [name, pricingPlan] of Object.entries(defaultPricingPlans)) {
         await PaymentService.createPricingPlan(pricingPlan);
       }
+    }
+    try {
+      const res = await db
+        .select({ count: sql<number>`count (*)` })
+        .from(tables.user);
+      if (config.loadSamples || (!config.isProduction && res?.count === 0)) {
+        for (const [name, entries] of Object.entries(sampleData)) {
+          // const res = await router.respond(
+          //   new Request(`/query/v1/${name}`, {
+          //     method: "POST",
+          //     body: JSON.stringify(entries),
+          //   }),
+          // );
+          // entries.map(entry)
+          for (const entry of entries) {
+            try {
+              await db.insert(tables[name]).values(entry);
+            } catch (error) {
+              // console.log(error);
+              // if (
+              //   !(error.cause && /duplicate|unique/i.test(error.cause.toString()))
+              // ) {
+              //   console.log(name, entry);
+              //   console.error(
+              //     error.cause ? error.cause.toString() : error.toString(),
+              //   );
+              // }
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error(error);
     }
     // delete expired sessions and sessionBlacklists
     {

@@ -89,9 +89,6 @@ const solutions = [
   },
 ];
 
-const startMonth = new Date();
-const endMonth = new Date(Date.now() + 5 * 365.25 * 24 * 60 * 60 * 1000);
-
 export default function Page() {
   // const [dates, setDates] = React.useState([new Date()]);
 
@@ -99,7 +96,7 @@ export default function Page() {
     <div className="flex min-h-screen flex-col font-sans">
       <SiteHeader />
 
-      <main className="flex-1">
+      <main className="flex-1 z-0">
         {/* Hero Section */}
         <HeroSection />
 

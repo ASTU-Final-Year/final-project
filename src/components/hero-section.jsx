@@ -8,14 +8,21 @@ import {
   Stethoscope,
 } from "lucide-react";
 import Link from "next/link";
+import SearchComponent from "./public/search";
+import { cn } from "@/lib/utils";
 
-export default function HeroSection() {
+export default function HeroSection({ className, ...props }) {
   return (
     <section
-      className="relative bg-cover bg-center min-h-[90vh] flex items-center py-20 px-6 overflow-hidden"
+      className={cn(
+        "relative bg-cover bg-center min-h-[90vh] flex flex-col items-center py-20 px-6",
+        className,
+      )}
       style={{
-        backgroundImage: 'url("/images/pexels-lovetosmile-36200692.jpg")', // Ensure this path is correct
+        backgroundImage:
+          'url("/images/pexels-lovetosmile-36200692-blurred.jpg")',
       }}
+      {...props}
     >
       {/* Dynamic Floating Animations (Self-contained) */}
       <style
@@ -44,6 +51,16 @@ export default function HeroSection() {
       <div className="absolute inset-0 bg-gradient-to-r from-[#0B132B]/95 via-[#0B132B]/80 to-transparent z-0" />
       <div className="absolute inset-0 bg-gradient-to-tl from-[#0B132B] via-transparent to-transparent z-0 opacity-80" />
 
+      <div className="w-full flex flex-col gap-2 z-50">
+        <SearchComponent
+          searchBarOnly={true}
+          floatServiceList={true}
+          serviceListClassName="bg-slate-900/30 border-1 border-border/30 rounded-[1.5em] empty:hidden backdrop-blur-md mt-2 z-50"
+          resultsClassName="px-1"
+          dark={true}
+        />
+      </div>
+
       <div className="relative z-10 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center w-full">
         {/* --- LEFT CONTENT --- */}
         <div className="text-white flex flex-col items-start pt-8 lg:pt-0 z-20">
@@ -55,10 +72,8 @@ export default function HeroSection() {
 
           {/* Headline */}
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.15] mb-6">
-            Unified Scheduling <br className="hidden sm:block" />
-            for <span className="text-blue-500">Every Service</span>
-            <br />
-            <span className="text-[#5A67D8]">Sector</span>
+            Unified Scheduling for <br className="hidden sm:block" />{" "}
+            <span className="text-blue-500">Every Service Sector</span>
           </h1>
 
           {/* Description */}
@@ -77,16 +92,16 @@ export default function HeroSection() {
             </Link>
 
             <Link
-              href="/services"
+              href="/login"
               className="inline-flex justify-center items-center rounded-[25px] px-8 py-3.5 bg-white/5 text-white font-medium border border-white/20 backdrop-blur-sm hover:bg-white/10 transition-all duration-300"
             >
-              Explore Services
+              Get Started
             </Link>
           </div>
         </div>
 
         {/* --- RIGHT CONTENT (Glassmorphism Pipeline) --- */}
-        <div className="relative h-[600px] lg:flex items-center justify-center z-10 pointer-events-none">
+        <div className="relative hidden lg:display h-[600px] lg:flex items-center justify-center z-10 pointer-events-none">
           {/* Background Glowing Lines (Simulated SVG Stream) */}
           <svg
             className="absolute inset-0 w-full h-full opacity-40"

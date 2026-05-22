@@ -137,7 +137,7 @@ components:
         monthlyDiscount:
           type: number
           example: 0
-        annualDiscount:
+        yearlyDiscount:
           type: number
           example: 0
         maxServices:

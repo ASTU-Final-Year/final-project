@@ -11,39 +11,54 @@ import {
   User,
   Loader2,
 } from "lucide-react";
-import { useSessionStore } from "@/store";
+import { useClientStore, useSessionStore } from "@/store";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import Auth from "@/lib/auth";
 
 export default function DashboardOverview() {
-  const [client, setClient] = useState(null);
-  const [appointments, setAppointments] = useState(null);
+  // const [client, setClient] = useState(null);
+  // const [appointments, setAppointments] = useState(null);
+  const client = useClientStore(({ client }) => client);
+  const setClient = useClientStore(({ setClient }) => setClient);
+  const appointments = useClientStore(({ appointments }) => appointments);
+  const setAppointments = useClientStore(
+    ({ setAppointments }) => setAppointments,
+  );
+  const clientStats = useClientStore(({ clientStats }) => clientStats);
+  const setClientStats = useClientStore(({ setClientStats }) => setClientStats);
   // const session = useSessionStore(({ session }) => session);
   const [stats, setStats] = useState({
     appointments: 0,
   });
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(clientStats == null);
+
+  useEffect(() => {
+    Auth.checkSession();
+  }, []);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const clientRes = await RequestHandler.Get("/api/v1/user");
+        const clientRes = await RequestHandler.Get(
+          "/query/v1/user?mine&~role=client",
+        );
         if (clientRes.ok) {
-          const { user } = await clientRes.json();
-          setClient(user);
-          const clientId = user.id;
+          const {
+            users: [client],
+          } = await clientRes.json();
+          setClient(client);
+          const clientId = client.id;
 
           // Fetch aggregate stats concurrently
-          const [countRes] = await Promise.all([
-            RequestHandler.Get(`/api/v1/client/${clientId}/tasks/count`),
+          const [dataRes] = await Promise.all([
+            RequestHandler.Get(`/query/v1/appointment?~clientId=${clientId}`),
           ]);
 
-          if (countRes.ok) {
-            setStats({
-              appointments: countRes.ok
-                ? (await countRes.json()).count || 0
-                : 0,
-            });
+          if (dataRes.ok) {
+            const { count, appointments } = await dataRes.json();
+            setAppointments(appointments);
+            setClientStats({ appointments: count || 0 });
           }
         }
       } catch (error) {
@@ -54,7 +69,7 @@ export default function DashboardOverview() {
     };
 
     fetchDashboardData();
-  }, []);
+  }, [setClient, setClientStats, setAppointments]);
 
   if (isLoading)
     return (
@@ -109,19 +124,19 @@ export default function DashboardOverview() {
         </CardContent>
       </Card>
 
-      <div>
+      {/* <div>
         <h2 className="text-2xl font-bold tracking-tight">
           Welcome back, {client.firstname + " " + client.lastname}
         </h2>
         <p className="text-muted-foreground">
           Here is an overview of your workspace today.
         </p>
-      </div>
+      </div> */}
 
       <div className="grid gap-3 grid-cols-1 md:grid-cols-2">
         <StatCard
           title="Appointments"
-          value={stats.appointments}
+          value={clientStats.appointments}
           href={"/dashboard/client/appointments"}
           icon={CalendarDays}
         />

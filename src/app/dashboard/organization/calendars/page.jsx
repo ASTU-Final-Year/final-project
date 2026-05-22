@@ -136,7 +136,7 @@ export default function CalendarsPage() {
 
   // View & Filter States
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(5);
+  const [limit, setLimit] = useState(10);
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [view, setView] = useState("table");
@@ -174,18 +174,14 @@ export default function CalendarsPage() {
 
     const offset = (page - 1) * limit;
     const params = new URLSearchParams({
-      o: offset.toString(),
-      l: limit.toString(),
-      iorganization: 1,
-      icalendar: 1,
+      offset: offset.toFixed(),
+      limit: limit.toFixed(),
     });
 
     const [countRes, dataRes] = await Promise.all([
+      RequestHandler.Get(`/query/v1/organizationCalendar?mine&countOnly`),
       RequestHandler.Get(
-        `/api/v1/organization/${organizationId}/calendars/count`,
-      ),
-      RequestHandler.Get(
-        `/api/v1/organization/${organizationId}/calendars?${params.toString()}`,
+        `/query/v1/organizationCalendar?mine&${params.toString()}`,
       ),
     ]);
 
@@ -195,8 +191,8 @@ export default function CalendarsPage() {
     }
 
     if (dataRes.ok) {
-      const data = await dataRes.json();
-      let results = data.calendars || [];
+      const { organizationCalendars } = await dataRes.json();
+      let results = organizationCalendars || [];
 
       if (statusFilter !== "all") {
         results = results.filter(
@@ -271,7 +267,8 @@ export default function CalendarsPage() {
   const handleAddCalendar = async () => {
     setIsSubmitting(true);
     const res = await RequestHandler.Post(
-      `/api/v1/organization/${organizationId}/calendar`,
+      // `/api/v1/organization/${organizationId}/calendar`,
+      `/query/v1/organizationCalendar?mine'`,
       {
         body: {
           name: formData.name,
@@ -297,7 +294,7 @@ export default function CalendarsPage() {
   const handleEditCalendar = async () => {
     setIsSubmitting(true);
     const res = await RequestHandler.Patch(
-      `/api/v1/organization/${organizationId}/calendar/${selectedCalendar.id}`,
+      `/query/v1/organizationCalendar?mine&~id='${selectedCalendar.id}'`,
       {
         body: {
           name: formData.name,
@@ -318,7 +315,8 @@ export default function CalendarsPage() {
   const handleDeleteCalendar = async () => {
     setIsSubmitting(true);
     const res = await RequestHandler.Delete(
-      `/api/v1/organization/${organizationId}/calendar/${selectedCalendar.id}`,
+      // `/api/v1/organization/${organizationId}/calendar/${selectedCalendar.id}`,
+      `/query/v1/organizationCalendar?mine&~id='${selectedCalendar.id}'`,
     );
     if (res.ok) {
       setIsDeleteOpen(false);
@@ -432,7 +430,7 @@ export default function CalendarsPage() {
               />
             </div>
             {/* <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[150px] bg-background">
+              <SelectTrigger className="w-[160px] bg-background">
                 <Filter className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -609,13 +607,13 @@ export default function CalendarsPage() {
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Rows:</span>
             <Select
-              value={limit.toString()}
+              value={limit.toFixed()}
               onValueChange={(v) => {
                 setLimit(Number(v));
-                setPage(2); // Reset to page 1 on limit change
+                setPage(1); // Reset to page 1 on limit change
               }}
             >
-              <SelectTrigger className="h-8 w-[70px]">
+              <SelectTrigger className="h-8 w-[80px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

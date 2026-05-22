@@ -88,7 +88,7 @@ export default function ServicesPage() {
 
   // View & Filter States
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(5);
+  const [limit, setLimit] = useState(10);
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [view, setView] = useState("table");
@@ -105,6 +105,7 @@ export default function ServicesPage() {
     description: "",
     isActive: true,
     calendarId: null,
+    price: 0.0,
   });
 
   const organizationId = organization?.id;
@@ -112,9 +113,11 @@ export default function ServicesPage() {
   // --- Data Fetching ---
   useEffect(() => {
     if (organization == null) {
-      RequestHandler.Get("/api/v1/organization").then(async (res) => {
+      RequestHandler.Get("/query/v1/organization").then(async (res) => {
         if (res.ok) {
-          const { organization } = await res.json();
+          const {
+            organizations: [organization],
+          } = await res.json();
           setOrganization(organization);
         }
       });
@@ -127,20 +130,15 @@ export default function ServicesPage() {
 
     const offset = (page - 1) * limit;
     const params = new URLSearchParams({
-      o: offset.toString(),
-      l: limit.toString(),
-      iorganization: 1,
-      icalendar: 1,
+      order: `["isActive.desc"]`,
+      offset: offset.toFixed(),
+      limit: limit.toFixed(),
     });
 
     const [countRes, dataRes, calRes] = await Promise.all([
-      RequestHandler.Get(
-        `/api/v1/organization/${organizationId}/services/count`,
-      ),
-      RequestHandler.Get(
-        `/api/v1/organization/${organizationId}/services?${params.toString()}`,
-      ),
-      RequestHandler.Get(`/api/v1/organization/${organizationId}/calendars`),
+      RequestHandler.Get(`/query/v1/organizationService?countOnly`),
+      RequestHandler.Get(`/query/v1/organizationService?${params.toString()}`),
+      RequestHandler.Get(`/query/v1/organizationCalendar`),
     ]);
 
     if (countRes.ok) {
@@ -149,8 +147,8 @@ export default function ServicesPage() {
     }
 
     if (dataRes.ok) {
-      const data = await dataRes.json();
-      let results = data.services || [];
+      const { count, organizationServices } = await dataRes.json();
+      let results = organizationServices || [];
 
       if (statusFilter !== "all") {
         results = results.filter(
@@ -167,8 +165,8 @@ export default function ServicesPage() {
       setServices(results);
       // (async () => setServices(results))();
       if (calRes.ok) {
-        const { calendars } = await calRes.json();
-        setCalendars(calendars);
+        const { organizationCalendars } = await calRes.json();
+        setCalendars(organizationCalendars);
       }
     }
     (async () => setIsLoading(false))();
@@ -190,10 +188,9 @@ export default function ServicesPage() {
   // --- CRUD Handlers ---
   const handleAddService = async () => {
     setIsSubmitting(true);
-    const res = await RequestHandler.Post(
-      `/api/v1/organization/${organizationId}/service`,
-      { body: formData },
-    );
+    const res = await RequestHandler.Post(`/query/v1/organizationService`, {
+      body: formData,
+    });
     if (res.ok) {
       setIsAddOpen(false);
       setFormData({
@@ -201,6 +198,7 @@ export default function ServicesPage() {
         description: "",
         isActive: true,
         calendarId: null,
+        price: 0.0,
       });
       fetchServices();
     }
@@ -210,7 +208,7 @@ export default function ServicesPage() {
   const handleEditService = async () => {
     setIsSubmitting(true);
     const res = await RequestHandler.Patch(
-      `/api/v1/organization/${organizationId}/service/${selectedService.id}`,
+      `/query/v1/organizationService?~id=${selectedService.id}`,
       { body: formData },
     );
     if (res.ok) {
@@ -224,7 +222,7 @@ export default function ServicesPage() {
   const handleDeleteService = async () => {
     setIsSubmitting(true);
     const res = await RequestHandler.Delete(
-      `/api/v1/organization/${organizationId}/service/${selectedService.id}`,
+      `/query/v1/organizationService?~id=${selectedService.id}`,
     );
     if (res.ok) {
       setIsDeleteOpen(false);
@@ -241,6 +239,7 @@ export default function ServicesPage() {
       description: service.description,
       isActive: service.isActive,
       calendarId: service.calendarId,
+      price: service.price,
     });
     setIsEditOpen(true);
   };
@@ -280,7 +279,7 @@ export default function ServicesPage() {
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[150px] bg-background">
+              <SelectTrigger className="w-[160px] bg-background">
                 <Filter className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -305,7 +304,7 @@ export default function ServicesPage() {
       </Card>
 
       {/* Main Content */}
-      {isLoading ? (
+      {isLoading || !services ? (
         <div className="h-64 flex items-center justify-center border rounded-xl bg-card">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
@@ -316,7 +315,9 @@ export default function ServicesPage() {
               <TableRow>
                 <TableHead className="px-2"></TableHead>
                 <TableHead className="font-bold">Service</TableHead>
-                <TableHead className="font-bold text-center">Status</TableHead>
+                <TableHead className="font-bold">Price</TableHead>
+                <TableHead className="font-bold">Calendar</TableHead>
+                <TableHead className="font-bold">Status</TableHead>
                 <TableHead className="text-right font-bold">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -346,7 +347,11 @@ export default function ServicesPage() {
                       {service.description}
                     </div>
                   </TableCell>
-                  <TableCell className="text-center">
+                  <TableCell className="">{service.price} Birr</TableCell>
+                  <TableCell className="">
+                    {service.calendar?.name || "-"}
+                  </TableCell>
+                  <TableCell className="">
                     <AcriveBadge isActive={service.isActive} />
                   </TableCell>
                   <TableCell className="text-right">
@@ -457,13 +462,13 @@ export default function ServicesPage() {
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Rows:</span>
             <Select
-              value={limit.toString()}
+              value={limit.toFixed()}
               onValueChange={(v) => {
                 setLimit(Number(v));
-                setPage(2); // Reset to page 1 on limit change
+                setPage(1); // Reset to page 1 on limit change
               }}
             >
-              <SelectTrigger className="h-8 w-[70px]">
+              <SelectTrigger className="h-8 w-[80px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -557,6 +562,17 @@ export default function ServicesPage() {
                   </SelectGroup>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Service Price</Label>
+              <Input
+                type="number"
+                pattern="/\d{1,7}\.\d{0,2}/"
+                value={formData.price}
+                onChange={(e) =>
+                  setFormData({ ...formData, price: parseInt(e.target.value) })
+                }
+              />
             </div>
             <div className="flex items-center gap-2">
               <input

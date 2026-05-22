@@ -1,6 +1,6 @@
 import { Time } from "@bepalo/time";
 import path from "path";
-import { JWT, JwtPayload, type JwtSymmetricAlgorithm } from "@bepalo/jwt";
+import { JWT, type JwtPayload, type JwtSymmetricAlgorithm } from "@bepalo/jwt";
 import { config as dotenvConfig } from "dotenv";
 dotenvConfig({ path: "../.env" });
 
@@ -8,12 +8,14 @@ export const config = {
   port: parseInt(process.env.BACKEND_PORT || "") || 4000,
   frontendPort: parseInt(process.env.PORT || "") || 3000,
   url: process.env.URL || "http://localhost",
-  isProduction: process.env.BUN_ENV === "production",
+  isProduction: process.env.NODE_ENV === "production",
+  prodDatabase: !!process.env.PROD_DATABASE,
+  loadSamples: !!process.env.LOAD_SAMPLES,
   emailDomain: process.env.EMAIL_DOMAIN || "servesyncplus.et",
   errorFd: 0,
   infoFd: 0,
-  localPath: path.join(process.cwd(), "../.local"),
-  logsPath: path.join(process.cwd(), "../.logs"),
+  localPath: path.join(process.cwd(), ".local"),
+  logsPath: path.join(process.cwd(), ".logs"),
 };
 
 export const cacheConfig = {
@@ -58,10 +60,7 @@ export const dbConfig = {
   pgDatabaseURL:
     process.env.PG_DATABASE_URL ||
     "postgresql://postgres:postgres@localhost:5432/servesyncplus",
-  sqliteDatabaseURL: path.join(
-    "../",
-    process.env.SQLITE_DATABASE_URL || ".local/.dev.db",
-  ),
+  sqliteDatabaseURL: process.env.SQLITE_DATABASE_URL || ".local/.dev.db",
   superAdminEmail:
     process.env.SUPER_ADMIN_EMAIL || "super.admin@" + config.emailDomain,
   superAdminFirstname: process.env.SUPER_ADMIN_FIRSTNAME || "Super",

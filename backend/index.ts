@@ -1,20 +1,27 @@
 import {
-  blob,
+  cors,
+  json,
+  limitRate,
   RouterFramework,
-  status,
+  type CTXAddress,
   type SocketAddress,
 } from "@bepalo/router";
 import type { CTXMain } from "./base";
 import { config } from "./config";
-import { initDb } from "./db";
+import { db, initDb, type Transaction } from "~/db";
 import fs from "fs";
 import path, { resolve } from "path";
 import { LOGE, LOGI } from "./lib";
 import { join } from "path";
+import { getBepaloQueryRouter } from "./lib/bepalo-query";
+import queryAuth from "~/acl/v1";
+import { tables } from "./db/schema";
+import type { CTXSession } from "./middleware";
+import { Time } from "@bepalo/time";
 
 console.log("-".repeat(80));
 console.log(`💫 Launching...`);
-const router = new RouterFramework<CTXMain>({
+export const router = new RouterFramework<CTXMain>({
   rootPath: "./routes",
   normalizeTrailingSlash: true,
   defaultHeaders: [["x-powered-by", "@bepalo/router"]],
@@ -26,7 +33,14 @@ const router = new RouterFramework<CTXMain>({
         } else {
           LOGE(req.url, error);
         }
-        return status(500);
+        return json(
+          {
+            error: error.message || "Internal server error",
+          },
+          {
+            status: error.status || 500,
+          },
+        );
       },
   enable: {
     hooks: false,
@@ -37,19 +51,46 @@ const router = new RouterFramework<CTXMain>({
   },
 });
 
+router.append(
+  "/query/v1/*",
+  getBepaloQueryRouter<
+    typeof tables,
+    typeof db,
+    Transaction,
+    CTXAddress & { data?: Record<string, unknown> }
+  >(db, {
+    tables,
+    queryAuth,
+    pathPrefix: "/query/v1/",
+    isProduction: config.isProduction,
+    routeFilters: [
+      limitRate({
+        key: (_req, ctx) => ctx.address.address,
+        maxTokens: 200,
+        refillInterval: Time.every(60).seconds._ms,
+        refillRate: 100,
+        setXRateLimitHeaders: true,
+      }),
+      cors({
+        origins: [
+          `${config.url}:${config.port}`,
+          `${config.url}:${config.frontendPort}`,
+        ],
+        allowedHeaders: ["Content-Type", "Authorization", "Cache-Control"],
+        methods: ["HEAD", "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        credentials: true,
+      }),
+    ],
+  }),
+);
+
 await (async () => {
-  if (!fs.existsSync(config.localPath)) {
-    fs.mkdirSync(config.localPath);
-  }
-  if (!fs.existsSync(config.logsPath)) {
-    fs.mkdirSync(config.logsPath);
-  }
   config.errorFd = fs.openSync(path.join(config.logsPath, "error.log"), "a+");
   config.infoFd = fs.openSync(path.join(config.logsPath, "info.log"), "a+");
 })()
-  .then(() => console.log("✅ Folders created"))
+  .then(() => console.log("✅ Logs files opened"))
   .catch((error) => {
-    console.error("❌ Failed to create folders", error);
+    console.error("❌ Failed to open log files", error);
   });
 
 await router
@@ -88,7 +129,7 @@ const server = Bun.serve({
     const elapsed = performance.now() - start;
     const urlLog = `${req.method} ${elapsed.toFixed(2).padStart(6)}ms | ${resp.status} ${resp.statusText} | ${req.url.substring(0, 180)}`;
     // if (config.isProduction) {
-    //   LOGI(urlLog);
+    // LOGI(urlLog);
     // } else {
     console.log(urlLog);
     // }
@@ -145,3 +186,19 @@ process.on("unhandledRejection", (reason, promise) => {
   cleanup();
   process.exit(1);
 });
+
+// setInterval(async () => {
+//   const res = await router.respond(
+//     new Request("http://localhost:4000/api/v1/cron/process-tasks", {
+//       headers: [["Authorization", `Bearer ${process.env.CRON_SECRET}`]],
+//     }),
+//     {
+//       address: {
+//         family: "AFINET",
+//         address: "127.0.0.1",
+//         port: 23243,
+//       },
+//     },
+//   );
+//   console.log("-- running cron " + res.status);
+// }, 30_000);

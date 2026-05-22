@@ -20,8 +20,8 @@ import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
 export default function DashboardOverview() {
-  const { employee_id } = useParams();
-  const [employee, setEmploymee] = useState(null);
+  const { employment_id } = useParams();
+  const [employment, setEmployment] = useState(null);
   // const session = useSessionStore(({ session }) => session);
   const [stats, setStats] = useState({
     tasks: 0,
@@ -32,14 +32,16 @@ export default function DashboardOverview() {
     const fetchDashboardData = async () => {
       try {
         const empRes = await RequestHandler.Get(
-          "/api/v1/employee/" + employee_id,
+          `/query/v1/employee?~id=${employment_id}`,
         );
         if (empRes.ok) {
-          const { employee } = await empRes.json();
-          setEmploymee(employee);
+          const {
+            employees: [employment],
+          } = await empRes.json();
+          setEmployment(employment);
           setStats((p) => ({
             ...p,
-            isActive: employee.isActive,
+            isActive: employment.isActive,
           }));
         }
       } catch (error) {
@@ -50,7 +52,7 @@ export default function DashboardOverview() {
     };
 
     fetchDashboardData();
-  }, [employee_id]);
+  }, [employment_id]);
 
   if (isLoading)
     return (
@@ -58,11 +60,11 @@ export default function DashboardOverview() {
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
-  if (!employee) return <div>Employee not found.</div>;
+  if (!employment) return <div>Employment not found.</div>;
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      {/* Employee Profile Card */}
+      {/* Employment Profile Card */}
       <Card className="border-primary/20">
         <CardContent className="p-6">
           <div className="flex items-start gap-6">
@@ -72,7 +74,7 @@ export default function DashboardOverview() {
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
                 <h2 className="text-2xl font-bold">
-                  {employee.user.firstname + " " + employee.user.lastname}
+                  {employment.user.firstname + " " + employment.user.lastname}
                 </h2>
                 {/* <Badge className="bg-primary/10 text-primary border-primary/20">
                   Verified
@@ -80,10 +82,10 @@ export default function DashboardOverview() {
               </div>
               <div className="flex items-baseline">
                 <p className="text-muted-foreground mb-4">
-                  <b>{employee.jobTitle ?? ""}</b> |
-                  {employee.jobDescription ?? ""}
+                  <b>{employment.jobTitle ?? ""}</b> |
+                  {employment.jobDescription ?? ""}
                 </p>
-                {employee.calendarId ? (
+                {employment.calendarId ? (
                   <Button variant="ghost" size="icon" asChild>
                     <Link
                       href={
@@ -103,16 +105,16 @@ export default function DashboardOverview() {
               <div className="flex gap-6">
                 <div>
                   <p className="text-sm text-muted-foreground">Email</p>
-                  <p className="font-medium">{employee.user.email}</p>
+                  <p className="font-medium">{employment.user.email}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Phone</p>
-                  <p className="font-medium">{employee.user.phone}</p>
+                  <p className="font-medium">{employment.user.phone}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Joined</p>
                   <p className="font-medium">
-                    {new Date(employee.createdAt).getFullYear()}
+                    {new Date(employment.createdAt).getFullYear()}
                   </p>
                 </div>
               </div>
@@ -124,14 +126,15 @@ export default function DashboardOverview() {
         </CardContent>
       </Card>
 
-      <div>
+      {/* <div>
         <h2 className="text-2xl font-bold tracking-tight">
-          Welcome back, {employee.user.firstname + " " + employee.user.lastname}
+          Welcome back,{" "}
+          {employment.user.firstname + " " + employment.user.lastname}
         </h2>
         <p className="text-muted-foreground">
           Here is an overview of your workspace today.
         </p>
-      </div>
+      </div> */}
 
       <div className="grid gap-3 md:grid-cols-1 lg:grid-cols-2">
         <StatCard title="Active Tasks" value={stats.tasks} icon={Briefcase} />
@@ -142,8 +145,8 @@ export default function DashboardOverview() {
           icon={UserIcon}
         /> */}
         <StatCard
-          title="Employee Status"
-          value={employee.isActive ? "Active" : "Inactive"}
+          title="Employment Status"
+          value={employment.isActive ? "Active" : "Inactive"}
           icon={Activity}
         />
       </div>
