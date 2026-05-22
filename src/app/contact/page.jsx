@@ -22,18 +22,8 @@ import {
   Clock,
   Send,
   CheckCircle,
-  AlertCircle,
-  Facebook,
-  Twitter,
-  Linkedin,
-  Instagram,
-  Globe,
-  MessageSquare,
   Bot,
   Headphones,
-  Building2,
-  Users,
-  CalendarDays,
 } from "lucide-react";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
@@ -63,12 +53,9 @@ export default function ContactPage() {
     // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 1500));
 
-    // Success response
     setSubmitStatus("success");
     setFormData({ name: "", email: "", subject: "", message: "" });
     setIsSubmitting(false);
-
-    // Auto-hide success message after 5 seconds
     setTimeout(() => setSubmitStatus(null), 5000);
   };
 
@@ -452,7 +439,6 @@ export default function ContactPage() {
             </CardContent>
           </Card>
         </div>
-        {/* <Chatbot /> */}
       </main>
       <SiteFooter />
     </div>
