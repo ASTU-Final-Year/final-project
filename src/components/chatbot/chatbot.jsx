@@ -33,17 +33,26 @@ const QUICK_ACTIONS = [
     label: "Book appointment",
     icon: Calendar,
     query: "How do I book an appointment?",
+    color: "bg-blue-50 text-blue-600 hover:bg-blue-100 border-blue-200",
   },
   {
     label: "Pricing plans",
     icon: CreditCard,
     query: "Tell me about pricing plans",
+    color:
+      "bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border-emerald-200",
   },
-  { label: "Track service", icon: Clock, query: "How do I track my service?" },
+  {
+    label: "Track service",
+    icon: Clock,
+    query: "How do I track my service?",
+    color: "bg-purple-50 text-purple-600 hover:bg-purple-100 border-purple-200",
+  },
   {
     label: "Contact support",
     icon: HelpCircle,
     query: "How can I contact support?",
+    color: "bg-amber-50 text-amber-600 hover:bg-amber-100 border-amber-200",
   },
 ];
 
@@ -55,7 +64,7 @@ export function Chatbot() {
       id: "welcome",
       role: "assistant",
       content:
-        "👋 Welcome to **ServeSync+**! I'm SyncBot, your AI assistant. I can help you with booking appointments, understanding pricing, tracking services, and more.\n\nHow can I help you today?",
+        "👋 Hello! I'm SyncBot, your ServeSync+ assistant. I can help you with booking appointments, understanding pricing, tracking services, and more.\n\nHow can I help you today?",
       timestamp: new Date(),
     },
   ]);
@@ -79,90 +88,17 @@ export function Chatbot() {
     }
   }, [isOpen, isMinimized]);
 
-  // Helper to copy text to clipboard
-  const copyToClipboard = (text, id) => {
-    navigator.clipboard.writeText(text);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
-  };
+  const sendMessage = async (messageText = inputValue) => {
+    if (!messageText.trim() || isLoading || isTyping) return;
 
-  // Delete conversation (keep only welcome message)
-  const clearChat = () => {
-    setMessages([
-      {
-        id: "welcome",
-        role: "assistant",
-        content:
-          "👋 Welcome back! I'm SyncBot, your AI assistant. How can I help you today?",
-        timestamp: new Date(),
-      },
-    ]);
-  };
-
-  // Edit a user message: pre‑fill input and remove the old pair (user + assistant response)
-  const editUserMessage = (userMsgId, userContent) => {
-    // Find index of this user message
-    const userIndex = messages.findIndex((m) => m.id === userMsgId);
-    if (userIndex === -1) return;
-
-    // The assistant response is the next message (if exists)
-    const assistantIndex = userIndex + 1;
-    let newMessages = [...messages];
-
-    // Remove the user message and (if exists) its assistant response
-    if (
-      assistantIndex < newMessages.length &&
-      newMessages[assistantIndex].role === "assistant"
-    ) {
-      newMessages.splice(userIndex, 2);
-    } else {
-      newMessages.splice(userIndex, 1);
-    }
-
-    setMessages(newMessages);
-    setInputValue(userContent);
-    // Focus input so user can edit and resend
-    setTimeout(() => inputRef.current?.focus(), 50);
-  };
-
-  // Regenerate last assistant response (resend the previous user query)
-  const regenerateResponse = async () => {
-    // Find the last user message
-    const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
-    if (!lastUserMsg) return;
-
-    // Remove the last assistant message (if it exists)
-    const lastAssistantIndex = [...messages]
-      .reverse()
-      .findIndex((m) => m.role === "assistant");
-    if (lastAssistantIndex !== -1) {
-      const newMessages = [...messages];
-      const idx = newMessages.length - 1 - lastAssistantIndex;
-      newMessages.splice(idx, 1);
-      setMessages(newMessages);
-    }
-
-    // Resend the user's query
-    await sendMessage(lastUserMsg.content, true); // true = skip adding user message again
-  };
-
-  // Core send function, can be called with an optional flag to not duplicate user message
-  const sendMessage = async (messageText = inputValue, skipAddUser = false) => {
-    if ((!messageText.trim() && !skipAddUser) || isLoading) return;
-
-    let userMsgId = null;
-    if (!skipAddUser) {
-      const userMessage = {
-        id: Date.now().toString(),
-        role: "user",
-        content: messageText,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, userMessage]);
-      userMsgId = userMessage.id;
-      setInputValue("");
-    }
-
+    const userMessage = {
+      id: Date.now().toString(),
+      role: "user",
+      content: messageText,
+      timestamp: new Date(),
+    };
+    setMessages((prev) => [...prev, userMessage]);
+    setInputValue("");
     setIsLoading(true);
 
     // Quick response detection (works without API)
@@ -178,61 +114,59 @@ export function Chatbot() {
             timestamp: new Date(),
           },
         ]);
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: (Date.now() + 1).toString(),
+            role: "assistant",
+            content: quickResponse,
+            timestamp: new Date(),
+          },
+        ]);
         setIsLoading(false);
       }, 300);
       return;
     }
 
-    const typingId = (Date.now() + 1).toString();
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: typingId,
-        role: "assistant",
-        content: "",
-        timestamp: new Date(),
-        isTyping: true,
-      },
-    ]);
-
     try {
-      // Build conversation history (exclude typing indicator)
-      const history = messages
-        .filter((m) => !m.isTyping && m.role !== "system")
-        .slice(-5)
-        .map((m) => ({
-          role: m.role === "user" ? "user" : "assistant",
-          content: m.content,
-        }));
+      const history = messages.slice(-5).map((m) => ({
+        role: m.role === "user" ? "user" : "assistant",
+        content: typeof m.content === "string" ? m.content : "",
+      }));
       history.push({ role: "user", content: messageText });
 
       const response = await getChatbotResponse(history);
 
-      setMessages((prev) => prev.filter((m) => m.id !== typingId));
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: (Date.now() + 1).toString(),
-          role: "assistant",
-          content: response,
-          timestamp: new Date(),
-        },
-      ]);
+      // Add a small delay to simulate typing
+      setTimeout(() => {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: (Date.now() + 1).toString(),
+            role: "assistant",
+            content: response,
+            timestamp: new Date(),
+          },
+        ]);
+        setIsLoading(false);
+        setIsTyping(false);
+      }, 800);
     } catch (error) {
       console.error("Chatbot error:", error);
-      setMessages((prev) => prev.filter((m) => m.id !== typingId));
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: (Date.now() + 1).toString(),
-          role: "assistant",
-          content:
-            "Sorry, I'm having trouble connecting. Please try again or contact support@servesyncplus.et",
-          timestamp: new Date(),
-        },
-      ]);
-    } finally {
-      setIsLoading(false);
+      setTimeout(() => {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: (Date.now() + 1).toString(),
+            role: "assistant",
+            content:
+              "Sorry, I'm having trouble connecting. Please try again or contact support@servesyncplus.et",
+            timestamp: new Date(),
+          },
+        ]);
+        setIsLoading(false);
+        setIsTyping(false);
+      }, 500);
     }
   };
 
@@ -256,12 +190,19 @@ export function Chatbot() {
         <div className="absolute -top-12 right-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black border border-zinc-800 text-white text-xs px-3.5 py-2 rounded-full whitespace-nowrap shadow-lg">
           Chat with <span className="font-bold text-indigo-400">SyncBot</span>{" "}
           💬
+          Chat with <span className="font-bold text-indigo-400">SyncBot</span>{" "}
+          💬
         </div>
       </div>
     );
   }
 
   return (
+    <Card
+      className={`fixed bottom-6 right-6 z-50 w-[420px] lg:w-[480px] shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all duration-300 overflow-hidden border border-zinc-800 bg-black text-white flex flex-col ${
+        isMinimized ? "h-[76px]" : "h-[620px]"
+      }`}
+    >
     <Card
       className={`fixed bottom-6 right-6 z-50 w-[420px] lg:w-[480px] shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all duration-300 overflow-hidden border border-zinc-800 bg-black text-white flex flex-col ${
         isMinimized ? "h-[76px]" : "h-[620px]"
@@ -282,12 +223,18 @@ export function Chatbot() {
                 <span className="font-bold text-base tracking-tight text-white">
                   SyncBot
                 </span>
+                <span className="font-bold text-base tracking-tight text-white">
+                  SyncBot
+                </span>
                 <Badge className="bg-zinc-900 border border-zinc-800 text-indigo-400 text-[10px] px-2.5 py-0.5 font-semibold">
                   AI ASSISTANT
                 </Badge>
               </div>
               <div className="flex items-center gap-1.5 mt-0.5">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+                <p className="text-[11px] text-zinc-400">
+                  Online • Live Support
+                </p>
                 <p className="text-[11px] text-zinc-400">
                   Online • Live Support
                 </p>
@@ -302,6 +249,11 @@ export function Chatbot() {
               className="h-8 w-8 text-zinc-400 hover:text-white hover:bg-zinc-905 rounded-full transition-all duration-200"
               onClick={() => setIsMinimized(!isMinimized)}
             >
+              {isMinimized ? (
+                <Maximize2 className="h-4 w-4" />
+              ) : (
+                <Minimize2 className="h-4 w-4" />
+              )}
               {isMinimized ? (
                 <Maximize2 className="h-4 w-4" />
               ) : (
@@ -323,6 +275,10 @@ export function Chatbot() {
       {!isMinimized && (
         <>
           {/* Messages Area - Dark Space */}
+          <div
+            className="flex-1 overflow-y-auto bg-black p-4 space-y-4 scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent"
+            ref={scrollRef}
+          >
           <div
             className="flex-1 overflow-y-auto bg-black p-4 space-y-4 scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent"
             ref={scrollRef}
@@ -364,15 +320,23 @@ export function Chatbot() {
                     <div
                       className={`text-sm leading-relaxed ${message.role === "user" ? "text-white" : "text-zinc-200"} prose prose-invert max-w-none`}
                     >
+                    <div
+                      className={`text-sm leading-relaxed ${message.role === "user" ? "text-white" : "text-zinc-200"} prose prose-invert max-w-none`}
+                    >
                       <ReactMarkdown
                         components={{
                           p: ({ children }) => (
-                            <p className="mb-2 last:mb-0">{children}</p>
+                            <p className="mb-2 last:mb-0 whitespace-pre wrap-normal max-w-80 overflow-auto">
+                              {children}
+                            </p>
                           ),
                           ul: ({ children }) => (
                             <ul className="list-disc pl-4 my-2 space-y-1">
                               {children}
                             </ul>
+                          ),
+                          ol: ({ children }) => (
+                            <ol className="pl-4 my-2 space-y-1">{children}</ol>
                           ),
                           li: ({ children }) => (
                             <li className="text-sm">{children}</li>
@@ -398,6 +362,7 @@ export function Chatbot() {
               </div>
             ))}
 
+
             {/* Realistic Typing Indicator */}
             {isTyping && (
               <div className="flex justify-start animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -422,7 +387,22 @@ export function Chatbot() {
                           className="h-1.5 w-1.5 bg-indigo-300 rounded-full animate-bounce"
                           style={{ animationDelay: "300ms" }}
                         />
+                        <div
+                          className="h-1.5 w-1.5 bg-indigo-500 rounded-full animate-bounce"
+                          style={{ animationDelay: "0ms" }}
+                        />
+                        <div
+                          className="h-1.5 w-1.5 bg-indigo-400 rounded-full animate-bounce"
+                          style={{ animationDelay: "150ms" }}
+                        />
+                        <div
+                          className="h-1.5 w-1.5 bg-indigo-300 rounded-full animate-bounce"
+                          style={{ animationDelay: "300ms" }}
+                        />
                       </div>
+                      <span className="text-[11px] text-zinc-400">
+                        SyncBot is typing...
+                      </span>
                       <span className="text-[11px] text-zinc-400">
                         SyncBot is typing...
                       </span>
@@ -431,6 +411,7 @@ export function Chatbot() {
                 </div>
               </div>
             )}
+
 
             <div ref={messagesEndRef} />
           </div>
@@ -482,10 +463,14 @@ export function Chatbot() {
               </Button>
             </div>
 
+
             {/* Footer Stats Note */}
             <div className="flex items-center justify-center gap-2.5 pt-1 border-t border-zinc-900">
               <div className="flex items-center gap-1">
                 <Zap className="h-3 w-3 text-indigo-500" />
+                <p className="text-[10px] text-zinc-500">
+                  AI-powered assistant
+                </p>
                 <p className="text-[10px] text-zinc-500">
                   AI-powered assistant
                 </p>
@@ -500,8 +485,10 @@ export function Chatbot() {
         </>
       )}
 
+
       {/* Minimized View */}
       {isMinimized && (
+        <div
         <div
           className="flex items-center gap-3 p-3 cursor-pointer hover:bg-zinc-900 transition-all duration-200 group bg-black"
           onClick={() => setIsMinimized(false)}
@@ -514,6 +501,9 @@ export function Chatbot() {
           </div>
           <div className="flex-1">
             <p className="text-sm font-bold text-white">SyncBot</p>
+            <p className="text-xs text-zinc-400">
+              Click to resume conversation
+            </p>
             <p className="text-xs text-zinc-400">
               Click to resume conversation
             </p>
@@ -534,3 +524,4 @@ export function Chatbot() {
     </Card>
   );
 }
+

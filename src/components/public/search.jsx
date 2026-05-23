@@ -130,14 +130,14 @@ export default function SearchComponent({
               onSubmit={handleSearch}
               className="flex gap-2 shadow-sm rounded-full"
             >
-              <div className="relative flex-1">
+              <div className="relative flex-1 bg-background/80 backdrop-blur-sm rounded-full overflow-hidden">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
                   type="text"
                   placeholder='Try "barber", "hospital", "permit"...'
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  className="rounded-full pl-12 h-14 text-lg bg-background/80 backdrop-blur-sm border-border hover:border-primary/50 focus-visible:border-primary focus-visible:ring-primary/20 transition-colors shadow-sm"
+                  className="rounded-full pl-12 h-14 text-lg border-border bg-transparent hover:border-primary/50 focus-visible:border-primary focus-visible:ring-primary/20 transition-colors shadow-sm"
                 />
               </div>
             </form>
