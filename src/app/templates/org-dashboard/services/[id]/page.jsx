@@ -22,10 +22,6 @@ import {
   CreditCard,
   Smartphone,
   AlertTriangle,
-  Facebook,
-  Twitter,
-  Linkedin,
-  Instagram,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -702,38 +698,6 @@ export default function ServiceDetailPage() {
                 </div>
 
                 <Separator className="my-2" />
-
-                {/* Social Media */}
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 hover:bg-primary-600/10 hover:text-primary-600"
-                  >
-                    <Facebook className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 hover:bg-primary-600/10 hover:text-primary-600"
-                  >
-                    <Twitter className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 hover:bg-primary-600/10 hover:text-primary-600"
-                  >
-                    <Linkedin className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 hover:bg-primary-600/10 hover:text-primary-600"
-                  >
-                    <Instagram className="h-4 w-4" />
-                  </Button>
-                </div>
               </CardContent>
             </Card>
 
