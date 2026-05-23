@@ -803,6 +803,29 @@ export const queryAuth = {
         },
       },
     },
+    PATCH: {
+      organization_admin: {
+        select: tables.organization,
+        validateBody: genArkSchemaValidator(
+          omit(tables.organization, [
+            "id",
+            "adminId",
+            "slug",
+            "rating",
+            "billingStart",
+            "billingEnd",
+            "billingPeriod",
+            "pricingPlanId",
+            "createdAt",
+            "updatedAt",
+            "isActive",
+          ]),
+          true,
+        ),
+        where: (req, { session }) =>
+          eq(tables.organization.adminId, session.userId),
+      },
+    },
     DELETE: {
       organization_admin: {
         select: tables.organization,

@@ -48,7 +48,7 @@ const Auth = {
         .then(async (res) => {
           if (res.ok) {
             const { sessions: [session] } = await res.json();
-            useSessionStore.setState((p) =>( {...p, session }));
+            useSessionStore.setState((p) =>( {...p, session, profileUpdateHash: p.profileUpdateHash + 1 }));
             return resolve({ session });
           } else {
             const status = {
