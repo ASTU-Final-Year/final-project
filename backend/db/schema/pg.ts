@@ -13,6 +13,7 @@ import {
   integer,
   pgEnum,
   primaryKey,
+  index,
 } from "drizzle-orm/pg-core";
 
 // export const cpuuid = uuid;
@@ -63,6 +64,30 @@ export const roleEnum = pgEnum("role", [
   "organization_admin",
   "employee",
   "client",
+]);
+
+// Enums
+export const notificationTypeEnum = pgEnum("notification_type", [
+  "appointment_created",
+  "appointment_updated",
+  "appointment_cancelled",
+  "appointment_reminder",
+  "task_assigned",
+  "task_completed",
+  "task_requires_action",
+  "payment_received",
+  "payment_failed",
+  "service_rated",
+  "organization_invite",
+  "employee_assigned",
+  "system_alert",
+]);
+
+export const notificationPriorityEnum = pgEnum("notification_priority", [
+  "low",
+  "medium",
+  "high",
+  "urgent",
 ]);
 
 export const timestamps = {
@@ -332,6 +357,43 @@ export const pgTasks = pgTable("tasks", {
   completedAt: timestamp("completed_at", { withTimezone: true }),
   ...timestamps,
 });
+// Notifications Table
+export const notifications = pgTable(
+  "notifications",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => pgUsers.id, {
+        onUpdate: "cascade",
+        onDelete: "cascade",
+      }),
+    type: notificationTypeEnum("type").notNull(),
+    title: varchar("title", { length: 30 }).notNull(),
+    message: varchar("message", { length: 200 }).notNull(),
+    priority: notificationPriorityEnum("priority").notNull().default("medium"),
+    metadata: jsonb("metadata").default("{}"),
+    isRead: boolean("is_read").notNull().default(false),
+    isArchived: boolean("is_archived").notNull().default(false),
+    actionUrl: varchar("action_url", { length: 100 }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    readAt: timestamp("read_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("idx_notifications_user_id").on(table.userId),
+    index("idx_notifications_user_unread").on(table.userId, table.isRead),
+    index("idx_notifications_user_type").on(table.userId, table.type),
+    index("idx_notifications_created_at").on(table.createdAt),
+    index("idx_notifications_expires_at").on(table.expiresAt),
+    index("idx_notifications_user_archived").on(table.userId, table.isArchived),
+  ],
+);
 
 //////////////////////////////////////////////////
 
@@ -427,6 +489,14 @@ export const pgAppointmentsRelations = relations(pgAppointments, ({ one }) => ({
   // }),
 }));
 
+// Relations
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  user: one(pgUsers, {
+    fields: [notifications.userId],
+    references: [pgUsers.id],
+  }),
+}));
+
 export const pgTasksRelations = relations(pgTasks, ({ one }) => ({
   // appointment: one(pgAppointments, {
   //   fields: [pgTasks.appointmentId],
@@ -470,6 +540,7 @@ export const pgTables = {
   serviceFirstEmployee: pgServiceFirstEmployees,
   task: pgTasks,
   appointment: pgAppointments,
+  notification: notifications,
 };
 
 export const pgRelations = {
@@ -482,6 +553,7 @@ export const pgRelations = {
   serviceFirstEmployeesRelations: pgServiceFirstEmployeesRelations,
   tasksRelations: pgTasksRelations,
   appointmentRelations: pgAppointmentsRelations,
+  notificationsRelations: notificationsRelations,
 };
 
 export const pgSchema = {

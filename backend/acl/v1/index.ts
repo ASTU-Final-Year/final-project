@@ -1,4 +1,12 @@
 // acl/v1/index.ts
+import {
+  onAppointmentCreated,
+  onAppointmentUpdated,
+  onAppointmentCancelled,
+  onTaskAssigned,
+  onTaskCompleted,
+  onTaskRequiresAction,
+} from "~/hooks/notificationHooks";
 
 import {
   aliasedTable,
@@ -342,32 +350,47 @@ export const queryAuth = {
           isActive: true,
         }),
 
-        // afterQuery: async (req, ctx) => {
-        //   const appointment = ctx.result.appointments?.[0];
-        //   if (appointment) {
-        //     // Optionally create a task for the appointment
-        //     const [firstEmployee] = await ctx.transaction
-        //       .select({ employeeId: tables.serviceFirstEmployee.employeeId })
-        //       .from(tables.serviceFirstEmployee)
-        //       .where(
-        //         eq(
-        //           tables.serviceFirstEmployee.serviceId,
-        //           appointment.serviceId,
-        //         ),
-        //       )
-        //       .limit(1);
+        afterQuery: async (req, ctx) => {
+          const appointment = ctx.result.appointments?.[0];
+          if (!appointment) return;
 
-        //     if (firstEmployee) {
-        //       await ctx.transaction.insert(tables.task).values({
-        //         appointmentId: appointment.id,
-        //         name: `Appointment: ${appointment.id}`,
-        //         status: "pending",
-        //         employeeId: firstEmployee.employeeId,
-        //         createdBy: appointment.clientId,
-        //       });
-        //     }
-        //   }
-        // },
+          // Fetch related data INSIDE the transaction (reads are safe)
+          const [row] = await ctx.transaction
+            .select({
+              client: {
+                id: tables.user.id,
+                firstname: tables.user.firstname,
+                lastname: tables.user.lastname,
+                email: tables.user.email,
+              },
+              organization: {
+                id: tables.organization.id,
+                name: tables.organization.name,
+                adminId: tables.organization.adminId,
+              },
+              service: {
+                id: tables.organizationService.id,
+                name: tables.organizationService.name,
+              },
+            })
+            .from(tables.appointment)
+            .innerJoin(tables.user, eq(tables.user.id, appointment.clientId))
+            .innerJoin(tables.organization, eq(tables.organization.id, appointment.organizationId))
+            .innerJoin(tables.organizationService, eq(tables.organizationService.id, appointment.serviceId))
+            .where(eq(tables.appointment.id, appointment.id))
+            .limit(1);
+
+          // Defer notification INSERT to after the transaction commits
+          if (row) {
+            setTimeout(() =>
+              onAppointmentCreated(
+                { ...appointment, service: row.service },
+                row.client,
+                row.organization,
+              ).catch((err) => console.error("[notification] onAppointmentCreated failed:", err)),
+            0);
+          }
+        },
       },
     },
 
@@ -390,6 +413,29 @@ export const queryAuth = {
             eq(tables.appointment.clientId, session.userId),
             eq(tables.appointment.isActive, true),
           ),
+        afterQuery: async (req, ctx) => {
+          const appointment = ctx.result.appointments?.[0];
+          if (!appointment) return;
+          const [row] = await ctx.transaction
+            .select({
+              client: {
+                id: tables.user.id,
+                firstname: tables.user.firstname,
+                lastname: tables.user.lastname,
+                email: tables.user.email,
+              },
+            })
+            .from(tables.user)
+            .where(eq(tables.user.id, appointment.clientId))
+            .limit(1);
+          if (row) {
+            setTimeout(() =>
+              onAppointmentUpdated(appointment, row.client, ["details updated"]).catch(
+                (err) => console.error("[notification] onAppointmentUpdated (client) failed:", err),
+              ),
+            0);
+          }
+        },
       },
 
       employee: {
@@ -404,10 +450,30 @@ export const queryAuth = {
               eq(tables.appointment.organizationId, employment.organizationId),
             ),
           ),
-        // and(
-        //   eq(tables.appointment.clientId, .userId),
-        //   eq(tables.appointment.isActive, true),
-        // ),
+        afterQuery: async (req, ctx) => {
+          const appointment = ctx.result.appointments?.[0];
+          if (!appointment) return;
+          const [row] = await ctx.transaction
+            .select({
+              client: {
+                id: tables.user.id,
+                firstname: tables.user.firstname,
+                lastname: tables.user.lastname,
+                email: tables.user.email,
+              },
+            })
+            .from(tables.user)
+            .where(eq(tables.user.id, appointment.clientId))
+            .limit(1);
+          if (row) {
+            const changes = Object.keys(ctx.body ?? {}).filter((k) => k !== "id");
+            setTimeout(() =>
+              onAppointmentUpdated(appointment, row.client, changes.length ? changes : ["status updated"]).catch(
+                (err) => console.error("[notification] onAppointmentUpdated (employee) failed:", err),
+              ),
+            0);
+          }
+        },
       },
 
       organization_admin: {
@@ -431,6 +497,30 @@ export const queryAuth = {
             ),
             eq(tables.appointment.isActive, true),
           ),
+        afterQuery: async (req, ctx) => {
+          const appointment = ctx.result.appointments?.[0];
+          if (!appointment) return;
+          const [row] = await ctx.transaction
+            .select({
+              client: {
+                id: tables.user.id,
+                firstname: tables.user.firstname,
+                lastname: tables.user.lastname,
+                email: tables.user.email,
+              },
+            })
+            .from(tables.user)
+            .where(eq(tables.user.id, appointment.clientId))
+            .limit(1);
+          if (row) {
+            const changes = Object.keys(ctx.body ?? {}).filter((k) => k !== "id");
+            setTimeout(() =>
+              onAppointmentUpdated(appointment, row.client, changes.length ? changes : ["updated by organization"]).catch(
+                (err) => console.error("[notification] onAppointmentUpdated (org_admin) failed:", err),
+              ),
+            0);
+          }
+        },
       },
     },
 
@@ -460,12 +550,50 @@ export const queryAuth = {
           }
         },
         afterQuery: async (req, ctx) => {
-          // Soft delete - set isActive to false instead of actual delete
-          if (ctx.result.appointments?.[0]) {
-            await ctx.transaction
-              .update(tables.appointment)
-              .set({ isActive: false, status: "canceled" })
-              .where(eq(tables.appointment.id, ctx.result.appointments[0].id));
+          const appointment = ctx.result.appointments?.[0];
+          if (!appointment) return;
+
+          // Soft-delete stays inside the transaction
+          await ctx.transaction
+            .update(tables.appointment)
+            .set({ isActive: false, status: "canceled" })
+            .where(eq(tables.appointment.id, appointment.id));
+
+          // Fetch related data while still in transaction (reads only)
+          const [row] = await ctx.transaction
+            .select({
+              client: {
+                id: tables.user.id,
+                firstname: tables.user.firstname,
+                lastname: tables.user.lastname,
+                email: tables.user.email,
+              },
+              organization: {
+                id: tables.organization.id,
+                name: tables.organization.name,
+                adminId: tables.organization.adminId,
+              },
+              service: {
+                id: tables.organizationService.id,
+                name: tables.organizationService.name,
+              },
+            })
+            .from(tables.appointment)
+            .innerJoin(tables.user, eq(tables.user.id, appointment.clientId))
+            .innerJoin(tables.organization, eq(tables.organization.id, appointment.organizationId))
+            .innerJoin(tables.organizationService, eq(tables.organizationService.id, appointment.serviceId))
+            .where(eq(tables.appointment.id, appointment.id))
+            .limit(1);
+
+          // Defer notification INSERT to after transaction commits
+          if (row) {
+            setTimeout(() =>
+              onAppointmentCancelled(
+                { ...appointment, service: row.service },
+                row.client,
+                row.organization,
+              ).catch((err) => console.error("[notification] onAppointmentCancelled (client) failed:", err)),
+            0);
           }
         },
       },
@@ -478,11 +606,48 @@ export const queryAuth = {
             (session as OrganizationSession).organization.id,
           ),
         afterQuery: async (req, ctx) => {
-          if (ctx.result.appointments?.[0]) {
-            await ctx.transaction
-              .update(tables.appointment)
-              .set({ status: "canceled" })
-              .where(eq(tables.appointment.id, ctx.result.appointments[0].id));
+          const appointment = ctx.result.appointments?.[0];
+          if (!appointment) return;
+
+          // Org-side status update stays inside the transaction
+          await ctx.transaction
+            .update(tables.appointment)
+            .set({ status: "canceled" })
+            .where(eq(tables.appointment.id, appointment.id));
+
+          const [row] = await ctx.transaction
+            .select({
+              client: {
+                id: tables.user.id,
+                firstname: tables.user.firstname,
+                lastname: tables.user.lastname,
+                email: tables.user.email,
+              },
+              organization: {
+                id: tables.organization.id,
+                name: tables.organization.name,
+                adminId: tables.organization.adminId,
+              },
+              service: {
+                id: tables.organizationService.id,
+                name: tables.organizationService.name,
+              },
+            })
+            .from(tables.appointment)
+            .innerJoin(tables.user, eq(tables.user.id, appointment.clientId))
+            .innerJoin(tables.organization, eq(tables.organization.id, appointment.organizationId))
+            .innerJoin(tables.organizationService, eq(tables.organizationService.id, appointment.serviceId))
+            .where(eq(tables.appointment.id, appointment.id))
+            .limit(1);
+
+          if (row) {
+            setTimeout(() =>
+              onAppointmentCancelled(
+                { ...appointment, service: row.service },
+                row.client,
+                row.organization,
+              ).catch((err) => console.error("[notification] onAppointmentCancelled (org_admin) failed:", err)),
+            0);
           }
         },
       },
@@ -675,6 +840,41 @@ export const queryAuth = {
           // requirements: body.requirements ?? {},
           organizationId: (data as any).service.organizationId,
         }),
+        afterQuery: async (req, ctx) => {
+          const task = ctx.result.tasks?.[0];
+          if (!task) return;
+
+          // Fetch employee + appointment data while still in transaction (reads only)
+          const [row] = await ctx.transaction
+            .select({
+              employee: {
+                id: tables.user.id,
+                firstname: tables.user.firstname,
+                lastname: tables.user.lastname,
+                email: tables.user.email,
+                userId: tables.employee.userId,
+              },
+              appointment: {
+                id: tables.appointment.id,
+                startTime: tables.appointment.startTime,
+              },
+            })
+            .from(tables.task)
+            .innerJoin(tables.appointment, eq(tables.appointment.id, task.appointmentId))
+            .innerJoin(tables.employee, eq(tables.employee.id, task.employeeId))
+            .innerJoin(tables.user, eq(tables.user.id, tables.employee.userId))
+            .where(eq(tables.task.id, task.id))
+            .limit(1);
+
+          // Defer notification INSERT to after transaction commits
+          if (row) {
+            setTimeout(() =>
+              onTaskAssigned(task, row.employee, row.appointment).catch(
+                (err) => console.error("[notification] onTaskAssigned failed:", err),
+              ),
+            0);
+          }
+        },
       },
     },
 
@@ -684,6 +884,49 @@ export const queryAuth = {
         validateBody: genArkSchemaValidator(pick(tables.task, ["submissions"])),
         where: (req, { session }) =>
           eq(tables.appointment.clientId, session.userId),
+        afterQuery: async (req, ctx) => {
+          const task = ctx.result.tasks?.[0];
+          if (!task) return;
+
+          // Fetch employee + client while still in transaction (reads only)
+          const [row] = await ctx.transaction
+            .select({
+              employee: {
+                id: tables.user.id,
+                firstname: tables.user.firstname,
+                lastname: tables.user.lastname,
+                userId: tables.employee.userId,
+              },
+              client: {
+                id: clientUser.id,
+                firstname: clientUser.firstname,
+                lastname: clientUser.lastname,
+              },
+            })
+            .from(tables.task)
+            .innerJoin(tables.employee, eq(tables.employee.id, task.employeeId))
+            .innerJoin(tables.user, eq(tables.user.id, tables.employee.userId))
+            .innerJoin(tables.appointment, eq(tables.appointment.id, task.appointmentId))
+            .innerJoin(clientUser, eq(clientUser.id, tables.appointment.clientId))
+            .where(eq(tables.task.id, task.id))
+            .limit(1);
+
+          // Defer notification INSERT to after transaction commits
+          if (row) {
+            setTimeout(() => {
+              import("~/services/notifcation.service").then(({ default: NotificationService }) =>
+                NotificationService.create(row.employee.userId, {
+                  type: "task_submission_received",
+                  title: "Client Submission Received",
+                  message: `${row.client.firstname} ${row.client.lastname} has submitted requirements for task "${task.name}".`,
+                  priority: "medium",
+                  metadata: { taskId: task.id },
+                  actionUrl: `/dashboard/employee/task/${task.id}`,
+                }),
+              ).catch((err) => console.error("[notification] task_submission_received failed:", err));
+            }, 0);
+          }
+        },
       },
 
       employee: {
@@ -709,6 +952,46 @@ export const queryAuth = {
               eq(tables.task.employeeId, employment.id),
             ),
           ),
+        afterQuery: async (req, ctx) => {
+          const task = ctx.result.tasks?.[0];
+          if (!task) return;
+
+          // Fetch appointment + client while still in transaction (reads only)
+          const [row] = await ctx.transaction
+            .select({
+              client: {
+                id: tables.user.id,
+                firstname: tables.user.firstname,
+                lastname: tables.user.lastname,
+              },
+              appointment: {
+                id: tables.appointment.id,
+                startTime: tables.appointment.startTime,
+              },
+            })
+            .from(tables.task)
+            .innerJoin(tables.appointment, eq(tables.appointment.id, task.appointmentId))
+            .innerJoin(tables.user, eq(tables.user.id, tables.appointment.clientId))
+            .where(eq(tables.task.id, task.id))
+            .limit(1);
+
+          if (!row) return;
+
+          // Defer notification INSERT to after transaction commits
+          if (task.status === "requires_action") {
+            setTimeout(() =>
+              onTaskRequiresAction(task, row.client, row.appointment).catch(
+                (err) => console.error("[notification] onTaskRequiresAction failed:", err),
+              ),
+            0);
+          } else if (task.isDone === true || task.status === "completed") {
+            setTimeout(() =>
+              onTaskCompleted(task, row.client, row.appointment).catch(
+                (err) => console.error("[notification] onTaskCompleted failed:", err),
+              ),
+            0);
+          }
+        },
       },
     },
   },

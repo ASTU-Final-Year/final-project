@@ -1210,13 +1210,24 @@ export const getBepaloQueryRouter = <
                 if (authProtected.onQueryError) {
                   ctx.error = error as Error;
                   await authProtected.onQueryError(req, ctx);
+                } else {
+                  console.error(error);
                 }
                 if (ctx.dontRollback !== undefined && !ctx.dontRollback)
                   transaction.rollback();
                 if (ctx.dontThrow !== undefined && !ctx.dontThrow) throw error;
               }
             });
-            return json(ctx.result, { status: Status._201_Created });
+            return ctx.result
+              ? json(ctx.result, { status: Status._201_Created })
+              : json(
+                  {
+                    error: "Failed to create entries",
+                  },
+                  {
+                    status: 400,
+                  },
+                );
           } catch (error) {
             if (error instanceof DrizzleQueryError) {
               if (error.cause?.extendedCode === "SQLITE_CONSTRAINT_UNIQUE") {
@@ -1559,13 +1570,24 @@ export const getBepaloQueryRouter = <
                 if (authProtected.onQueryError) {
                   ctx.error = error as Error;
                   await authProtected.onQueryError(req, ctx);
+                } else {
+                  console.error(error);
                 }
                 if (ctx.dontRollback !== undefined && !ctx.dontRollback)
                   transaction.rollback();
                 if (ctx.dontThrow !== undefined && !ctx.dontThrow) throw error;
               }
             });
-            return json(ctx.result);
+            return ctx.result
+              ? json(ctx.result)
+              : json(
+                  {
+                    error: "Bad query",
+                  },
+                  {
+                    status: Status._400_BadRequest,
+                  },
+                );
           } catch (error) {
             if (!IS_PRODUCTION) {
               console.error(error);
@@ -1835,13 +1857,24 @@ export const getBepaloQueryRouter = <
                 if (authProtected.onQueryError) {
                   ctx.error = error as Error;
                   await authProtected.onQueryError(req, ctx);
+                } else {
+                  console.error(error);
                 }
                 if (ctx.dontRollback !== undefined && !ctx.dontRollback)
                   transaction.rollback();
                 if (ctx.dontThrow !== undefined && !ctx.dontThrow) throw error;
               }
             });
-            return json(ctx.result);
+            return ctx.result
+              ? json(ctx.result)
+              : json(
+                  {
+                    error: "Bad query",
+                  },
+                  {
+                    status: Status._400_BadRequest,
+                  },
+                );
           } catch (error) {
             if (!IS_PRODUCTION) {
               console.error(error);

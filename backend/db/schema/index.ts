@@ -39,6 +39,9 @@ export const tasks = prodDatabase ? pgTables.task : sqTables.task;
 export const appointments = prodDatabase
   ? pgTables.appointment
   : sqTables.appointment;
+export const notifications = prodDatabase
+  ? pgTables.notification
+  : sqTables.notification;
 
 export const usersRelations = prodDatabase
   ? pgRelations.usersRelations
@@ -67,6 +70,12 @@ export const tasksRelations = prodDatabase
 export const appointmentRelations = prodDatabase
   ? pgRelations.appointmentRelations
   : sqRelations.appointmentRelations;
+export const notificationsRelations = prodDatabase
+  ? pgRelations.notificationsRelations
+  : sqRelations.notificationsRelations;
+
+export type Notification = typeof notifications.$inferSelect;
+export type NewNotification = typeof notifications.$inferInsert;
 
 export const tables = (prodDatabase ? pgTables : sqTables) as typeof pgTables;
 export const relations = (

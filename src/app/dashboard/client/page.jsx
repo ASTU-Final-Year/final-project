@@ -33,6 +33,7 @@ import {
   TrendingUp,
   Award,
   Clock as ClockIcon,
+  Upload,
 } from "lucide-react";
 import RequestHandler from "@/lib/request-handler";
 import Link from "next/link";

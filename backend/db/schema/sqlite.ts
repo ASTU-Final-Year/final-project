@@ -339,6 +339,64 @@ export const sqTasks = sqliteTable("tasks", {
   completedAt: integer("completed_at", { mode: "timestamp" }),
   ...timestamps,
 });
+// backend/db/schema/sqlite.ts
+
+export const notificationTypeEnum = [
+  "appointment_created",
+  "appointment_updated",
+  "appointment_cancelled",
+  "appointment_reminder",
+  "task_assigned",
+  "task_completed",
+  "task_requires_action",
+  "payment_received",
+  "payment_failed",
+  "service_rated",
+  "organization_invite",
+  "employee_assigned",
+  "system_alert",
+] as const;
+
+export const notificationPriorityEnum = [
+  "low",
+  "medium",
+  "high",
+  "urgent",
+] as const;
+
+export const sqNotifications = sqliteTable(
+  "notifications",
+  {
+    id: cpuuid("id").primaryKey().notNull().$defaultFn(randomCUUID),
+    userId: cpuuid("user_id")
+      .notNull()
+      .references(() => sqUsers.id, {
+        onUpdate: "cascade",
+        onDelete: "cascade",
+      }),
+    type: text("type", { enum: notificationTypeEnum }).notNull(),
+    title: text("title", { length: 200 }).notNull(),
+    message: text("message", { length: 500 }).notNull(),
+    priority: text("priority", { enum: notificationPriorityEnum })
+      .notNull()
+      .default("medium"),
+    metadata: text("metadata", { mode: "json" }).default("{}"),
+    isRead: integer("is_read", { mode: "boolean" }).notNull().default(false),
+    isArchived: integer("is_archived", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    actionUrl: text("action_url", { length: 500 }),
+    expiresAt: integer("expires_at", { mode: "timestamp" }),
+    readAt: integer("read_at", { mode: "timestamp" }),
+    ...timestamps,
+  },
+  (table: any) => [
+    index("notification_user_idx").on(table.userId),
+    index("notification_user_read_idx").on(table.userId, table.isRead),
+    index("notification_user_type_idx").on(table.userId, table.type),
+    index("notification_created_idx").on(table.createdAt),
+  ],
+);
 
 ////////////////////////////////////////////////
 
@@ -435,6 +493,17 @@ export const sqAppointmentsRelations = relations(sqAppointments, ({ one }) => ({
   // }),
 }));
 
+// Add relations
+export const sqNotificationsRelations = relations(
+  sqNotifications,
+  ({ one }) => ({
+    user: one(sqUsers, {
+      fields: [sqNotifications.userId],
+      references: [sqUsers.id],
+    }),
+  }),
+);
+
 export const sqTasksRelations = relations(sqTasks, ({ one }) => ({
   // appointment: one(sqAppointments, {
   //   fields: [sqTasks.appointmentId],
@@ -478,6 +547,7 @@ export const sqTables = {
   serviceFirstEmployee: sqServiceFirstEmployees,
   task: sqTasks,
   appointment: sqAppointments,
+  notification: sqNotifications,
 };
 
 export const sqRelations = {
@@ -490,6 +560,7 @@ export const sqRelations = {
   serviceFirstEmployeesRelations: sqServiceFirstEmployeesRelations,
   tasksRelations: sqTasksRelations,
   appointmentRelations: sqAppointmentsRelations,
+  notificationsRelations: sqNotificationsRelations,
 };
 
 export const sqSchema = {

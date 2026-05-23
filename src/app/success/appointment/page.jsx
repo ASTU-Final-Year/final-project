@@ -1,6 +1,7 @@
 // src/app/appointments/success/page.jsx
 "use client";
 
+import { Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle } from "lucide-react";
@@ -8,6 +9,14 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
 export default function BookingSuccessPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <BookingSuccessContent />
+    </Suspense>
+  );
+}
+
+function BookingSuccessContent() {
   const searchParams = useSearchParams();
   const appointmentId = searchParams.get("id");
 

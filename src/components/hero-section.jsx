@@ -10,6 +10,7 @@ import {
 import Link from "next/link";
 import SearchComponent from "./public/search";
 import { cn } from "@/lib/utils";
+import { Suspense } from "react";
 
 export default function HeroSection({ className, ...props }) {
   return (
@@ -52,13 +53,15 @@ export default function HeroSection({ className, ...props }) {
       <div className="absolute inset-0 bg-gradient-to-tl from-[#0B132B] via-transparent to-transparent z-0 opacity-80" />
 
       <div className="w-full flex flex-col gap-2 z-50">
-        <SearchComponent
-          searchBarOnly={true}
-          floatServiceList={true}
-          serviceListClassName="bg-slate-900/30 border-1 border-border/30 rounded-[1.5em] empty:hidden backdrop-blur-md mt-2 z-50"
-          resultsClassName="px-1"
-          dark={true}
-        />
+        <Suspense fallback={null}>
+          <SearchComponent
+            searchBarOnly={true}
+            floatServiceList={true}
+            serviceListClassName="bg-slate-900/30 border-1 border-border/30 rounded-[1.5em] empty:hidden backdrop-blur-md mt-2 z-50"
+            resultsClassName="px-1"
+            dark={true}
+          />
+        </Suspense>
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center w-full">
