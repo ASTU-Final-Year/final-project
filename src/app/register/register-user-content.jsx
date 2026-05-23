@@ -23,10 +23,31 @@ import {
   EyeOff,
   ArrowRight,
   HomeIcon,
+  Loader2,
+  CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Auth from "@/lib/auth";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+
+// Password strength calculator
+const calculatePasswordStrength = (password) => {
+  let strength = 0;
+  if (password.length >= 8) strength += 1;
+  if (password.length >= 15) strength += 1;
+  if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength += 1;
+  if (/\d/.test(password)) strength += 1;
+  if (/[!@#$%^&*]/.test(password)) strength += 1;
+  return strength;
+};
+
+const getPasswordStrengthColor = (strength) => {
+  if (strength <= 1) return "bg-red-500";
+  if (strength <= 2) return "bg-orange-500";
+  if (strength <= 3) return "bg-yellow-500";
+  return "bg-green-500";
+};
 
 export default function RegisterUserContent() {
   const router = useRouter();
@@ -34,6 +55,7 @@ export default function RegisterUserContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
 
   const [formData, setFormData] = useState({
     firstname: "",
@@ -103,7 +125,7 @@ export default function RegisterUserContent() {
       .then(({ success }) => {
         if (success) {
           setError("");
-          setIsSubmitting(false);
+          setSuccess(true);
           setTimeout(() => {
             router.push("/login");
           }, 1500);
@@ -111,7 +133,7 @@ export default function RegisterUserContent() {
       })
       .catch(({ message }) => {
         setIsSubmitting(false);
-        setError(message);
+        setError(message || "Registration failed. Please try again.");
       });
   };
 
@@ -186,8 +208,19 @@ export default function RegisterUserContent() {
           {/* Error Message */}
           {error && (
             <Alert variant="destructive" className="py-2.5">
-              <AlertDescription className="text-xs font-medium text-center">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="text-xs font-medium ml-2">
                 {error}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Success Message */}
+          {success && (
+            <Alert className="py-2.5 bg-green-50 border-green-200">
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-xs font-medium ml-2 text-green-700">
+                Account created successfully! Redirecting to login...
               </AlertDescription>
             </Alert>
           )}
@@ -208,9 +241,11 @@ export default function RegisterUserContent() {
                       )}
                       placeholder="Abebe"
                       value={formData.firstname}
+                      autoComplete="given-name"
                       onChange={(e) =>
                         handleChange("firstname", e.target.value)
                       }
+                      disabled={isSubmitting || success}
                     />
                   </div>
                   {errors.firstname && (
@@ -234,7 +269,9 @@ export default function RegisterUserContent() {
                       )}
                       placeholder="Bekele"
                       value={formData.lastname}
+                      autoComplete="family-name"
                       onChange={(e) => handleChange("lastname", e.target.value)}
+                      disabled={isSubmitting || success}
                     />
                   </div>
                   {errors.lastname && (
@@ -251,12 +288,14 @@ export default function RegisterUserContent() {
                   <Select
                     value={formData.gender}
                     onValueChange={(v) => handleChange("gender", v)}
+                    disabled={isSubmitting || success}
                   >
                     <SelectTrigger
                       className={cn(
                         "min-h-12 h-12 w-full mb-0",
                         errors.gender && "border-red-500",
                       )}
+                      disabled={isSubmitting || success}
                     >
                       <SelectValue className="" placeholder="Select gender" />
                     </SelectTrigger>
@@ -288,7 +327,9 @@ export default function RegisterUserContent() {
                       )}
                       placeholder="abebe@example.com"
                       value={formData.email}
+                      autoComplete="email"
                       onChange={(e) => handleChange("email", e.target.value)}
+                      disabled={isSubmitting || success}
                     />
                   </div>
                   {errors.email && (
@@ -312,7 +353,9 @@ export default function RegisterUserContent() {
                       )}
                       placeholder="+251 900000000"
                       value={formData.phone}
+                      autoComplete="tel"
                       onChange={(e) => handleChange("phone", e.target.value)}
+                      disabled={isSubmitting || success}
                     />
                   </div>
                   {errors.phone && (
@@ -337,12 +380,15 @@ export default function RegisterUserContent() {
                       )}
                       placeholder="Create a strong password"
                       value={formData.password}
+                      autoComplete="new-password"
                       onChange={(e) => handleChange("password", e.target.value)}
+                      disabled={isSubmitting || success}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors disabled:opacity-50"
+                      disabled={isSubmitting || success}
                     >
                       {showPassword ? (
                         <EyeOff className="h-4 w-4" />
@@ -351,6 +397,39 @@ export default function RegisterUserContent() {
                       )}
                     </button>
                   </div>
+
+                  {/* Password Strength Indicator */}
+                  {formData.password && (
+                    <div className="space-y-2">
+                      <div className="flex gap-1">
+                        {[...Array(5)].map((_, i) => (
+                          <div
+                            key={i}
+                            className={cn(
+                              "h-1.5 flex-1 rounded-full",
+                              i < calculatePasswordStrength(formData.password)
+                                ? getPasswordStrengthColor(
+                                    calculatePasswordStrength(
+                                      formData.password,
+                                    ),
+                                  )
+                                : "bg-slate-200",
+                            )}
+                          />
+                        ))}
+                      </div>
+                      <p className="text-xs text-slate-500">
+                        {calculatePasswordStrength(formData.password) <= 1
+                          ? "Weak password - add numbers, symbols, and uppercase letters"
+                          : calculatePasswordStrength(formData.password) <= 2
+                            ? "Fair password - could be stronger"
+                            : calculatePasswordStrength(formData.password) <= 3
+                              ? "Good password"
+                              : "Strong password"}
+                      </p>
+                    </div>
+                  )}
+
                   {errors.password && (
                     <p className="text-xs font-medium text-red-500 mt-1">
                       {errors.password}
@@ -364,12 +443,25 @@ export default function RegisterUserContent() {
               <Button
                 type="submit"
                 className="w-full h-12 font-bold shadow-md hover:shadow-lg transition-all text-base"
-                disabled={isSubmitting}
+                disabled={isSubmitting || success}
               >
-                {isSubmitting
-                  ? "Creating account..."
-                  : `Register as ${formData.role === "client" ? "Client" : "Employee"}`}
-                {!isSubmitting && <ArrowRight className="ml-2 h-4 w-4" />}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating account...
+                  </>
+                ) : success ? (
+                  <>
+                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                    Account created successfully
+                  </>
+                ) : (
+                  <>
+                    Register as{" "}
+                    {formData.role === "client" ? "Client" : "Employee"}
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </>
+                )}
               </Button>
             </div>
           </form>

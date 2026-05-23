@@ -375,20 +375,33 @@ export const queryAuth = {
             })
             .from(tables.appointment)
             .innerJoin(tables.user, eq(tables.user.id, appointment.clientId))
-            .innerJoin(tables.organization, eq(tables.organization.id, appointment.organizationId))
-            .innerJoin(tables.organizationService, eq(tables.organizationService.id, appointment.serviceId))
+            .innerJoin(
+              tables.organization,
+              eq(tables.organization.id, appointment.organizationId),
+            )
+            .innerJoin(
+              tables.organizationService,
+              eq(tables.organizationService.id, appointment.serviceId),
+            )
             .where(eq(tables.appointment.id, appointment.id))
             .limit(1);
 
           // Defer notification INSERT to after the transaction commits
           if (row) {
-            setTimeout(() =>
-              onAppointmentCreated(
-                { ...appointment, service: row.service },
-                row.client,
-                row.organization,
-              ).catch((err) => console.error("[notification] onAppointmentCreated failed:", err)),
-            0);
+            setTimeout(
+              () =>
+                onAppointmentCreated(
+                  { ...appointment, service: row.service },
+                  row.client,
+                  row.organization,
+                ).catch((err) =>
+                  console.error(
+                    "[notification] onAppointmentCreated failed:",
+                    err,
+                  ),
+                ),
+              0,
+            );
           }
         },
       },
@@ -429,11 +442,18 @@ export const queryAuth = {
             .where(eq(tables.user.id, appointment.clientId))
             .limit(1);
           if (row) {
-            setTimeout(() =>
-              onAppointmentUpdated(appointment, row.client, ["details updated"]).catch(
-                (err) => console.error("[notification] onAppointmentUpdated (client) failed:", err),
-              ),
-            0);
+            setTimeout(
+              () =>
+                onAppointmentUpdated(appointment, row.client, [
+                  "details updated",
+                ]).catch((err) =>
+                  console.error(
+                    "[notification] onAppointmentUpdated (client) failed:",
+                    err,
+                  ),
+                ),
+              0,
+            );
           }
         },
       },
@@ -466,12 +486,23 @@ export const queryAuth = {
             .where(eq(tables.user.id, appointment.clientId))
             .limit(1);
           if (row) {
-            const changes = Object.keys(ctx.body ?? {}).filter((k) => k !== "id");
-            setTimeout(() =>
-              onAppointmentUpdated(appointment, row.client, changes.length ? changes : ["status updated"]).catch(
-                (err) => console.error("[notification] onAppointmentUpdated (employee) failed:", err),
-              ),
-            0);
+            const changes = Object.keys(ctx.body ?? {}).filter(
+              (k) => k !== "id",
+            );
+            setTimeout(
+              () =>
+                onAppointmentUpdated(
+                  appointment,
+                  row.client,
+                  changes.length ? changes : ["status updated"],
+                ).catch((err) =>
+                  console.error(
+                    "[notification] onAppointmentUpdated (employee) failed:",
+                    err,
+                  ),
+                ),
+              0,
+            );
           }
         },
       },
@@ -513,12 +544,23 @@ export const queryAuth = {
             .where(eq(tables.user.id, appointment.clientId))
             .limit(1);
           if (row) {
-            const changes = Object.keys(ctx.body ?? {}).filter((k) => k !== "id");
-            setTimeout(() =>
-              onAppointmentUpdated(appointment, row.client, changes.length ? changes : ["updated by organization"]).catch(
-                (err) => console.error("[notification] onAppointmentUpdated (org_admin) failed:", err),
-              ),
-            0);
+            const changes = Object.keys(ctx.body ?? {}).filter(
+              (k) => k !== "id",
+            );
+            setTimeout(
+              () =>
+                onAppointmentUpdated(
+                  appointment,
+                  row.client,
+                  changes.length ? changes : ["updated by organization"],
+                ).catch((err) =>
+                  console.error(
+                    "[notification] onAppointmentUpdated (org_admin) failed:",
+                    err,
+                  ),
+                ),
+              0,
+            );
           }
         },
       },
@@ -580,20 +622,33 @@ export const queryAuth = {
             })
             .from(tables.appointment)
             .innerJoin(tables.user, eq(tables.user.id, appointment.clientId))
-            .innerJoin(tables.organization, eq(tables.organization.id, appointment.organizationId))
-            .innerJoin(tables.organizationService, eq(tables.organizationService.id, appointment.serviceId))
+            .innerJoin(
+              tables.organization,
+              eq(tables.organization.id, appointment.organizationId),
+            )
+            .innerJoin(
+              tables.organizationService,
+              eq(tables.organizationService.id, appointment.serviceId),
+            )
             .where(eq(tables.appointment.id, appointment.id))
             .limit(1);
 
           // Defer notification INSERT to after transaction commits
           if (row) {
-            setTimeout(() =>
-              onAppointmentCancelled(
-                { ...appointment, service: row.service },
-                row.client,
-                row.organization,
-              ).catch((err) => console.error("[notification] onAppointmentCancelled (client) failed:", err)),
-            0);
+            setTimeout(
+              () =>
+                onAppointmentCancelled(
+                  { ...appointment, service: row.service },
+                  row.client,
+                  row.organization,
+                ).catch((err) =>
+                  console.error(
+                    "[notification] onAppointmentCancelled (client) failed:",
+                    err,
+                  ),
+                ),
+              0,
+            );
           }
         },
       },
@@ -635,19 +690,32 @@ export const queryAuth = {
             })
             .from(tables.appointment)
             .innerJoin(tables.user, eq(tables.user.id, appointment.clientId))
-            .innerJoin(tables.organization, eq(tables.organization.id, appointment.organizationId))
-            .innerJoin(tables.organizationService, eq(tables.organizationService.id, appointment.serviceId))
+            .innerJoin(
+              tables.organization,
+              eq(tables.organization.id, appointment.organizationId),
+            )
+            .innerJoin(
+              tables.organizationService,
+              eq(tables.organizationService.id, appointment.serviceId),
+            )
             .where(eq(tables.appointment.id, appointment.id))
             .limit(1);
 
           if (row) {
-            setTimeout(() =>
-              onAppointmentCancelled(
-                { ...appointment, service: row.service },
-                row.client,
-                row.organization,
-              ).catch((err) => console.error("[notification] onAppointmentCancelled (org_admin) failed:", err)),
-            0);
+            setTimeout(
+              () =>
+                onAppointmentCancelled(
+                  { ...appointment, service: row.service },
+                  row.client,
+                  row.organization,
+                ).catch((err) =>
+                  console.error(
+                    "[notification] onAppointmentCancelled (org_admin) failed:",
+                    err,
+                  ),
+                ),
+              0,
+            );
           }
         },
       },
@@ -860,7 +928,10 @@ export const queryAuth = {
               },
             })
             .from(tables.task)
-            .innerJoin(tables.appointment, eq(tables.appointment.id, task.appointmentId))
+            .innerJoin(
+              tables.appointment,
+              eq(tables.appointment.id, task.appointmentId),
+            )
             .innerJoin(tables.employee, eq(tables.employee.id, task.employeeId))
             .innerJoin(tables.user, eq(tables.user.id, tables.employee.userId))
             .where(eq(tables.task.id, task.id))
@@ -868,11 +939,14 @@ export const queryAuth = {
 
           // Defer notification INSERT to after transaction commits
           if (row) {
-            setTimeout(() =>
-              onTaskAssigned(task, row.employee, row.appointment).catch(
-                (err) => console.error("[notification] onTaskAssigned failed:", err),
-              ),
-            0);
+            setTimeout(
+              () =>
+                onTaskAssigned(task, row.employee, row.appointment).catch(
+                  (err) =>
+                    console.error("[notification] onTaskAssigned failed:", err),
+                ),
+              0,
+            );
           }
         },
       },
@@ -906,24 +980,37 @@ export const queryAuth = {
             .from(tables.task)
             .innerJoin(tables.employee, eq(tables.employee.id, task.employeeId))
             .innerJoin(tables.user, eq(tables.user.id, tables.employee.userId))
-            .innerJoin(tables.appointment, eq(tables.appointment.id, task.appointmentId))
-            .innerJoin(clientUser, eq(clientUser.id, tables.appointment.clientId))
+            .innerJoin(
+              tables.appointment,
+              eq(tables.appointment.id, task.appointmentId),
+            )
+            .innerJoin(
+              clientUser,
+              eq(clientUser.id, tables.appointment.clientId),
+            )
             .where(eq(tables.task.id, task.id))
             .limit(1);
 
           // Defer notification INSERT to after transaction commits
           if (row) {
             setTimeout(() => {
-              import("~/services/notifcation.service").then(({ default: NotificationService }) =>
-                NotificationService.create(row.employee.userId, {
-                  type: "task_submission_received",
-                  title: "Client Submission Received",
-                  message: `${row.client.firstname} ${row.client.lastname} has submitted requirements for task "${task.name}".`,
-                  priority: "medium",
-                  metadata: { taskId: task.id },
-                  actionUrl: `/dashboard/employee/task/${task.id}`,
-                }),
-              ).catch((err) => console.error("[notification] task_submission_received failed:", err));
+              import("~/services/notifcation.service")
+                .then(({ default: NotificationService }) =>
+                  NotificationService.create(row.employee.userId, {
+                    type: "task_submission_received",
+                    title: "Client Submission Received",
+                    message: `${row.client.firstname} ${row.client.lastname} has submitted requirements for task "${task.name}".`,
+                    priority: "medium",
+                    metadata: { taskId: task.id },
+                    actionUrl: `/dashboard/employee/task/${task.id}`,
+                  }),
+                )
+                .catch((err) =>
+                  console.error(
+                    "[notification] task_submission_received failed:",
+                    err,
+                  ),
+                );
             }, 0);
           }
         },
@@ -970,8 +1057,14 @@ export const queryAuth = {
               },
             })
             .from(tables.task)
-            .innerJoin(tables.appointment, eq(tables.appointment.id, task.appointmentId))
-            .innerJoin(tables.user, eq(tables.user.id, tables.appointment.clientId))
+            .innerJoin(
+              tables.appointment,
+              eq(tables.appointment.id, task.appointmentId),
+            )
+            .innerJoin(
+              tables.user,
+              eq(tables.user.id, tables.appointment.clientId),
+            )
             .where(eq(tables.task.id, task.id))
             .limit(1);
 
@@ -979,17 +1072,29 @@ export const queryAuth = {
 
           // Defer notification INSERT to after transaction commits
           if (task.status === "requires_action") {
-            setTimeout(() =>
-              onTaskRequiresAction(task, row.client, row.appointment).catch(
-                (err) => console.error("[notification] onTaskRequiresAction failed:", err),
-              ),
-            0);
+            setTimeout(
+              () =>
+                onTaskRequiresAction(task, row.client, row.appointment).catch(
+                  (err) =>
+                    console.error(
+                      "[notification] onTaskRequiresAction failed:",
+                      err,
+                    ),
+                ),
+              0,
+            );
           } else if (task.isDone === true || task.status === "completed") {
-            setTimeout(() =>
-              onTaskCompleted(task, row.client, row.appointment).catch(
-                (err) => console.error("[notification] onTaskCompleted failed:", err),
-              ),
-            0);
+            setTimeout(
+              () =>
+                onTaskCompleted(task, row.client, row.appointment).catch(
+                  (err) =>
+                    console.error(
+                      "[notification] onTaskCompleted failed:",
+                      err,
+                    ),
+                ),
+              0,
+            );
           }
         },
       },
@@ -1044,6 +1149,7 @@ export const queryAuth = {
             "id",
             "adminId",
             "rating",
+            "total_ratings",
             "isActive",
             "billingStart",
             "billingEnd",
@@ -1095,6 +1201,7 @@ export const queryAuth = {
             "adminId",
             "slug",
             "rating",
+            "total_ratings",
             "billingStart",
             "billingEnd",
             "billingPeriod",
