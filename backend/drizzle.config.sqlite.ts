@@ -1,7 +1,7 @@
 // drizzle.config.ts
 import type { Config } from "drizzle-kit";
-import { config } from "dotenv";
-config();
+import { config as dotenvConfig } from "dotenv";
+dotenvConfig({ path: "../.env" });
 
 export default {
   schema: "./db/schema/sqlite.ts",
