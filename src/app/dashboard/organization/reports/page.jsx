@@ -3,9 +3,13 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { DatePicker } from "@/components/ui/date-picker"; // we'll build a simple one if missing
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   BarChart,
   Bar,
@@ -60,7 +64,7 @@ export default function ReportsPage() {
     setError(null);
     try {
       const res = await RequestHandler.Get(
-        `/api/v1/organization/reports?type=${reportType}&startDate=${startDate}&endDate=${endDate}`
+        `/api/v1/organization/reports?type=${reportType}&startDate=${startDate}&endDate=${endDate}`,
       );
       if (!res.ok) throw new Error("Failed to fetch report");
       const result = await res.json();
@@ -75,7 +79,11 @@ export default function ReportsPage() {
 
   const renderChart = () => {
     if (!data || data.length === 0)
-      return <p className="text-center text-gray-500 py-8">No data for selected period.</p>;
+      return (
+        <p className="text-center text-gray-500 py-8">
+          No data for selected period.
+        </p>
+      );
 
     if (reportType === "appointments") {
       return (
@@ -112,7 +120,9 @@ export default function ReportsPage() {
                   <td className="p-2">{emp.totalTasks}</td>
                   <td className="p-2">
                     {emp.totalTasks
-                      ? ((emp.completedTasks / emp.totalTasks) * 100).toFixed(1) + "%"
+                      ? ((emp.completedTasks / emp.totalTasks) * 100).toFixed(
+                          1,
+                        ) + "%"
                       : "0%"}
                   </td>
                 </tr>
@@ -138,7 +148,10 @@ export default function ReportsPage() {
                 label
               >
                 {data.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={COLORS[index % COLORS.length]}
+                  />
                 ))}
               </Pie>
               <Tooltip />
@@ -163,7 +176,9 @@ export default function ReportsPage() {
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
-      <h1 className="text-2xl font-bold text-indigo-950">Reports & Analytics</h1>
+      <h1 className="text-2xl font-bold text-indigo-950">
+        Reports & Analytics
+      </h1>
 
       <Card>
         <CardHeader>
@@ -172,20 +187,30 @@ export default function ReportsPage() {
         <CardContent className="space-y-4">
           <div className="flex flex-wrap gap-4 items-end">
             <div>
-              <label className="block text-sm font-medium mb-1">Report Type</label>
+              <label className="block text-sm font-medium mb-1">
+                Report Type
+              </label>
               <Select value={reportType} onValueChange={setReportType}>
                 <SelectTrigger className="w-48">
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="appointments">Appointment Trends</SelectItem>
-                  <SelectItem value="employeePerformance">Employee Performance</SelectItem>
-                  <SelectItem value="servicePopularity">Service Popularity</SelectItem>
+                  <SelectItem value="appointments">
+                    Appointment Trends
+                  </SelectItem>
+                  <SelectItem value="employeePerformance">
+                    Employee Performance
+                  </SelectItem>
+                  <SelectItem value="servicePopularity">
+                    Service Popularity
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Start Date</label>
+              <label className="block text-sm font-medium mb-1">
+                Start Date
+              </label>
               <SimpleDatePicker value={startDate} onChange={setStartDate} />
             </div>
             <div>

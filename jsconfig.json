@@ -4,5 +4,6 @@
       "@/*": ["./src/*"],
       "~/*": ["./backend/*"]
     }
-  }
+  },
+  "exclude": ["node_modules", ".next", "backend", "src/app/templates"]
 }

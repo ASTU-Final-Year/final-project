@@ -5,12 +5,12 @@
   "scripts": {
     "postinstall": "cd backend && bun i",
     "dev": "concurrently \"bun --bun run dev:frontend\" \"bun --bun run dev:backend\"",
-    "dev:frontend": "next dev --turbopack",
+    "dev:frontend": "bun --bun next dev --turbopack",
     "dev:backend": "cd backend && bun dev",
     "start": "NODE_ENV=production concurrently \"bun --bun run start:frontend\" \"bun --bun run start:backend\"",
-    "start:frontend": "next start",
+    "start:frontend": "bun --bun next start",
     "start:backend": "cd backend && bun start",
-    "build": "next build",
+    "build": "bun --bun next build",
     "lint": "eslint"
   },
   "dependencies": {
