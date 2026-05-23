@@ -75,6 +75,7 @@ router.append(
         origins: [
           `${config.url}:${config.port}`,
           `${config.url}:${config.frontendPort}`,
+          `${config.url}:8081`, // expo url
         ],
         allowedHeaders: ["Content-Type", "Authorization", "Cache-Control"],
         methods: ["HEAD", "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
