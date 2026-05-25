@@ -1,12 +1,22 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, LayoutAnimation, Platform, UIManager } from 'react-native';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 import { useUIStore, useAppointmentStore } from '../store';
-import { ArrowLeft, User, Clock, CheckCircle2 } from 'lucide-react-native';
+import { ArrowLeft, User, Clock, CheckCircle2, ChevronDown, ChevronUp, Phone, Mail } from 'lucide-react-native';
 import { tw } from '../lib/native-utils';
 
 export default function DetailScreen() {
   const { viewingAppointmentId, setViewingAppointment } = useUIStore();
   const { appointments, cancelAppointment } = useAppointmentStore();
+  const [isProviderExpanded, setIsProviderExpanded] = useState(false);
+
+  const toggleProviderDetails = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setIsProviderExpanded(!isProviderExpanded);
+  };
   
   const appointment = appointments.find(a => a.id === viewingAppointmentId);
 
@@ -50,19 +60,42 @@ export default function DetailScreen() {
         </View>
 
         {/* Technician */}
-        <View style={tw`mb-8 p-4 bg-blue-600 rounded-3xl flex-row items-center justify-between shadow-lg shadow-blue-100`}>
-           <View style={tw`flex-row items-center gap-3 flex-1`}>
-             <View style={tw`w-10 h-10 rounded-full bg-white bg-opacity-20 items-center justify-center`}>
-               <User size={20} color="white" />
+        <View style={tw`mb-8 p-4 bg-blue-600 rounded-3xl shadow-lg shadow-blue-100`}>
+           <View style={tw`flex-row items-center justify-between`}>
+             <View style={tw`flex-row items-center gap-3 flex-1`}>
+               <View style={tw`w-10 h-10 rounded-full bg-white bg-opacity-20 items-center justify-center`}>
+                 <User size={20} color="white" />
+               </View>
+               <View style={tw`flex-1`}>
+                 <Text style={tw`text-[9px] font-bold text-white text-opacity-60 uppercase`}>Service Provider</Text>
+                 <Text style={tw`text-sm font-bold text-white`}>{appointment.technician || 'Pending Assignment'}</Text>
+               </View>
              </View>
-             <View style={tw`flex-1`}>
-               <Text style={tw`text-[9px] font-bold text-white text-opacity-60 uppercase`}>Service Provider</Text>
-               <Text style={tw`text-sm font-bold text-white`}>{appointment.technician || 'Pending Assignment'}</Text>
+             <TouchableOpacity 
+               onPress={toggleProviderDetails}
+               style={tw`w-10 h-10 bg-white bg-opacity-20 rounded-full items-center justify-center`}
+             >
+                {isProviderExpanded ? <ChevronUp size={16} color="white" /> : <ChevronDown size={16} color="white" />}
+             </TouchableOpacity>
+           </View>
+           {isProviderExpanded && (
+             <View style={tw`mt-4 pt-4 border-t border-white border-opacity-20 gap-3`}>
+                <View style={tw`flex-row items-center gap-3`}>
+                   <View style={tw`w-8 h-8 rounded-full bg-white bg-opacity-20 items-center justify-center`}>
+                      <Phone size={14} color="white" />
+                   </View>
+                   <Text style={tw`text-xs font-bold text-white`}>+251 911 234 567</Text>
+                </View>
+                <View style={tw`flex-row items-center gap-3`}>
+                   <View style={tw`w-8 h-8 rounded-full bg-white bg-opacity-20 items-center justify-center`}>
+                      <Mail size={14} color="white" />
+                   </View>
+                   <Text style={tw`text-xs font-bold text-white`}>
+                     {appointment.technician ? appointment.technician.toLowerCase().replace(' ', '.') + '@servesync.com' : 'support@servesync.com'}
+                   </Text>
+                </View>
              </View>
-           </View>
-           <View style={tw`w-10 h-10 bg-white bg-opacity-20 rounded-full items-center justify-center`}>
-              <Clock size={16} color="white" />
-           </View>
+           )}
         </View>
 
         {/* Detailed Progress */}
