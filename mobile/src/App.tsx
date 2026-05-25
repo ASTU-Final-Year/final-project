@@ -6,7 +6,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, SafeAreaView, StatusBar, Platform } from 'react-native';
 import { useUIStore, useAuthStore, useAppointmentStore } from './store';
-import { LayoutGrid, CalendarCheck, User, Plus, Bell } from 'lucide-react-native';
+import { LayoutGrid, CalendarCheck, User, Plus, Bell, CreditCard } from 'lucide-react-native';
 import { tw } from './lib/native-utils';
 
 // Screens
@@ -18,6 +18,7 @@ import AppointmentsScreen from './components/AppointmentsScreen';
 import DetailScreen from './components/DetailScreen';
 import ProfileScreen from './components/ProfileScreen';
 import NotificationsScreen from './components/NotificationsScreen';
+import PaymentScreen from './components/PaymentScreen';
 
 export default function App() {
   const { activeScreen, setActiveScreen } = useUIStore();
@@ -59,6 +60,7 @@ export default function App() {
       case 'DETAIL': return <DetailScreen />;
       case 'PROFILE': return <ProfileScreen />;
       case 'NOTIFICATIONS': return <NotificationsScreen />;
+      case 'PAYMENT': return <PaymentScreen />;
       default: return <HomeScreen />;
     }
   };
@@ -100,17 +102,17 @@ export default function App() {
           </TouchableOpacity>
 
           <NavButton 
+            icon={CreditCard} 
+            label="Payment" 
+            active={activeScreen === 'PAYMENT'} 
+            onClick={() => setActiveScreen('PAYMENT')} 
+          />
+          
+          <NavButton 
             icon={User} 
             label="Profile" 
             active={activeScreen === 'PROFILE'} 
             onClick={() => setActiveScreen('PROFILE')} 
-          />
-          
-          <NavButton 
-            icon={Bell} 
-            label="Alerts" 
-            active={activeScreen === 'NOTIFICATIONS'} 
-            onClick={() => setActiveScreen('NOTIFICATIONS')} 
           />
         </View>
       )}
