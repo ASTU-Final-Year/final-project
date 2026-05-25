@@ -105,6 +105,7 @@ export default function ServicesPage() {
     description: "",
     isActive: true,
     calendarId: null,
+    imageUrl: null,
     price: 0.0,
   });
 
@@ -198,6 +199,7 @@ export default function ServicesPage() {
         description: "",
         isActive: true,
         calendarId: null,
+        imageUrl: null,
         price: 0.0,
       });
       fetchServices();
@@ -571,6 +573,16 @@ export default function ServicesPage() {
                 value={formData.price}
                 onChange={(e) =>
                   setFormData({ ...formData, price: parseInt(e.target.value) })
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Service Image URL</Label>
+              <Input
+                type="text"
+                value={formData.imageUrl ?? undefined}
+                onChange={(e) =>
+                  setFormData({ ...formData, imageUrl: e.target.value })
                 }
               />
             </div>

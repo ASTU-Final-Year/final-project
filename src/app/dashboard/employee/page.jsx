@@ -32,7 +32,7 @@ export default function DashboardOverview() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const empRes = await RequestHandler.Get("/query/v1/employee");
+        const empRes = await RequestHandler.Get("/query/v1/employee?mine");
         if (empRes.ok) {
           const { employees: employments } = await empRes.json();
           setEmployments(employments);

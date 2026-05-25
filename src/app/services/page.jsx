@@ -82,8 +82,8 @@ export default function ServicesSearchPage() {
 
         const dataRes = await RequestHandler.Get(
           searchQuery
-            ? `/query/v1/organizationService?guest&${sparams.toString()}${activeSector ? `&~organization.sector.${ilike}=${activeSector}` : ""}&${searchFilter}`
-            : `/query/v1/organizationService?guest&${sparams.toString()}${activeSector ? `&~organization.sector.${ilike}=${activeSector}` : ""}`,
+            ? `/query/v1/organizationService?guest&${sparams.toString()}${activeSector ? `&~organization.sector.${ilike}=${activeSector.toLowerCase()}` : ""}&${searchFilter}`
+            : `/query/v1/organizationService?guest&${sparams.toString()}${activeSector ? `&~organization.sector.${ilike}=${activeSector.toLowerCase()}` : ""}`,
         );
         if (dataRes.ok) {
           const { organizationServices } = await dataRes.json();

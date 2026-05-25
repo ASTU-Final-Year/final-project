@@ -43,22 +43,22 @@ import {
 } from "~/middleware";
 import { JWT } from "@bepalo/jwt";
 import NotificationService from "~/services/notifcation.service";
-import { getErrorResponse } from "~/lib";
+import { getErrorResponse, toCUUIDDriver } from "~/lib";
 
 const clientUser = aliasedTable(tables.user, "client");
 const employeeUser = aliasedTable(tables.user, "employee");
 const service = aliasedTable(tables.organizationService, "service");
 const employment = aliasedTable(tables.employee, "employment");
 
-// Helper function to check calendar availability
+// Helper function to check calendar availability with working hours
 async function checkCalendarAvailability(
   serviceId: string,
   startTime: Date,
   endTime: Date,
   tx: Transaction,
-): Promise<boolean> {
+): Promise<{ available: boolean; reason?: string }> {
   // Get service with calendar
-  const [service] = await tx
+  const [serviceData] = await tx
     .select({
       calendarId: tables.organizationService.calendarId,
       calendar: tables.organizationCalendar,
@@ -70,43 +70,100 @@ async function checkCalendarAvailability(
     )
     .where(eq(tables.organizationService.id, serviceId));
 
-  if (!service || !service.calendar) {
-    return true; // No calendar restrictions
+  if (!serviceData || !serviceData.calendar) {
+    return { available: true }; // No calendar restrictions
   }
 
+  const calendar = serviceData.calendar;
   const dayOfWeek = startTime.getDay();
   const adjustedDay = dayOfWeek === 0 ? 7 : dayOfWeek;
-  const availableDays = service.calendar.available?.weekly || [];
 
-  // Check if service is available on this day
+  // Check weekly availability
+  const availableDays = calendar.available?.weekly || [];
   if (!availableDays.includes(adjustedDay)) {
-    return false;
+    return {
+      available: false,
+      reason: "This service is not available on the selected day",
+    };
   }
 
-  // Check if time is within available hours
-  const availableHours = service.calendar.available?.hours || [
-    ["09:00", "17:00"],
-  ];
-  const startHour = startTime.getHours();
-  const startMinute = startTime.getMinutes();
+  // Check if date is in unavailable ranges
+  const isInUnavailableRange = calendar.unavailable?.ranges?.some(
+    (range: any) => {
+      const from = new Date(range.from);
+      const to = new Date(range.to);
+      return startTime >= from && startTime <= to;
+    },
+  );
 
-  let isWithinHours = false;
-  for (const [start, end] of availableHours) {
-    const [startH, startM] = start.split(":").map(Number);
-    const [endH, endM] = end.split(":").map(Number);
+  if (isInUnavailableRange) {
+    return {
+      available: false,
+      reason: "This date is not available for booking",
+    };
+  }
 
-    const startTotal = startHour * 60 + startMinute;
-    const availableStartTotal = startH * 60 + startM;
-    const availableEndTotal = endH * 60 + endM;
+  // Check if date is specifically unavailable
+  const isSpecificallyUnavailable = calendar.unavailable?.exactly?.some(
+    (date: Date) => {
+      return date.toDateString() === startTime.toDateString();
+    },
+  );
 
-    if (startTotal >= availableStartTotal && startTotal < availableEndTotal) {
-      isWithinHours = true;
-      break;
+  if (isSpecificallyUnavailable) {
+    return {
+      available: false,
+      reason: "This date is not available for booking",
+    };
+  }
+
+  // Check daily working hours (weeklyHours)
+  const weeklyHours = calendar.available?.weeklyHours;
+  if (weeklyHours && weeklyHours[adjustedDay - 1]) {
+    const [startHour, startMinute] = weeklyHours[adjustedDay - 1][0]
+      .split(":")
+      .map(Number);
+    const [endHour, endMinute] = weeklyHours[adjustedDay - 1][1]
+      .split(":")
+      .map(Number);
+
+    const startTotal = startTime.getHours() * 60 + startTime.getMinutes();
+    const workingStartTotal = startHour * 60 + startMinute;
+    const workingEndTotal = endHour * 60 + endMinute;
+
+    if (startTotal < workingStartTotal || startTotal >= workingEndTotal) {
+      return {
+        available: false,
+        reason: `Service hours are ${weeklyHours[adjustedDay - 1][0]} - ${weeklyHours[adjustedDay - 1][1]}`,
+      };
     }
-  }
+  } else {
+    // Fallback to global hours
+    const availableHours = calendar.available?.hours || [["09:00", "17:00"]];
+    const startHour = startTime.getHours();
+    const startMinute = startTime.getMinutes();
 
-  if (!isWithinHours) {
-    return false;
+    let isWithinHours = false;
+    for (const [start, end] of availableHours) {
+      const [startH, startM] = start.split(":").map(Number);
+      const [endH, endM] = end.split(":").map(Number);
+
+      const startTotal = startHour * 60 + startMinute;
+      const availableStartTotal = startH * 60 + startM;
+      const availableEndTotal = endH * 60 + endM;
+
+      if (startTotal >= availableStartTotal && startTotal < availableEndTotal) {
+        isWithinHours = true;
+        break;
+      }
+    }
+
+    if (!isWithinHours) {
+      return {
+        available: false,
+        reason: "Outside operational hours",
+      };
+    }
   }
 
   // Check for overlapping appointments
@@ -119,10 +176,18 @@ async function checkCalendarAvailability(
         sql`${tables.appointment.startTime} < ${endTime.toISOString()}`,
         sql`${tables.appointment.endTime} > ${startTime.toISOString()}`,
         eq(tables.appointment.isActive, true),
+        eq(tables.appointment.status, "scheduled"),
       ),
     );
 
-  return overlapping.count === 0;
+  if (overlapping.count > 0) {
+    return {
+      available: false,
+      reason: "This time slot is already booked",
+    };
+  }
+
+  return { available: true };
 }
 
 const onQueryError = (req, ctx) => {
@@ -344,7 +409,6 @@ export const queryAuth = {
               Status._400_BadRequest,
             );
           }
-
           // Check calendar availability
           const isAvailable = await checkCalendarAvailability(
             service.id,
@@ -359,8 +423,7 @@ export const queryAuth = {
               Status._400_BadRequest,
             );
           }
-
-          ctx.data = { service, startTime, endTime };
+          ctx.data = { service, organization };
           return b;
         },
 
@@ -894,23 +957,27 @@ export const queryAuth = {
           const b = genArkSchemaValidator(
             omit(tables.task, [
               "id",
-              "isDone",
               "createdAt",
               "updatedAt",
+              "status",
+              "isDone",
               "nextTaskId",
+              "submissions",
+              "requirements",
+              "completedAt",
             ]),
             {
               forwards: true,
-              submissions: true,
-              requirements: true,
-              status: true,
             },
           )(body);
           if (!(b instanceof ArkErrors)) {
             const [service] = await db
               .select({ id: tables.organizationService.id })
               .from(tables.organizationService)
-              .leftJoin(tables.appointment)
+              .leftJoin(
+                tables.appointment,
+                eq(tables.appointment.serviceId, tables.organizationService.id),
+              )
               .where(
                 and(
                   eq(tables.appointment.id, b.appointmentId as string),
@@ -974,16 +1041,35 @@ export const queryAuth = {
             );
           }
         },
-        onQueryError,
+        // onQueryError,
       },
     },
 
     PATCH: {
       client: {
         select: tables.task,
-        validateBody: genArkSchemaValidator(pick(tables.task, ["submissions"])),
-        where: (req, { session }) =>
-          eq(tables.appointment.clientId, session.userId),
+        // include: {
+        //   appointment: [
+        //     tables.appointment,
+        //     eq(tables.appointment.id, tables.task.appointmentId),
+        //   ],
+        // },
+        validateBody: genArkSchemaValidator(
+          pick(tables.task, ["submissions", "completedAt"]),
+          true,
+        ),
+        injectBody: (body) => ({
+          submissions: body.submissions,
+          completedAt: new Date(),
+        }),
+        where: (req, { session }) => sql`
+          ${tables.task.id} IN (
+            SELECT t.id 
+            FROM ${tables.task} t
+            INNER JOIN ${tables.appointment} a ON a.id = t.appointment_id
+            WHERE a.client_id = ${toCUUIDDriver(session.userId)}
+          )
+        `,
         afterQuery: async (req, ctx) => {
           const task = ctx.result.tasks?.[0];
           if (!task) return;
@@ -992,7 +1078,7 @@ export const queryAuth = {
           const [row] = await ctx.transaction
             .select({
               employee: {
-                id: tables.user.id,
+                id: tables.employee.id,
                 firstname: tables.user.firstname,
                 lastname: tables.user.lastname,
                 userId: tables.employee.userId,
@@ -1004,13 +1090,13 @@ export const queryAuth = {
               },
             })
             .from(tables.task)
-            .innerJoin(tables.employee, eq(tables.employee.id, task.employeeId))
-            .innerJoin(tables.user, eq(tables.user.id, tables.employee.userId))
-            .innerJoin(
+            .leftJoin(tables.employee, eq(tables.employee.id, task.employeeId))
+            .leftJoin(tables.user, eq(tables.user.id, tables.employee.userId))
+            .leftJoin(
               tables.appointment,
               eq(tables.appointment.id, task.appointmentId),
             )
-            .innerJoin(
+            .leftJoin(
               clientUser,
               eq(clientUser.id, tables.appointment.clientId),
             )
@@ -1020,26 +1106,18 @@ export const queryAuth = {
           // Defer notification INSERT to after transaction commits
           if (row) {
             setTimeout(() => {
-              import("~/services/notifcation.service")
-                .then(({ default: NotificationService }) =>
-                  NotificationService.create(row.employee.userId, {
-                    type: "task_submission_received",
-                    title: "Client Submission Received",
-                    message: `${row.client.firstname} ${row.client.lastname} has submitted requirements for task "${task.name}".`,
-                    priority: "medium",
-                    metadata: { taskId: task.id },
-                    actionUrl: `/dashboard/employee/task/${task.id}`,
-                  }),
-                )
-                .catch((err) =>
-                  console.error(
-                    "[notification] task_submission_received failed:",
-                    err,
-                  ),
-                );
+              NotificationService.create(row.employee.userId, {
+                type: "task_submission_received",
+                title: "Client Submission Received",
+                message: `${row.client.firstname} ${row.client.lastname} has submitted requirements for task "${task.name}".`,
+                priority: "medium",
+                metadata: { taskId: task.id },
+                actionUrl: `/dashboard/employee/task/${task.id}`,
+              });
             }, 0);
           }
         },
+        // onQueryError,
       },
 
       employee: {
@@ -1424,14 +1502,14 @@ export const queryAuth = {
               tables.organizationService.organizationId,
             ),
           ],
-          firstEmployees: [
-            tables.serviceFirstEmployee,
-            eq(
-              tables.serviceFirstEmployee.serviceId,
-              tables.organizationService.id,
-            ),
-            "serviceFirstEmployee",
-          ],
+          // firstEmployees: [
+          //   tables.serviceFirstEmployee,
+          //   eq(
+          //     tables.serviceFirstEmployee.serviceId,
+          //     tables.organizationService.id,
+          //   ),
+          //   "serviceFirstEmployee",
+          // ],
         },
         where: (req, { session }) =>
           eq(

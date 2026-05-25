@@ -468,7 +468,7 @@ export default function TasksPage() {
   useEffect(() => {
     const fetchEmployments = async () => {
       try {
-        const res = await RequestHandler.Get("/query/v1/employee");
+        const res = await RequestHandler.Get("/query/v1/employee?mine");
         if (res.ok) {
           const { employees } = await res.json();
           setEmployments(employees || []);
@@ -1306,6 +1306,7 @@ export default function TasksPage() {
     </div>
   );
 }
+
 // Requirements Builder Dialog Component
 const RequirementsBuilderDialog = ({ open, onOpenChange, task, onSave }) => {
   const [requirements, setRequirements] = useState({
@@ -1372,10 +1373,11 @@ const RequirementsBuilderDialog = ({ open, onOpenChange, task, onSave }) => {
   // Load existing requirements when task changes
   useEffect(() => {
     if (task?.requirements) {
-      setRequirements({
-        form: task.requirements.form || {},
-        payment: task.requirements.payment || null,
-      });
+      (async () =>
+        setRequirements({
+          form: task.requirements.form || {},
+          payment: task.requirements.payment || null,
+        }))();
     }
   }, [task]);
 

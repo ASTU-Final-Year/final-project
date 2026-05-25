@@ -3,10 +3,10 @@ import { Badge } from "../ui/badge";
 import { Card, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
 import Link from "next/link";
+import { config } from "@/lib/config";
 
 // Fallback image for services
-const fallbackImage =
-  "https://images.unsplash.com/photo-1604076850742-4c7221f3101b?w=800&auto=format";
+const fallbackImage = config.fallbackServiceImage;
 
 // Individual Service Card Component
 export default function ServiceCard({ service }) {
@@ -15,12 +15,13 @@ export default function ServiceCard({ service }) {
     name,
     description,
     organization,
-    sector,
     price,
     rating = 1,
     imageUrl,
     location,
   } = service;
+
+  const sector = organization.sector;
 
   const orgName = organization?.name || service.provider || "Service Provider";
   const orgLocation =
@@ -34,11 +35,6 @@ export default function ServiceCard({ service }) {
           alt={name}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
-        {sector && (
-          <Badge className="absolute top-3 left-3 bg-white/90 text-primary border-none">
-            {sector}
-          </Badge>
-        )}
         {price && (
           <Badge className="absolute top-3 right-3 p-2 py-3 rounded-full bg-white/90 border border-2 border-primary/50 backdrop-blur-sm text-primary text-lg">
             {price} Birr
@@ -46,7 +42,8 @@ export default function ServiceCard({ service }) {
         )}
       </div>
 
-      <CardContent className="p-5">
+      <CardContent className="px-5 pb-4">
+        {sector && <Badge variant="outline">{sector}</Badge>}
         <h3 className="text-xl font-semibold mb-2 line-clamp-1">{name}</h3>
         <p className="text-muted-foreground text-sm mb-3 line-clamp-2">
           {description}

@@ -27,7 +27,7 @@ export default function SmartCalendarPage() {
 
   useEffect(() => {
     RequestHandler.Get(
-      `/query/v1/employee?~id=${employment_id}&select=${encodeURIComponent(`{"organizationCalendar":true,"organization":["name"]}`)}`,
+      `/query/v1/employee?mine&~id=${employment_id}&select=${encodeURIComponent(`{"organizationCalendar":true,"organization":["name"]}`)}`,
     ).then(async (res) => {
       if (res.ok) {
         const { employees } = await res.json();

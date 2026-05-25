@@ -203,8 +203,8 @@ export default function EmployeesPage() {
       setIsAddOpen(false);
       setFormData({
         email: "",
-        name: "",
-        description: "",
+        jobTitle: "",
+        jobDescription: "",
         isActive: true,
         calendarId: null,
       });
@@ -222,8 +222,8 @@ export default function EmployeesPage() {
       setIsAddOpen(false);
       setFormData({
         email: "",
-        name: "",
-        description: "",
+        jobTitle: "",
+        jobDescription: "",
         isActive: true,
         calendarId: null,
       });

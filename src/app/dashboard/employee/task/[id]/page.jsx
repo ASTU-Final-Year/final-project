@@ -23,12 +23,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   ChevronLeft,
   Loader2,
   CheckCircle,
@@ -54,6 +48,7 @@ import {
   MessageSquare,
   History,
   Link as LinkIcon,
+  DollarSign,
 } from "lucide-react";
 import RequestHandler from "@/lib/request-handler";
 import { format } from "date-fns";
@@ -146,7 +141,9 @@ const getStatusBadge = (status, isDone) => {
 
 // Submission Review Component
 const SubmissionReview = ({
+  task,
   submission,
+  viewOnly,
   onApprove,
   onReject,
   onRequestChanges,
@@ -173,12 +170,19 @@ const SubmissionReview = ({
     setAction(null);
   };
 
-  const renderValue = (value) => {
+  const renderValue = (value, key) => {
     if (typeof value === "object") {
       return (
-        <pre className="text-xs bg-muted p-2 rounded overflow-auto">
-          {JSON.stringify(value, null, 2)}
-        </pre>
+        <div>
+          {value.uploaded && value.type?.includes("image") && (
+            <img
+              src={`/api/v1/client/upload?taskId=${task.id}&requirementId=${key}&filename=${value.filename}`}
+            />
+          )}
+          <pre className="text-xs bg-muted p-2 rounded overflow-auto">
+            {JSON.stringify(value, null, 2)}
+          </pre>
+        </div>
       );
     }
     if (typeof value === "boolean") {
@@ -223,38 +227,40 @@ const SubmissionReview = ({
               <Label className="text-xs text-muted-foreground capitalize">
                 {key.replace(/([A-Z])/g, " $1").trim()}
               </Label>
-              <div className="mt-1">{renderValue(value)}</div>
+              <div className="mt-1">{renderValue(value, key)}</div>
             </div>
           );
         })}
       </div>
 
       <Separator />
-      <div className="flex gap-3">
-        <Button
-          onClick={() => handleAction("approve")}
-          className="flex-1 bg-green-600 hover:bg-green-700"
-        >
-          <ThumbsUp className="h-4 w-4 mr-2" />
-          Approve
-        </Button>
-        <Button
-          onClick={() => handleAction("changes")}
-          variant="outline"
-          className="flex-1"
-        >
-          <MessageSquare className="h-4 w-4 mr-2" />
-          Request Changes
-        </Button>
-        <Button
-          onClick={() => handleAction("reject")}
-          variant="destructive"
-          className="flex-1"
-        >
-          <ThumbsDown className="h-4 w-4 mr-2" />
-          Reject
-        </Button>
-      </div>
+      {!viewOnly && (
+        <div className="flex gap-3">
+          <Button
+            onClick={() => handleAction("approve")}
+            className="flex-1 bg-green-600 hover:bg-green-700"
+          >
+            <ThumbsUp className="h-4 w-4 mr-2" />
+            Approve
+          </Button>
+          <Button
+            onClick={() => handleAction("changes")}
+            variant="outline"
+            className="flex-1"
+          >
+            <MessageSquare className="h-4 w-4 mr-2" />
+            Request Changes
+          </Button>
+          <Button
+            onClick={() => handleAction("reject")}
+            variant="destructive"
+            className="flex-1"
+          >
+            <ThumbsDown className="h-4 w-4 mr-2" />
+            Reject
+          </Button>
+        </div>
+      )}
 
       <Dialog open={showCommentDialog} onOpenChange={setShowCommentDialog}>
         <DialogContent>
@@ -521,6 +527,616 @@ const RequirementsForm = ({ requirements, onSave, isSubmitting }) => {
   );
 };
 
+// Requirements Builder Dialog Component
+const RequirementsBuilderDialog = ({ open, onOpenChange, task, onSave }) => {
+  const [requirements, setRequirements] = useState({
+    form: {},
+    payment: null,
+  });
+  const [activeTab, setActiveTab] = useState("form");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Common MIME type options
+  const mimeTypeOptions = [
+    {
+      label: "Images (JPEG, PNG)",
+      value: "image/jpeg, image/png",
+      types: ["image/jpeg", "image/png"],
+    },
+    { label: "Images (All)", value: "image/*", types: ["image/*"] },
+    {
+      label: "Documents (PDF)",
+      value: "application/pdf",
+      types: ["application/pdf"],
+    },
+    {
+      label: "Documents (Word)",
+      value:
+        "application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      types: [
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      ],
+    },
+    {
+      label: "Documents (Excel)",
+      value:
+        "application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      types: [
+        "application/vnd.ms-excel",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      ],
+    },
+    {
+      label: "Documents (All)",
+      value:
+        "application/pdf, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      types: [
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      ],
+    },
+    {
+      label: "Videos",
+      value: "video/mp4, video/mpeg, video/quicktime",
+      types: ["video/mp4", "video/mpeg", "video/quicktime"],
+    },
+    {
+      label: "Audio",
+      value: "audio/mpeg, audio/wav, audio/ogg",
+      types: ["audio/mpeg", "audio/wav", "audio/ogg"],
+    },
+    { label: "Any File", value: "*/*", types: ["*/*"] },
+  ];
+
+  // Load existing requirements when task changes
+  useEffect(() => {
+    if (task?.requirements) {
+      (async () =>
+        setRequirements({
+          form: task.requirements.form || {},
+          payment: task.requirements.payment || null,
+        }))();
+    }
+  }, [task]);
+
+  // Get preset label for existing accept types
+  const getAcceptPreset = (acceptArray) => {
+    if (!acceptArray || acceptArray.length === 0) return "";
+    const acceptString = acceptArray.join(", ");
+    const preset = mimeTypeOptions.find((opt) => opt.value === acceptString);
+    return preset ? preset.value : "custom";
+  };
+
+  // Form field handlers
+  const addFormField = () => {
+    const fieldName = prompt("Enter field name (e.g., national-id):");
+    if (!fieldName) return;
+
+    const fieldType = "text";
+
+    const isOptional = false;
+
+    const newField = {
+      type: fieldType,
+      optional: !isOptional,
+    };
+
+    if (fieldType === "text") {
+      newField.placeholder = "";
+      newField.description = "";
+    }
+
+    if (fieldType === "file") {
+      newField.accept = ["image/jpeg", "image/png"];
+      newField.maxSize = 2 * 1024 * 1024;
+      newField.multiple = false;
+    }
+
+    setRequirements({
+      ...requirements,
+      form: {
+        ...requirements.form,
+        [fieldName]: newField,
+      },
+    });
+  };
+
+  const removeFormField = (fieldName) => {
+    const newForm = { ...requirements.form };
+    delete newForm[fieldName];
+    setRequirements({ ...requirements, form: newForm });
+  };
+
+  const updateFormField = (fieldName, key, value) => {
+    setRequirements({
+      ...requirements,
+      form: {
+        ...requirements.form,
+        [fieldName]: {
+          ...requirements.form[fieldName],
+          [key]: value,
+        },
+      },
+    });
+  };
+
+  const handleMimeTypeChange = (fieldName, presetValue) => {
+    if (presetValue === "custom") {
+      // Allow custom input
+      const customTypes = prompt(
+        "Enter custom MIME types (comma-separated):",
+        "",
+      );
+      if (customTypes) {
+        const types = customTypes.split(",").map((s) => s.trim());
+        updateFormField(fieldName, "accept", types);
+      }
+    } else {
+      const selectedOption = mimeTypeOptions.find(
+        (opt) => opt.value === presetValue,
+      );
+      if (selectedOption) {
+        updateFormField(fieldName, "accept", selectedOption.types);
+      }
+    }
+  };
+
+  // Payment handlers
+  const enablePayment = () => {
+    const amount = 100;
+    const currency = "ETB";
+
+    setRequirements({
+      ...requirements,
+      payment: {
+        amount,
+        currency,
+        reason: "Service Fee",
+        methods: {
+          chapa: {
+            enabled: true,
+          },
+        },
+      },
+    });
+  };
+
+  const disablePayment = () => {
+    setRequirements({ ...requirements, payment: null });
+  };
+
+  const handleSave = async () => {
+    setIsSubmitting(true);
+    try {
+      const finalRequirements = {};
+      if (Object.keys(requirements.form).length > 0) {
+        finalRequirements.form = requirements.form;
+      }
+      if (requirements.payment) {
+        finalRequirements.payment = requirements.payment;
+      }
+
+      await onSave(finalRequirements);
+      onOpenChange(false);
+    } catch (error) {
+      console.error("Failed to save requirements:", error);
+      toast.error("Failed to save requirements");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Configure Task Requirements</DialogTitle>
+          <DialogDescription>
+            Set up requirements that need to be completed before the task can be
+            marked as done.
+          </DialogDescription>
+        </DialogHeader>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="form">Form Fields</TabsTrigger>
+            <TabsTrigger value="payment">Payment</TabsTrigger>
+          </TabsList>
+
+          {/* Form Fields Tab */}
+          <TabsContent value="form" className="space-y-4">
+            <div className="flex justify-between items-center">
+              <Label>Form Fields</Label>
+              <Button size="sm" onClick={addFormField}>
+                <FileText className="h-4 w-4 mr-1" />
+                Add Field
+              </Button>
+            </div>
+
+            {Object.keys(requirements.form).length === 0 ? (
+              <div className="text-center py-8 text-foreground border-2 border-dashed rounded-lg">
+                <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                <p>No form fields added yet</p>
+                <p className="text-sm">
+                  Click "Add Field" to create form requirements
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {Object.entries(requirements.form).map(
+                  ([fieldName, config]) => (
+                    <Card key={fieldName} className="relative">
+                      <CardHeader className="pb-2">
+                        <div className="flex justify-between items-start">
+                          <CardTitle className="text-base">
+                            {fieldName}
+                          </CardTitle>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive"
+                            onClick={() => removeFormField(fieldName)}
+                          >
+                            <XCircle className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <Label className="text-xs">Type</Label>
+                            <Select
+                              value={config.type}
+                              onValueChange={(v) =>
+                                updateFormField(fieldName, "type", v)
+                              }
+                            >
+                              <SelectTrigger className="h-8 text-foreground">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="text">Text</SelectItem>
+                                <SelectItem value="number">Number</SelectItem>
+                                <SelectItem value="textarea">
+                                  Textarea
+                                </SelectItem>
+                                <SelectItem value="file">
+                                  File Upload
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="space-y-1">
+                            <Label className="text-xs">Required</Label>
+                            <Switch
+                              checked={!config.optional}
+                              onCheckedChange={(v) =>
+                                updateFormField(fieldName, "optional", !v)
+                              }
+                            />
+                          </div>
+                        </div>
+
+                        {config.type === "text" && (
+                          <>
+                            <div className="space-y-1">
+                              <Label className="text-xs">Placeholder</Label>
+                              <Input
+                                value={config.placeholder || ""}
+                                onChange={(e) =>
+                                  updateFormField(
+                                    fieldName,
+                                    "placeholder",
+                                    e.target.value,
+                                  )
+                                }
+                                className="h-8"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs">Description</Label>
+                              <Input
+                                value={config.description || ""}
+                                onChange={(e) =>
+                                  updateFormField(
+                                    fieldName,
+                                    "description",
+                                    e.target.value,
+                                  )
+                                }
+                                className="h-8"
+                              />
+                            </div>
+                          </>
+                        )}
+
+                        {config.type === "number" && (
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                              <Label className="text-xs">Min Value</Label>
+                              <Input
+                                type="number"
+                                value={config.min || ""}
+                                onChange={(e) =>
+                                  updateFormField(
+                                    fieldName,
+                                    "min",
+                                    parseFloat(e.target.value),
+                                  )
+                                }
+                                className="h-8"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs">Max Value</Label>
+                              <Input
+                                type="number"
+                                value={config.max || ""}
+                                onChange={(e) =>
+                                  updateFormField(
+                                    fieldName,
+                                    "max",
+                                    parseFloat(e.target.value),
+                                  )
+                                }
+                                className="h-8"
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        {config.type === "textarea" && (
+                          <>
+                            <div className="space-y-1">
+                              <Label className="text-xs">Rows</Label>
+                              <Input
+                                type="number"
+                                value={config.rows || 4}
+                                onChange={(e) =>
+                                  updateFormField(
+                                    fieldName,
+                                    "rows",
+                                    parseInt(e.target.value),
+                                  )
+                                }
+                                className="h-8"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs">Placeholder</Label>
+                              <Input
+                                value={config.placeholder || ""}
+                                onChange={(e) =>
+                                  updateFormField(
+                                    fieldName,
+                                    "placeholder",
+                                    e.target.value,
+                                  )
+                                }
+                                className="h-8"
+                              />
+                            </div>
+                          </>
+                        )}
+
+                        {config.type === "file" && (
+                          <>
+                            <div className="space-y-1">
+                              <Label className="text-xs">
+                                Accepted File Types
+                              </Label>
+                              <Select
+                                value={getAcceptPreset(config.accept)}
+                                onValueChange={(v) =>
+                                  handleMimeTypeChange(fieldName, v)
+                                }
+                              >
+                                <SelectTrigger className="h-8">
+                                  <SelectValue placeholder="Select file types" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {mimeTypeOptions.map((option) => (
+                                    <SelectItem
+                                      key={option.value}
+                                      value={option.value}
+                                    >
+                                      {option.label}
+                                    </SelectItem>
+                                  ))}
+                                  <SelectItem value="custom">
+                                    Custom (enter manually)
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            {/* Show current accept types as badges */}
+                            {config.accept &&
+                              config.accept.length > 0 &&
+                              config.accept[0] !== "*/*" && (
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {config.accept.map((type, idx) => (
+                                    <Badge
+                                      key={idx}
+                                      variant="secondary"
+                                      className="text-xs"
+                                    >
+                                      {type}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              )}
+
+                            <div className="space-y-1">
+                              <Label className="text-xs">
+                                Max File Size (MB)
+                              </Label>
+                              <Input
+                                type="number"
+                                step="0.5"
+                                value={
+                                  config.maxSize
+                                    ? config.maxSize / (1024 * 1024)
+                                    : 2
+                                }
+                                onChange={(e) =>
+                                  updateFormField(
+                                    fieldName,
+                                    "maxSize",
+                                    parseFloat(e.target.value) * 1024 * 1024,
+                                  )
+                                }
+                                className="h-8"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs">Allow Multiple</Label>
+                              <Switch
+                                checked={config.multiple || false}
+                                onCheckedChange={(v) =>
+                                  updateFormField(fieldName, "multiple", v)
+                                }
+                              />
+                            </div>
+                          </>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ),
+                )}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Payment Tab */}
+          <TabsContent value="payment" className="space-y-4">
+            {!requirements.payment ? (
+              <div className="text-center py-8 border-2 border-dashed rounded-lg">
+                <DollarSign className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                <p className="mb-4">No payment requirement set</p>
+                <Button onClick={enablePayment}>
+                  <DollarSign className="h-4 w-4 mr-1" />
+                  Enable Payment
+                </Button>
+              </div>
+            ) : (
+              <Card>
+                <CardHeader>
+                  <div className="flex justify-between items-center">
+                    <CardTitle>Payment Configuration</CardTitle>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={disablePayment}
+                    >
+                      Remove Payment
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <Label>Amount</Label>
+                      <Input
+                        type="number"
+                        value={requirements.payment.amount}
+                        onChange={(e) =>
+                          setRequirements({
+                            ...requirements,
+                            payment: {
+                              ...requirements.payment,
+                              amount: parseFloat(e.target.value),
+                            },
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label>Currency</Label>
+                      <Input
+                        value={requirements.payment.currency}
+                        onChange={(e) =>
+                          setRequirements({
+                            ...requirements,
+                            payment: {
+                              ...requirements.payment,
+                              currency: e.target.value,
+                            },
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Payment Reason</Label>
+                    <Input
+                      value={requirements.payment.reason || ""}
+                      onChange={(e) =>
+                        setRequirements({
+                          ...requirements,
+                          payment: {
+                            ...requirements.payment,
+                            reason: e.target.value,
+                          },
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Payment Methods</Label>
+                    <div className="space-y-2">
+                      {requirements.payment.methods?.chapa && (
+                        <div className="flex items-center justify-between p-2 border rounded">
+                          <div className="flex items-center gap-2">
+                            <CreditCard className="h-4 w-4" />
+                            <span>Chapa</span>
+                          </div>
+                          <Switch
+                            checked={requirements.payment.methods.chapa.enabled}
+                            onCheckedChange={(v) =>
+                              setRequirements({
+                                ...requirements,
+                                payment: {
+                                  ...requirements.payment,
+                                  methods: {
+                                    ...requirements.payment.methods,
+                                    chapa: { enabled: v },
+                                  },
+                                },
+                              })
+                            }
+                          />
+                        </div>
+                      )}
+                      {/* Add more payment methods as needed */}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+        </Tabs>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave} disabled={isSubmitting}>
+            {isSubmitting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              "Save Requirements"
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 export default function EmployeeTaskDetailsPage() {
   const { id } = useParams();
   const router = useRouter();
@@ -538,6 +1154,10 @@ export default function EmployeeTaskDetailsPage() {
   const [previousTasks, setPreviousTasks] = useState([]);
   const [nextTasks, setNextTasks] = useState([]);
   const session = useSessionStore((s) => s.session);
+  const [viewing, setViewing] = useState(false);
+  const [isRequirementsBuilderOpen, setIsRequirementsBuilderOpen] =
+    useState(false);
+  const [selectedTaskForBuilder, setSelectedTaskForBuilder] = useState(null);
 
   const fetchTaskDetails = useCallback(async () => {
     try {
@@ -590,11 +1210,29 @@ export default function EmployeeTaskDetailsPage() {
     } finally {
       setLoading(false);
     }
-  }, [id, router]);
+  }, [id]);
 
   useEffect(() => {
-    fetchTaskDetails();
+    (async () => fetchTaskDetails())();
   }, [fetchTaskDetails]);
+
+  useEffect(() => {
+    if (task && task.status === "pending") {
+      RequestHandler.Patch(`/query/v1/task?~id=${task.id}`, {
+        body: {
+          status: "active",
+        },
+      }).then(async (res) => {
+        if (res.ok) {
+          const dataRes = await res.json();
+          if (dataRes.tasks?.length > 0) {
+            setTask((p) => ({ ...p, status: dataRes.tasks[0].status }));
+          }
+          toast("Task has been activated");
+        }
+      });
+    }
+  }, [task]);
 
   const handleUpdateStatus = async () => {
     setIsSubmitting(true);
@@ -640,7 +1278,7 @@ export default function EmployeeTaskDetailsPage() {
     }
   };
 
-  const handleApproveSubmission = async (comments) => {
+  const handleApproveSubmission = async (comments, employee) => {
     setIsSubmitting(true);
     try {
       const res = await RequestHandler.Patch(`/query/v1/task?~id=${task.id}`, {
@@ -650,7 +1288,6 @@ export default function EmployeeTaskDetailsPage() {
             ...task?.submissions,
             approvedAt: new Date().toISOString(),
             approvalComments: comments,
-            approvedBy: "employee",
           },
         },
       });
@@ -720,22 +1357,19 @@ export default function EmployeeTaskDetailsPage() {
   };
 
   const handleSaveRequirements = async (requirements) => {
-    setIsSubmitting(true);
-    try {
-      const res = await RequestHandler.Patch(`/query/v1/task?~id=${task.id}`, {
+    const res = await RequestHandler.Patch(
+      `/query/v1/task?~id=${selectedTaskForBuilder.id}`,
+      {
         body: { requirements },
-      });
-
-      if (res.ok) {
-        toast.success("Requirements saved successfully");
-        setShowRequirementsDialog(false);
-        fetchTaskDetails();
-      }
-    } catch (error) {
-      console.error("Failed to save requirements:", error);
+      },
+    );
+    if (res.ok) {
+      toast.success("Requirements saved successfully");
+      fetchTaskDetails();
+      return true;
+    } else {
       toast.error("Failed to save requirements");
-    } finally {
-      setIsSubmitting(false);
+      throw new Error("Failed to save");
     }
   };
 
@@ -748,8 +1382,8 @@ export default function EmployeeTaskDetailsPage() {
           previousTaskId: task.id,
           appointmentId: appointment?.id,
           organizationId: organization?.id,
-          completedAt: new Date(),
-          isDone: true,
+          // completedAt: new Date(),
+          // isDone: true,
         },
       });
 
@@ -760,7 +1394,10 @@ export default function EmployeeTaskDetailsPage() {
 
         // Update current task with nextTaskId
         await RequestHandler.Patch(`/query/v1/task?~id=${task.id}`, {
-          body: { nextTaskId: newTask.id },
+          body: {
+            status: "completed",
+            nextTaskId: newTask.id,
+          },
         });
 
         toast.success("Next task created successfully!");
@@ -803,9 +1440,9 @@ export default function EmployeeTaskDetailsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => router.back()}>
+          {/* <Button variant="ghost" size="icon" onClick={() => router.back()}>
             <ChevronLeft className="h-5 w-5" />
-          </Button>
+          </Button> */}
           <div>
             <h1 className="text-2xl font-bold">{task.name}</h1>
             <div className="flex items-center gap-2 mt-1">
@@ -819,7 +1456,25 @@ export default function EmployeeTaskDetailsPage() {
         <div className="flex gap-2">
           {!isCompleted && task.employee.id === session.userId && (
             <>
-              <Button onClick={() => setShowStatusDialog(true)}>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSelectedTaskForBuilder(task);
+                  setIsRequirementsBuilderOpen(true);
+                }}
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Set Requirements
+              </Button>
+              {/* ... other buttons */}
+            </>
+          )}
+          {!isCompleted && task.employee.id === session.userId && (
+            <>
+              <Button
+                variant="outline"
+                onClick={() => setShowStatusDialog(true)}
+              >
                 <PlayCircle className="h-4 w-4 mr-2" />
                 Update Status
               </Button>
@@ -849,15 +1504,36 @@ export default function EmployeeTaskDetailsPage() {
             <CardContent className="space-y-4">
               <div>
                 {/* <Label>Description</Label> */}
-                <p className="text-muted-foreground ">
-                  {previousTasks[0]?.employee.firstname}{" "}
-                  {previousTasks[0]?.employee.lastname} said
-                </p>
+                {previousTasks[0] && (
+                  <p className="text-muted-foreground ">
+                    {previousTasks[0]?.employee.firstname}{" "}
+                    {previousTasks[0]?.employee.lastname} said
+                  </p>
+                )}
                 <p className="mt-1 text-lg">
                   {task.description || "No description provided"}
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs text-muted-foreground">
+                    Assigned to
+                  </Label>
+                  <p className="text-sm">
+                    {task.employee.firstname} {task.employee.lastname}
+                  </p>
+                </div>
+                {previousTasks[0] && (
+                  <div>
+                    <Label className="text-xs text-muted-foreground">
+                      Coming from
+                    </Label>
+                    <p className="text-sm">
+                      {previousTasks[0].employee.firstname}{" "}
+                      {previousTasks[0].employee.lastname}
+                    </p>
+                  </div>
+                )}
                 <div>
                   <Label className="text-xs text-muted-foreground">
                     Created
@@ -959,15 +1635,28 @@ export default function EmployeeTaskDetailsPage() {
           {hasSubmissions && (
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Send className="h-5 w-5" />
-                  Client Submissions
+                <CardTitle className="flex items-center justify-between gap-2">
+                  <div>
+                    <Send className="h-5 w-5" />
+                    Client Submissions
+                  </div>
+                  <div>
+                    <Button
+                      variant="secondary"
+                      className="rounded-full"
+                      onClick={() => setViewing((v) => !v)}
+                    >
+                      {!needsReview && !viewing ? "view" : "hide"}
+                    </Button>
+                  </div>
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {needsReview ? (
+                {needsReview || viewing ? (
                   <SubmissionReview
+                    task={task}
                     submission={task.submissions}
+                    viewOnly={viewing}
                     onApprove={handleApproveSubmission}
                     onReject={handleRejectSubmission}
                     onRequestChanges={handleRequestChanges}
@@ -1286,6 +1975,13 @@ export default function EmployeeTaskDetailsPage() {
           />
         </DialogContent>
       </Dialog>
+      {/* Requirement builder dialog */}
+      <RequirementsBuilderDialog
+        open={isRequirementsBuilderOpen}
+        onOpenChange={setIsRequirementsBuilderOpen}
+        task={selectedTaskForBuilder}
+        onSave={handleSaveRequirements}
+      />
 
       {/* Create Next Task Dialog */}
       <Dialog

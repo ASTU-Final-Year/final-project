@@ -119,8 +119,7 @@ export function AppSidebarEmployee() {
           <SidebarMenuItem>
             <SidebarMenuButton
               onClick={() => {
-                Auth.logout();
-                router.push("/login");
+                Auth.logout().then(() => router.push("/login"));
               }}
               className="text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
             >

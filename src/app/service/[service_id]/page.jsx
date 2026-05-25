@@ -16,15 +16,38 @@ export default function OrganizationServicePublicPage() {
 
   const fetchService = useCallback(async () => {
     try {
-      // Fetch service with organization and calendar data
+      // Fetch service with complete data including calendar availability
       const dataRes = await RequestHandler.Get(
-        `/query/v1/organizationService?guest&~id='${service_id}'&select={"":true,"organization":["id","name","address","email","phone","sector","isGovernment"],"calendar":["available"]}`,
+        `/query/v1/organizationService?guest&~id='${service_id}'&select={"":["id","name","description","price","isActive","imageUrl","rating","organizationId"],"organization":["id","name","address","email","phone","sector","isGovernment","rating"],"calendar":["available","unavailable"]}`,
       );
 
       if (dataRes.ok) {
         const {
           organizationServices: [organizationService],
         } = await dataRes.json();
+
+        // Process calendar data
+        if (organizationService.calendar) {
+          // Parse available hours
+          if (organizationService.calendar.available?.hours) {
+            organizationService.calendar.available.hours =
+              organizationService.calendar.available.hours.map(([from, to]) => [
+                from,
+                to,
+              ]);
+          }
+          // Parse unavailable ranges
+          if (organizationService.calendar.unavailable?.ranges) {
+            organizationService.calendar.unavailable.ranges =
+              organizationService.calendar.unavailable.ranges.map(
+                ({ from, to }) => ({
+                  from: new Date(from),
+                  to: new Date(to),
+                }),
+              );
+          }
+        }
+
         setService(organizationService);
       }
     } catch (error) {

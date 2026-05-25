@@ -16,6 +16,7 @@ import {
   Activity,
   User,
   Bell,
+  LinkIcon,
 } from "lucide-react";
 
 import {
@@ -54,7 +55,7 @@ const navData = [
   {
     title: "Browse Services",
     url: "/services",
-    icon: Link,
+    icon: LinkIcon,
   },
   // {
   //   title: "Analytics",
@@ -112,8 +113,7 @@ export function AppSidebarClient() {
           <SidebarMenuItem>
             <SidebarMenuButton
               onClick={() => {
-                Auth.logout();
-                router.push("/login");
+                Auth.logout().then(() => router.push("/login"));
               }}
               className="text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
             >

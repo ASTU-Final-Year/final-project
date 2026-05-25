@@ -868,41 +868,41 @@ export const getBepaloQueryRouter = <
                   Status._400_BadRequest,
                 );
               }
-              const orderRules = queryOrder
-                ? queryOrder.map((selector) => {
-                    let [t, k, r] = selector.split(".", 3);
-                    if (!k) {
-                      k = t;
-                      t = tableId;
-                    } else if (!r) {
-                      r = k;
-                      k = t;
-                      t = tableId;
-                    }
-                    r = (r || "asc") as keyof typeof orderMap;
-                    const table = tables[tableId];
-                    if (table == null) {
-                      throw new HttpError(
-                        `Invalid or forbidden table '${t}' in order query`,
-                        Status._400_BadRequest,
-                      );
-                    }
-                    const field = table[k];
-                    if (!field) {
-                      throw new HttpError(
-                        `Invalid or forbidden field '${s}'->'${k}' in order query`,
-                        Status._400_BadRequest,
-                      );
-                    }
-                    if (r != "asc" && r != "desc") {
-                      throw new HttpError(
-                        `Invalid order type '${r}' in order query`,
-                        Status._400_BadRequest,
-                      );
-                    }
-                    return orderMap[r](field);
-                  })
-                : undefined;
+              // const orderRules = queryOrder
+              //   ? queryOrder.map((selector) => {
+              //       let [t, k, r] = selector.split(".", 3);
+              //       if (!k) {
+              //         k = t;
+              //         t = tableId;
+              //       } else if (!r) {
+              //         r = k;
+              //         k = t;
+              //         t = tableId;
+              //       }
+              //       r = (r || "asc") as keyof typeof orderMap;
+              //       const table = tables[tableId];
+              //       if (table == null) {
+              //         throw new HttpError(
+              //           `Invalid or forbidden table '${t}' in order query`,
+              //           Status._400_BadRequest,
+              //         );
+              //       }
+              //       const field = table[k];
+              //       if (!field) {
+              //         throw new HttpError(
+              //           `Invalid or forbidden field '${s}'->'${k}' in order query`,
+              //           Status._400_BadRequest,
+              //         );
+              //       }
+              //       if (r != "asc" && r != "desc") {
+              //         throw new HttpError(
+              //           `Invalid order type '${r}' in order query`,
+              //           Status._400_BadRequest,
+              //         );
+              //       }
+              //       return orderMap[r](field);
+              //     })
+              //   : undefined;
               const where = and(
                 authProtected?.where
                   ? authProtected.where(req, ctx)
@@ -916,52 +916,52 @@ export const getBepaloQueryRouter = <
                 const result =
                   selector && includeEntries
                     ? await offsetLimit(
-                        order(
-                          filter(
-                            join(
-                              tables,
-                              database.select(selector).from(table),
-                              includeEntries,
-                              0,
-                            ),
-                            where,
+                        // order(
+                        filter(
+                          join(
+                            tables,
+                            database.select(selector).from(table),
+                            includeEntries,
+                            0,
                           ),
-                          orderRules,
+                          where,
+                          // ),
+                          // orderRules,
                         ),
                         { offset, limit },
                       )
                     : selector
                       ? await offsetLimit(
-                          order(
-                            filter(
-                              database.select(selector).from(table),
-                              where,
-                            ),
-                            orderRules,
+                          // order(
+                          filter(
+                            database.select(selector).from(table),
+                            where,
+                            // ),
+                            // orderRules,
                           ),
                           { offset, limit },
                         )
                       : includeEntries
                         ? await offsetLimit(
-                            order(
-                              filter(
-                                join(
-                                  tables,
-                                  database.select().from(table),
-                                  includeEntries,
-                                  0,
-                                ),
-                                where,
+                            // order(
+                            filter(
+                              join(
+                                tables,
+                                database.select().from(table),
+                                includeEntries,
+                                0,
                               ),
-                              orderRules,
+                              where,
+                              // ),
+                              // orderRules,
                             ),
                             { offset, limit },
                           )
                         : await offsetLimit(
-                            order(
-                              filter(database.select().from(table), where),
-                              orderRules,
-                            ),
+                            // order(
+                            filter(database.select().from(table), where),
+                            //   orderRules,
+                            // ),
                             { offset, limit },
                           );
                 ctx.result = { count: result.length, [`${tableId}s`]: result };

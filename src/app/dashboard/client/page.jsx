@@ -38,6 +38,7 @@ import {
 import RequestHandler from "@/lib/request-handler";
 import Link from "next/link";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 // Helper functions
 const formatDate = (dateString) => {
@@ -133,35 +134,103 @@ const StarRating = ({ rating, onRate, size = "md", readonly = false }) => {
 // Task Requirements Modal
 const TaskRequirementsModal = ({ task, open, onClose, onComplete }) => {
   const [formData, setFormData] = useState({});
-  const [files, setFiles] = useState({});
+  const [uploadingFile, setUploadingFile] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
+
+  // Load existing submissions when task changes
+  useEffect(() => {
+    if (task?.submissions) {
+      (async () => setFormData(task.submissions))();
+    }
+  }, [task]);
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleFileChange = (field, fileList) => {
+  const handleFileChange = async (field, fileList) => {
     const file = fileList[0];
-    if (file) {
-      const fieldConfig = task.requirements?.form?.[field];
-      if (fieldConfig?.accept && !fieldConfig.accept.includes(file.type)) {
-        toast.error(
-          `Invalid file type. Accepted: ${fieldConfig.accept.join(", ")}`,
-        );
-        return;
+    if (!file) return;
+
+    const fieldConfig = task?.requirements?.form?.[field];
+    if (fieldConfig?.accept && !fieldConfig.accept.includes(file.type)) {
+      toast.error(
+        `Invalid file type. Accepted: ${fieldConfig.accept.join(", ")}`,
+      );
+      return;
+    }
+    if (fieldConfig?.maxSize && file.size > fieldConfig.maxSize) {
+      toast.error(
+        `File too large. Max size: ${fieldConfig.maxSize / (1024 * 1024)}MB`,
+      );
+      return;
+    }
+
+    setUploadingFile(field);
+
+    try {
+      const uploadFormData = new FormData();
+      uploadFormData.append("file", file);
+
+      const uploadRes = await RequestHandler.Put(
+        `/api/v1/client/upload?taskId=${task.id}&requirementId=${field}`,
+        {
+          body: uploadFormData,
+        },
+      );
+
+      if (uploadRes.ok) {
+        const data = await uploadRes.json();
+        setFormData((prev) => ({
+          ...prev,
+          [field]: {
+            ...data.file,
+            // name: file.name,
+            // size: file.size,
+            // type: file.type,
+            uploaded: true,
+          },
+        }));
+        toast.success(`File "${file.name}" uploaded successfully`);
+      } else {
+        const error = await uploadRes.json();
+        toast.error(error.error || "Failed to upload file");
       }
-      if (fieldConfig?.maxSize && file.size > fieldConfig.maxSize) {
-        toast.error(
-          `File too large. Max size: ${fieldConfig.maxSize / (1024 * 1024)}MB`,
-        );
-        return;
+    } catch (error) {
+      console.error("Upload failed:", error);
+      toast.error("Failed to upload file");
+    } finally {
+      setUploadingFile(null);
+    }
+  };
+
+  const handleDeleteFile = async (field) => {
+    if (!confirm("Are you sure you want to delete this file?")) return;
+
+    try {
+      const deleteRes = await fetch(
+        `/api/v1/client/upload?taskId=${task.id}&requirementId=${field}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        },
+      );
+
+      if (deleteRes.ok) {
+        setFormData((prev) => {
+          const newData = { ...prev };
+          delete newData[field];
+          delete newData.uploadedFiles?.[field];
+          return newData;
+        });
+        toast.success("File deleted successfully");
+      } else {
+        toast.error("Failed to delete file");
       }
-      setFiles((prev) => ({ ...prev, [field]: file }));
-      setFormData((prev) => ({
-        ...prev,
-        [field]: { name: file.name, size: file.size, type: file.type },
-      }));
+    } catch (error) {
+      console.error("Delete failed:", error);
+      toast.error("Failed to delete file");
     }
   };
 
@@ -193,26 +262,7 @@ const TaskRequirementsModal = ({ task, open, onClose, onComplete }) => {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      // Upload files if any
-      const uploadedFiles = {};
-      for (const [field, file] of Object.entries(files)) {
-        const uploadFormData = new FormData();
-        uploadFormData.append("file", file);
-        const uploadRes = await fetch("/api/v1/upload", {
-          method: "POST",
-          body: uploadFormData,
-        });
-        if (uploadRes.ok) {
-          const { url } = await uploadRes.json();
-          uploadedFiles[field] = url;
-        }
-      }
-
-      const submissions = {
-        ...formData,
-        uploadedFiles,
-        completedAt: new Date().toISOString(),
-      };
+      const submissions = formData;
 
       await onComplete(submissions);
       onClose();
@@ -234,8 +284,15 @@ const TaskRequirementsModal = ({ task, open, onClose, onComplete }) => {
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg max-w-lg w-full max-h-[80vh] overflow-y-auto m-4">
         <div className="sticky top-0 bg-white border-b p-4">
-          <h2 className="text-xl font-semibold">Complete Requirements</h2>
-          <p className="text-sm text-gray-500">{task.name}</p>
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-xl font-semibold">Complete Requirements</h2>
+              <p className="text-sm text-gray-500">{task.name}</p>
+            </div>
+            <Button variant="ghost" size="sm" onClick={onClose}>
+              ✕
+            </Button>
+          </div>
         </div>
 
         <div className="p-4 space-y-4">
@@ -287,29 +344,76 @@ const TaskRequirementsModal = ({ task, open, onClose, onComplete }) => {
 
                     {config.type === "file" ? (
                       <div className="border-2 border-dashed rounded-lg p-4 text-center">
-                        <input
-                          type="file"
-                          id={`file-${fieldName}`}
-                          className="hidden"
-                          accept={config.accept?.join(",")}
-                          onChange={(e) =>
-                            handleFileChange(fieldName, e.target.files)
-                          }
-                        />
-                        <label
-                          htmlFor={`file-${fieldName}`}
-                          className="cursor-pointer"
-                        >
-                          <Upload className="h-8 w-8 mx-auto text-gray-400" />
-                          <p className="text-sm text-gray-500">
-                            Click to upload
-                          </p>
-                          {files[fieldName] && (
-                            <p className="text-sm text-green-600 mt-1">
-                              {files[fieldName].name}
-                            </p>
-                          )}
-                        </label>
+                        {task.submissions?.uploadedFiles?.[fieldName] ? (
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between p-2 bg-green-50 rounded">
+                              <div className="flex items-center gap-2">
+                                <FileText className="h-5 w-5 text-green-600" />
+                                <span className="text-sm truncate max-w-[200px]">
+                                  {
+                                    task.submissions.uploadedFiles[fieldName]
+                                      .filename
+                                  }
+                                </span>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteFile(fieldName)}
+                                className="text-destructive"
+                              >
+                                Remove
+                              </Button>
+                            </div>
+                            <a
+                              href={`/api/v1/client/upload?taskId=${task.id}&requirementId=${fieldName}&filename=${task.submissions.uploadedFiles[fieldName].filename}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-primary hover:underline inline-flex items-center gap-1"
+                            >
+                              <Eye className="h-3 w-3" />
+                              View File →
+                            </a>
+                          </div>
+                        ) : (
+                          <>
+                            <input
+                              type="file"
+                              id={`file-${fieldName}`}
+                              className="hidden"
+                              accept={config.accept?.join(",")}
+                              onChange={(e) =>
+                                handleFileChange(fieldName, e.target.files)
+                              }
+                            />
+                            <label
+                              htmlFor={`file-${fieldName}`}
+                              className="cursor-pointer block"
+                            >
+                              <Upload className="h-8 w-8 mx-auto text-gray-400" />
+                              <p className="text-sm text-gray-500">
+                                Click to upload
+                              </p>
+                              {config.accept && (
+                                <p className="text-xs text-gray-400 mt-1">
+                                  Accepted: {config.accept.join(", ")}
+                                </p>
+                              )}
+                              {config.maxSize && (
+                                <p className="text-xs text-gray-400">
+                                  Max size: {config.maxSize / (1024 * 1024)}MB
+                                </p>
+                              )}
+                            </label>
+                            {uploadingFile === fieldName && (
+                              <div className="mt-2 flex items-center justify-center gap-2">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <span className="text-sm">Uploading...</span>
+                              </div>
+                            )}
+                          </>
+                        )}
                       </div>
                     ) : config.type === "textarea" ? (
                       <textarea
@@ -322,13 +426,27 @@ const TaskRequirementsModal = ({ task, open, onClose, onComplete }) => {
                         }
                         required={!config.optional}
                       />
-                    ) : (
+                    ) : config.type === "number" ? (
                       <input
-                        type={config.type === "number" ? "number" : "text"}
+                        type="number"
                         className="w-full p-2 border rounded-md"
                         placeholder={config.placeholder}
                         min={config.min}
                         max={config.max}
+                        value={formData[fieldName] || ""}
+                        onChange={(e) =>
+                          handleInputChange(
+                            fieldName,
+                            parseFloat(e.target.value),
+                          )
+                        }
+                        required={!config.optional}
+                      />
+                    ) : (
+                      <input
+                        type="text"
+                        className="w-full p-2 border rounded-md"
+                        placeholder={config.placeholder}
                         value={formData[fieldName] || ""}
                         onChange={(e) =>
                           handleInputChange(fieldName, e.target.value)
@@ -344,24 +462,25 @@ const TaskRequirementsModal = ({ task, open, onClose, onComplete }) => {
                   </div>
                 ),
               )}
-              <Button
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-                className="w-full"
-              >
-                {isSubmitting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  "Submit"
-                )}
-              </Button>
             </div>
           )}
         </div>
 
-        <div className="sticky bottom-0 bg-white border-t p-4">
-          <Button variant="outline" onClick={onClose} className="w-full">
-            Close
+        <div className="sticky bottom-0 bg-white border-t p-4 flex gap-3">
+          <Button variant="outline" onClick={onClose} className="flex-1">
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className="flex-1 bg-green-600 hover:bg-green-700"
+          >
+            {isSubmitting ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            ) : (
+              <CheckCircle className="h-4 w-4 mr-2" />
+            )}
+            Submit
           </Button>
         </div>
       </div>
@@ -433,36 +552,42 @@ export default function ClientDashboard() {
   }, []);
 
   useEffect(() => {
-    fetchData();
+    (async () => fetchData())();
   }, [fetchData]);
 
   const handleCompleteTask = async (submissions) => {
     try {
-      const res = await RequestHandler.Patch("/query/v1/task", {
-        body: {
-          id: selectedTask.id,
-          submissions: { ...selectedTask.submissions, ...submissions },
-          status: "completed",
-          isDone: true,
+      const res = await RequestHandler.Patch(
+        `/query/v1/task?~id=${selectedTask.id}`,
+        {
+          body: {
+            // id: selectedTask.id,
+            submissions: { ...selectedTask.submissions, ...submissions },
+            completedAt: new Date().toISOString(),
+            // status: "completed",
+            // isDone: true,
+          },
         },
-      });
+      );
       if (res.ok) {
         toast.success("Task completed successfully!");
         fetchData();
         setShowRequirementsModal(false);
         setSelectedTask(null);
+      } else {
+        const error = await res.json();
+        toast.error(error.error || "Failed to complete task");
       }
     } catch (error) {
       console.error("Failed to complete task:", error);
       toast.error("Failed to complete task");
     }
   };
-
-  const handleRateSepastAppointmentsrvice = async (appointmentId, rating) => {
+  const handleRateService = async (serviceId, rating) => {
     try {
       const res = await RequestHandler.Patch("/query/v1/organizationService", {
         body: {
-          id: appointmentId,
+          id: serviceId,
           rating: rating,
         },
       });
@@ -852,7 +977,7 @@ export default function ClientDashboard() {
             </Card>
           ) : (
             actionRequiredTasks.map((task) => (
-              <Card key={task.id} className="border-yellow-200 bg-yellow-50/30">
+              <Card key={task.id}>
                 <CardContent className="p-6">
                   <div className="flex flex-wrap justify-between items-start gap-4">
                     <div className="space-y-2 flex-1">
@@ -883,7 +1008,7 @@ export default function ClientDashboard() {
                         setSelectedTask(task);
                         setShowRequirementsModal(true);
                       }}
-                      className="bg-yellow-600 hover:bg-yellow-700"
+                      className=""
                     >
                       Complete Task
                     </Button>
@@ -935,7 +1060,7 @@ export default function ClientDashboard() {
                             rating={0}
                             onRate={(rating) =>
                               handleRateService(apt.service?.id, rating)
-                            }
+                            } // Fixed function name
                             size="sm"
                           />
                         </div>

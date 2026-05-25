@@ -1,316 +1,316 @@
-// lib/task-scheduler.ts
+// backend/lib/task-scheduler.ts
 import { db } from "~/db";
 import { tables } from "~/db/schema";
-import { and, eq, sql, isNull, gte, lte, inArray } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
+import NotificationService from "~/services/notifcation.service";
 
 /**
- * Main cron job function to process pending appointments that don't have tasks
- * This only processes appointments that were missed by the ACL afterQuery
+ * Process pending appointments and create initial tasks if they don't exist
  */
-export async function processPendingAppointments(): Promise<{
-  processed: number;
-  created: number;
-  errors: number;
-}> {
-  console.log(`[${new Date()}] Starting appointment processing...`);
-
-  const result = {
+export async function processPendingAppointments() {
+  const results = {
     processed: 0,
     created: 0,
+    skipped: 0,
     errors: 0,
+    details: [] as any[],
   };
 
   try {
-    // Get appointments that are scheduled, active, start within next 7 days, and have NO task
-    const sevenDaysFromNow = new Date();
-    sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
-
-    const appointments = await db
+    // Get all scheduled appointments that don't have tasks yet
+    const pendingAppointments = await db
       .select({
         id: tables.appointment.id,
-        serviceId: tables.appointment.serviceId,
         clientId: tables.appointment.clientId,
+        serviceId: tables.appointment.serviceId,
+        organizationId: tables.appointment.organizationId,
         startTime: tables.appointment.startTime,
         endTime: tables.appointment.endTime,
-        organizationId: tables.appointment.organizationId,
+        service: {
+          id: tables.organizationService.id,
+          name: tables.organizationService.name,
+          organizationId: tables.organizationService.organizationId,
+        },
+        organization: {
+          id: tables.organization.id,
+          name: tables.organization.name,
+        },
+        client: {
+          id: tables.user.id,
+          firstname: tables.user.firstname,
+          lastname: tables.user.lastname,
+          email: tables.user.email,
+        },
       })
       .from(tables.appointment)
-      .leftJoin(
-        tables.task,
-        eq(tables.task.appointmentId, tables.appointment.id),
+      .innerJoin(
+        tables.organizationService,
+        eq(tables.appointment.serviceId, tables.organizationService.id),
       )
+      .innerJoin(
+        tables.organization,
+        eq(tables.appointment.organizationId, tables.organization.id),
+      )
+      .innerJoin(tables.user, eq(tables.appointment.clientId, tables.user.id))
       .where(
         and(
           eq(tables.appointment.status, "scheduled"),
           eq(tables.appointment.isActive, true),
-          lte(tables.appointment.startTime, sevenDaysFromNow),
-          gte(tables.appointment.startTime, new Date()),
-          // isNull(tables.task.id), // Only appointments WITHOUT tasks
+          // Only process appointments that don't have tasks
+          sql`NOT EXISTS (
+            SELECT 1 FROM ${tables.task} 
+            WHERE ${tables.task.appointmentId} = ${tables.appointment.id}
+          )`,
         ),
       );
 
-    console.log(`Found ${appointments.length} appointments missing tasks`);
+    results.processed = pendingAppointments.length;
 
-    // For each appointment without a task, we need to simulate the ACL logic
-    // Since we can't directly call the ACL from here, we'll need to recreate the task creation logic
-    for (const appointment of appointments) {
-      result.processed++;
+    for (const apt of pendingAppointments) {
       try {
-        await db.transaction(async (tx) => {
-          // Get all first employees for this service
-          const firstEmployees = await tx
-            .select({
-              employeeId: tables.serviceFirstEmployee.employeeId,
-            })
-            .from(tables.serviceFirstEmployee)
-            .innerJoin(
-              tables.employee,
-              eq(tables.employee.id, tables.serviceFirstEmployee.employeeId),
-            )
-            .where(
-              and(
-                eq(
-                  tables.serviceFirstEmployee.serviceId,
-                  appointment.serviceId,
-                ),
-                eq(tables.employee.isActive, true),
-              ),
-            );
+        // Get the first employee assigned to this service
+        const [firstEmployee] = await db
+          .select({
+            id: tables.serviceFirstEmployee.employeeId,
+            employee: tables.employee,
+          })
+          .from(tables.serviceFirstEmployee)
+          .innerJoin(
+            tables.employee,
+            eq(tables.serviceFirstEmployee.employeeId, tables.employee.id),
+          )
+          .where(eq(tables.serviceFirstEmployee.serviceId, apt.serviceId))
+          .limit(1);
 
-          if (firstEmployees.length === 0) {
-            console.log(
-              `No active first employees found for service ${appointment.serviceId}`,
-            );
-            return;
-          }
-
-          // Get current workload for each employee
-          const employeeIds = firstEmployees.map((fe) => fe.employeeId);
-          const workload = await tx
-            .select({
-              employeeId: tables.task.employeeId,
-              count: sql<number>`count(*)`,
-            })
-            .from(tables.task)
-            .where(
-              and(
-                inArray(tables.task.employeeId, employeeIds),
-                sql`${tables.task.status} IN ('pending', 'active')`,
-                eq(tables.task.isDone, false),
-              ),
-            )
-            .groupBy(tables.task.employeeId);
-
-          const workloadMap = new Map<string, number>();
-          for (const w of workload) {
-            workloadMap.set(w.employeeId, w.count);
-          }
-          for (const empId of employeeIds) {
-            if (!workloadMap.has(empId)) {
-              workloadMap.set(empId, 0);
-            }
-          }
-
-          // Select employee with least workload
-          const sorted = firstEmployees.sort((a, b) => {
-            const workloadA = workloadMap.get(a.employeeId) || 0;
-            const workloadB = workloadMap.get(b.employeeId) || 0;
-            return workloadA - workloadB;
+        if (!firstEmployee) {
+          results.skipped++;
+          results.details.push({
+            appointmentId: apt.id,
+            status: "skipped",
+            reason: "No employee assigned to service",
           });
+          continue;
+        }
 
-          const selectedEmployee = sorted[0];
-          const startTime = new Date(appointment.startTime);
-          const endTime = new Date(appointment.endTime);
-
-          // Calculate task duration (minimum 1 hour, maximum appointment duration)
-          const durationHours = Math.max(
-            1,
-            (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60),
-          );
-          const taskEndTime = new Date(startTime);
-          taskEndTime.setHours(taskEndTime.getHours() + durationHours);
-
-          // Create task
-          // const taskName = `Service: ${appointment.serviceId.slice(0, 8)} for ${appointment.clientId.slice(0, 8)}`;
-          const taskName = `Initial Task`;
-
-          await tx.insert(tables.task).values({
-            appointmentId: appointment.id,
-            employeeId: selectedEmployee.employeeId,
-            name: taskName,
-            startTime: startTime,
-            endTime: taskEndTime,
+        // Create initial task for the appointment
+        const [newTask] = await db
+          .insert(tables.task)
+          .values({
+            name: `Complete ${apt.service.name} for ${apt.client.firstname} ${apt.client.lastname}`,
             status: "pending",
-            isDone: false,
-            requirements: {
-              appointmentId: appointment.id,
-              serviceId: appointment.serviceId,
-              clientId: appointment.clientId,
-              startTime: appointment.startTime,
-              endTime: appointment.endTime,
-              createdByCron: true,
-              createdAt: new Date(),
-            },
-          });
+            appointmentId: apt.id,
+            employeeId: firstEmployee.id,
+            organizationId: apt.organizationId,
+            createdBy: apt.clientId,
+          })
+          .returning();
 
-          console.log(
-            `Cron created task for appointment ${appointment.id} assigned to employee ${selectedEmployee.employeeId}`,
-          );
-          result.created++;
+        results.created++;
+        results.details.push({
+          appointmentId: apt.id,
+          taskId: newTask.id,
+          status: "created",
+        });
+
+        // Notify the employee about the new task
+        if (firstEmployee.employee?.userId) {
+          await NotificationService.create(firstEmployee.employee.userId, {
+            type: "task_assigned",
+            title: "New Task Assigned",
+            message: `You have been assigned to complete "${apt.service.name}" for ${apt.client.firstname} ${apt.client.lastname}.`,
+            priority: "high",
+            metadata: {
+              taskId: newTask.id,
+              appointmentId: apt.id,
+              serviceName: apt.service.name,
+            },
+            actionUrl: `/dashboard/employee/task/${newTask.id}`,
+          });
+        }
+
+        // Notify the client that their appointment is being processed
+        await NotificationService.create(apt.clientId, {
+          type: "appointment_created",
+          title: "Appointment Confirmed",
+          message: `Your appointment for "${apt.service.name}" on ${new Date(apt.startTime).toLocaleDateString()} has been confirmed and is being processed.`,
+          priority: "medium",
+          metadata: {
+            appointmentId: apt.id,
+            serviceName: apt.service.name,
+          },
+          actionUrl: `/dashboard/client/appointment/${apt.id}`,
         });
       } catch (error) {
-        console.error(`Error processing appointment ${appointment.id}:`, error);
-        result.errors++;
+        results.errors++;
+        results.details.push({
+          appointmentId: apt.id,
+          status: "error",
+          error: String(error),
+        });
+        console.error(
+          `Failed to create task for appointment ${apt.id}:`,
+          error,
+        );
       }
     }
-
-    console.log(
-      `Completed. Processed: ${result.processed}, Created: ${result.created}, Errors: ${result.errors}`,
-    );
   } catch (error) {
-    console.error("Error in processPendingAppointments:", error);
-    result.errors++;
+    console.error("Failed to process pending appointments:", error);
+    results.errors++;
+    results.details.push({
+      status: "fatal",
+      error: String(error),
+    });
   }
 
-  return result;
+  return results;
 }
 
 /**
- * Reassign tasks from inactive employees to active ones
+ * Reassign orphaned tasks (tasks where employee is no longer active)
  */
-export async function reassignOrphanedTasks(): Promise<{
-  reassigned: number;
-  errors: number;
-}> {
-  console.log(`[${new Date()}] Starting orphaned task reassignment...`);
-
-  const result = {
+export async function reassignOrphanedTasks() {
+  const results = {
+    processed: 0,
     reassigned: 0,
-    errors: 0,
+    failed: 0,
+    details: [] as any[],
   };
 
   try {
-    // Get tasks assigned to inactive employees
+    // Get tasks assigned to inactive employees or without valid employee
     const orphanedTasks = await db
       .select({
         id: tables.task.id,
-        serviceId: tables.appointment.serviceId,
+        name: tables.task.name,
         employeeId: tables.task.employeeId,
+        appointmentId: tables.task.appointmentId,
+        serviceId: tables.appointment.serviceId,
+        organizationId: tables.task.organizationId,
       })
       .from(tables.task)
       .innerJoin(
         tables.appointment,
-        eq(tables.appointment.id, tables.task.appointmentId),
+        eq(tables.task.appointmentId, tables.appointment.id),
       )
-      .innerJoin(
-        tables.employee,
-        eq(tables.employee.id, tables.task.employeeId),
-      )
+      .leftJoin(tables.employee, eq(tables.task.employeeId, tables.employee.id))
       .where(
         and(
-          sql`${tables.task.status} IN ('pending', 'active')`,
+          eq(tables.task.status, "pending"),
           eq(tables.task.isDone, false),
-          eq(tables.employee.isActive, false),
+          or(
+            eq(tables.employee.isActive, false),
+            sql`${tables.task.employeeId} IS NULL`,
+          ),
         ),
       );
 
-    console.log(`Found ${orphanedTasks.length} orphaned tasks`);
+    results.processed = orphanedTasks.length;
 
     for (const task of orphanedTasks) {
       try {
-        await db.transaction(async (tx) => {
-          // Get all active first employees for this service
-          const firstEmployees = await tx
-            .select({
-              employeeId: tables.serviceFirstEmployee.employeeId,
-            })
-            .from(tables.serviceFirstEmployee)
-            .innerJoin(
-              tables.employee,
-              eq(tables.employee.id, tables.serviceFirstEmployee.employeeId),
-            )
-            .where(
-              and(
-                eq(tables.serviceFirstEmployee.serviceId, task.serviceId),
-                eq(tables.employee.isActive, true),
-              ),
-            );
+        // Find a new employee for this service
+        const [newEmployee] = await db
+          .select({
+            id: tables.serviceFirstEmployee.employeeId,
+            employee: tables.employee,
+          })
+          .from(tables.serviceFirstEmployee)
+          .innerJoin(
+            tables.employee,
+            eq(tables.serviceFirstEmployee.employeeId, tables.employee.id),
+          )
+          .where(
+            and(
+              eq(tables.serviceFirstEmployee.serviceId, task.serviceId),
+              eq(tables.employee.isActive, true),
+            ),
+          )
+          .limit(1);
 
-          if (firstEmployees.length === 0) {
-            console.log(
-              `No active first employees for service ${task.serviceId}`,
-            );
-            return;
-          }
-
-          // Get workload for these employees
-          const employeeIds = firstEmployees.map((fe) => fe.employeeId);
-          const workload = await tx
-            .select({
-              employeeId: tables.task.employeeId,
-              count: sql<number>`count(*)`,
-            })
-            .from(tables.task)
-            .where(
-              and(
-                inArray(tables.task.employeeId, employeeIds),
-                sql`${tables.task.status} IN ('pending', 'active')`,
-                eq(tables.task.isDone, false),
-              ),
-            )
-            .groupBy(tables.task.employeeId);
-
-          const workloadMap = new Map<string, number>();
-          for (const w of workload) {
-            workloadMap.set(w.employeeId, w.count);
-          }
-          for (const empId of employeeIds) {
-            if (!workloadMap.has(empId)) {
-              workloadMap.set(empId, 0);
-            }
-          }
-
-          // Select employee with least workload (excluding the current assignee if they're inactive)
-          const availableEmployees = firstEmployees.filter(
-            (fe) => fe.employeeId !== task.employeeId,
-          );
-
-          if (availableEmployees.length === 0) {
-            console.log(`No alternative employees for task ${task.id}`);
-            return;
-          }
-
-          const sorted = availableEmployees.sort((a, b) => {
-            const workloadA = workloadMap.get(a.employeeId) || 0;
-            const workloadB = workloadMap.get(b.employeeId) || 0;
-            return workloadA - workloadB;
+        if (!newEmployee) {
+          results.failed++;
+          results.details.push({
+            taskId: task.id,
+            status: "failed",
+            reason: "No active employee found for this service",
           });
+          continue;
+        }
 
-          const newEmployeeId = sorted[0].employeeId;
+        // Reassign the task
+        await db
+          .update(tables.task)
+          .set({
+            employeeId: newEmployee.id,
+            updatedAt: new Date(),
+          })
+          .where(eq(tables.task.id, task.id));
 
-          await tx
-            .update(tables.task)
-            .set({
-              employeeId: newEmployeeId,
-              status: "pending",
-              updatedAt: new Date(),
-            })
-            .where(eq(tables.task.id, task.id));
-
-          console.log(
-            `Reassigned task ${task.id} from ${task.employeeId} to ${newEmployeeId}`,
-          );
-          result.reassigned++;
+        results.reassigned++;
+        results.details.push({
+          taskId: task.id,
+          newEmployeeId: newEmployee.id,
+          status: "reassigned",
         });
+
+        // Notify the new employee
+        if (newEmployee.employee?.userId) {
+          await NotificationService.create(newEmployee.employee.userId, {
+            type: "task_assigned",
+            title: "Task Reassigned",
+            message: `A task has been reassigned to you: "${task.name}".`,
+            priority: "medium",
+            metadata: {
+              taskId: task.id,
+              previousEmployeeId: task.employeeId,
+            },
+            actionUrl: `/dashboard/employee/task/${task.id}`,
+          });
+        }
       } catch (error) {
-        console.error(`Error reassigning task ${task.id}:`, error);
-        result.errors++;
+        results.failed++;
+        results.details.push({
+          taskId: task.id,
+          status: "error",
+          error: String(error),
+        });
+        console.error(`Failed to reassign task ${task.id}:`, error);
       }
     }
   } catch (error) {
-    console.error("Error in reassignOrphanedTasks:", error);
-    result.errors++;
+    console.error("Failed to reassign orphaned tasks:", error);
+    results.failed++;
+    results.details.push({
+      status: "fatal",
+      error: String(error),
+    });
   }
 
-  return result;
+  return results;
+}
+
+/**
+ * Clean up old tasks (archive completed tasks after certain period)
+ */
+export async function archiveOldTasks(daysOld = 30) {
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - daysOld);
+
+  const result = await db
+    .update(tables.task)
+    .set({
+      status: "archived",
+      updatedAt: new Date(),
+    })
+    .where(
+      and(
+        eq(tables.task.status, "completed"),
+        sql`${tables.task.completedAt} < ${cutoffDate.toISOString()}`,
+      ),
+    );
+
+  return {
+    archived: result.count,
+    cutoffDate: cutoffDate.toISOString(),
+  };
 }

@@ -32,6 +32,7 @@ import {
 import RequestHandler from "@/lib/request-handler";
 import Link from "next/link";
 import { toast } from "sonner";
+import { config } from "@/lib/config";
 
 const formatDate = (dateString) => {
   if (!dateString) return "Not scheduled";
@@ -126,9 +127,24 @@ export default function AppointmentDetailsPage() {
           `/query/v1/task?~appointmentId=${id}&order=["createdAt.asc","completedAt.asc"]`,
           // `/query/v1/task?~appointmentId=${id}&order=["createdAt.asc"]&select={"":["id","name","status","isDone","requirements","submissions","createdAt","completedAt"],"employee":{"user":["firstname","lastname"]}}`,
         );
-
         if (taskRes.ok) {
-          const { tasks: taskList } = await taskRes.json();
+          const { tasks } = await taskRes.json();
+          const taskMap = new Map(tasks.map((t) => [t.id, t]));
+          const taskList = [];
+          let curTask;
+          for (const task of tasks) {
+            if (task.previousTaskId == null) {
+              taskList.push(task);
+              curTask = task;
+              break;
+            }
+          }
+          if (curTask) {
+            for (let i = 1; i < tasks.length; i++) {
+              curTask = taskMap.get(curTask.nextTaskId);
+              taskList.push(curTask);
+            }
+          }
           setTasks(taskList || []);
         }
       } catch (err) {
@@ -231,10 +247,10 @@ export default function AppointmentDetailsPage() {
 
       {/* Service Header with Image */}
       <Card className="overflow-hidden pt-0">
-        {appointment.service?.imageUrl && (
+        {(appointment.service?.imageUrl || config.fallbackServiceImage) && (
           <div className="h-48 w-full relative">
             <img
-              src={appointment.service.imageUrl}
+              src={appointment.service?.imageUrl || config.fallbackServiceImage}
               alt={appointment.service.name}
               className="w-full h-full object-cover"
             />

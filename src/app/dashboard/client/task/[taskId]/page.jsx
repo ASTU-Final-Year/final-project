@@ -23,7 +23,6 @@ import {
   CalendarDays,
   Clock,
   Building2,
-  User,
 } from "lucide-react";
 import RequestHandler from "@/lib/request-handler";
 import { toast } from "sonner";
@@ -43,7 +42,7 @@ export default function TaskCompletionPage() {
     const fetchTask = async () => {
       try {
         const res = await RequestHandler.Get(
-          `/query/v1/task?client&~id=${taskId}&select={"":["id","name","status","isDone","requirements","submissions","createdAt"],"appointment":["id","startTime","endTime","status","service":["name","description","price"],"organization":["name","address","email","phone"]],"client":["firstname","lastname","email","phone"]}`,
+          `/query/v1/task?~id=${taskId}&select={"":["id","name","status","isDone","requirements","submissions","createdAt"],"appointment":["id","startTime","endTime","status","service":["name","description","price"],"organization":["name","address","email","phone"]],"client":["firstname","lastname","email","phone"]}`,
         );
 
         if (res.ok) {
@@ -76,27 +75,111 @@ export default function TaskCompletionPage() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleFileChange = (field, fileList) => {
+  const handleFileChange = async (field, fileList) => {
     const file = fileList[0];
-    if (file) {
-      const fieldConfig = task?.requirements?.form?.[field];
-      if (fieldConfig?.accept && !fieldConfig.accept.includes(file.type)) {
-        toast.error(
-          `Invalid file type. Accepted: ${fieldConfig.accept.join(", ")}`,
+    if (!file) return;
+
+    const fieldConfig = task?.requirements?.form?.[field];
+    if (fieldConfig?.accept && !fieldConfig.accept.includes(file.type)) {
+      toast.error(
+        `Invalid file type. Accepted: ${fieldConfig.accept.join(", ")}`,
+      );
+      return;
+    }
+    if (fieldConfig?.maxSize && file.size > fieldConfig.maxSize) {
+      toast.error(
+        `File too large. Max size: ${fieldConfig.maxSize / (1024 * 1024)}MB`,
+      );
+      return;
+    }
+
+    // Show uploading state
+    setUploadingFile(field);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const uploadRes = await fetch(
+        `/api/v1/client/upload?taskId=${task.id}&requirementId=${field}`,
+        {
+          method: "POST",
+          body: formData,
+          credentials: "include",
+        },
+      );
+
+      if (uploadRes.ok) {
+        const data = await uploadRes.json();
+        setFormData((prev) => ({
+          ...prev,
+          [field]: {
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            uploaded: true,
+          },
+        }));
+        toast.success(`File "${file.name}" uploaded successfully`);
+
+        // Refresh task to show updated submissions
+        const res = await RequestHandler.Get(
+          `/query/v1/task?&~id=${task.id}&select={"":["id","name","status","isDone","requirements","submissions","createdAt"],"appointment":["id","startTime","endTime","status","service":["name","description","price"],"organization":["name","address","email","phone"]],"client":["firstname","lastname","email","phone"]}`,
         );
-        return;
+        if (res.ok) {
+          const {
+            tasks: [taskData],
+          } = await res.json();
+          setTask(taskData);
+        }
+      } else {
+        const error = await uploadRes.json();
+        toast.error(error.error || "Failed to upload file");
       }
-      if (fieldConfig?.maxSize && file.size > fieldConfig.maxSize) {
-        toast.error(
-          `File too large. Max size: ${fieldConfig.maxSize / (1024 * 1024)}MB`,
+    } catch (error) {
+      console.error("Upload failed:", error);
+      toast.error("Failed to upload file");
+    } finally {
+      setUploadingFile(null);
+    }
+  };
+
+  const handleDeleteFile = async (field) => {
+    if (!confirm("Are you sure you want to delete this file?")) return;
+
+    try {
+      const deleteRes = await fetch(
+        `/api/v1/client/upload?taskId=${task.id}&requirementId=${field}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        },
+      );
+
+      if (deleteRes.ok) {
+        setFormData((prev) => {
+          const newData = { ...prev };
+          delete newData[field];
+          return newData;
+        });
+        toast.success("File deleted successfully");
+
+        // Refresh task
+        const res = await RequestHandler.Get(
+          `/query/v1/task?~id=${task.id}&select={"":["id","name","status","isDone","requirements","submissions","createdAt"],"appointment":["id","startTime","endTime","status","service":["name","description","price"],"organization":["name","address","email","phone"]],"client":["firstname","lastname","email","phone"]}`,
         );
-        return;
+        if (res.ok) {
+          const {
+            tasks: [taskData],
+          } = await res.json();
+          setTask(taskData);
+        }
+      } else {
+        toast.error("Failed to delete file");
       }
-      setFiles((prev) => ({ ...prev, [field]: file }));
-      setFormData((prev) => ({
-        ...prev,
-        [field]: { name: file.name, size: file.size, type: file.type },
-      }));
+    } catch (error) {
+      console.error("Delete failed:", error);
+      toast.error("Failed to delete file");
     }
   };
 
@@ -216,9 +299,9 @@ export default function TaskCompletionPage() {
     <div className="max-w-2xl mx-auto p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => router.back()}>
+        {/* <Button variant="ghost" size="icon" onClick={() => router.back()}>
           <ChevronLeft className="h-5 w-5" />
-        </Button>
+        </Button> */}
         <div>
           <h1 className="text-2xl font-bold">Complete Task</h1>
           <p className="text-gray-500 text-sm">{task.name}</p>

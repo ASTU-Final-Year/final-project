@@ -53,6 +53,7 @@ import { CalendarDatePicker } from "../calendar-date-picker";
 import { redirect, useRouter } from "next/navigation";
 import { useSessionStore } from "@/store";
 import Link from "next/link";
+import { config } from "@/lib/config";
 
 const sectorIcons = {
   Beauty: Scissors,
@@ -66,8 +67,7 @@ const sectorIcons = {
   Government: Building2,
 };
 
-const fallbackImage =
-  "https://images.unsplash.com/photo-1604076850742-4c7221f3101b?w=800&auto=format";
+const fallbackImage = config.fallbackServiceImage;
 
 export default function PublicOrganizationService({ service }) {
   const router = useRouter();
@@ -111,6 +111,11 @@ export default function PublicOrganizationService({ service }) {
       if (selectedDate && service.calendar) {
         const dayOfWeek = selectedDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
         const adjustedDay = dayOfWeek === 0 ? 7 : dayOfWeek; // Convert to 1-7 (Monday=1, Sunday=7)
+        const isToday =
+          selectedDate.setHours(0, 0, 0, 0) === new Date().setHours(0, 0, 0, 0);
+        const todayHour = new Date().getHours();
+        const todayMinute = new Date().getMinutes();
+        const todayTime = todayHour * 60 + todayMinute;
 
         const calendar = service.calendar;
         const availableDays = calendar.available?.weekly || [];
@@ -142,13 +147,27 @@ export default function PublicOrganizationService({ service }) {
               .map(Number);
 
             for (let hour = startHour; hour < endHour; hour++) {
-              const ampm = hour >= 12 ? "PM" : "AM";
-              if (!(hour >= startHourU && hour < endHourU)) {
-                const displayHour =
-                  hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-                slots.push(`${displayHour}:00 ${ampm}`);
-                if (hour < endHour || (hour === endHour - 1 && endMinute > 0)) {
-                  slots.push(`${displayHour}:30 ${ampm}`);
+              if (!(isToday & (hour * 60 < todayTime))) {
+                const ampm = hour >= 12 ? "PM" : "AM";
+                if (!(hour >= startHourU && hour < endHourU)) {
+                  const displayHour =
+                    hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+                  slots.push(`${displayHour}:00 ${ampm}`);
+                  // if (hour < endHour || (hour === endHour - 1 && endMinute > 0)) {
+                  //   slots.push(`${displayHour}:30 ${ampm}`);
+                  // }
+                }
+              } else if (!(isToday & (hour * 60 + 30 < todayTime))) {
+                const ampm = hour >= 12 ? "PM" : "AM";
+                if (!(hour >= startHourU && hour < endHourU)) {
+                  const displayHour =
+                    hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+                  if (
+                    hour < endHour ||
+                    (hour === endHour - 1 && endMinute > 0)
+                  ) {
+                    slots.push(`${displayHour}:30 ${ampm}`);
+                  }
                 }
               }
             }
@@ -190,7 +209,7 @@ export default function PublicOrganizationService({ service }) {
 
     setIsSubmitting(true);
     try {
-      const res = await RequestHandler.Post("/query/v1/appointment?client", {
+      const res = await RequestHandler.Post("/query/v1/appointment", {
         body: {
           serviceId: service.id,
           startTime: startDateTime.toISOString(),
@@ -216,7 +235,7 @@ export default function PublicOrganizationService({ service }) {
         }
       }
       const error = await res.json();
-      throw new Error(error.message || "Failed to book appointment");
+      throw new Error(error.error || "Failed to book appointment");
     } catch (error) {
       console.error("Booking error:", error);
       toast.error(error.message || "Failed to book appointment");
