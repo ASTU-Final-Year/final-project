@@ -1,9 +1,33 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useAuthStore, useUIStore } from '../store';
-import { Mail, Lock, Eye, EyeOff, CheckCircle } from 'lucide-react-native';
+import { Mail, Lock, Eye, EyeOff, CheckCircle, AlertCircle } from 'lucide-react-native';
 import { tw } from '../lib/native-utils';
+
+// ─── Password policy ────────────────────────────────────────────────────────
+const PASSWORD_RULES = [
+  { label: 'At least 8 characters',          test: (p: string) => p.length >= 8 },
+  { label: 'One uppercase letter (A–Z)',      test: (p: string) => /[A-Z]/.test(p) },
+  { label: 'One lowercase letter (a–z)',      test: (p: string) => /[a-z]/.test(p) },
+  { label: 'One number (0–9)',                test: (p: string) => /[0-9]/.test(p) },
+  { label: 'One special character (!@#$…)',   test: (p: string) => /[^A-Za-z0-9]/.test(p) },
+];
+
+type StrengthLevel = 'weak' | 'medium' | 'strong';
+
+function getPasswordStrength(password: string): { level: StrengthLevel; score: number } {
+  if (!password) return { level: 'weak', score: 0 };
+  const score = PASSWORD_RULES.filter(r => r.test(password)).length;
+  const level: StrengthLevel = score <= 2 ? 'weak' : score <= 4 ? 'medium' : 'strong';
+  return { level, score };
+}
+
+const STRENGTH_CONFIG: Record<StrengthLevel, { label: string; color: string; bars: number }> = {
+  weak:   { label: 'Weak',   color: '#EF4444', bars: 1 },
+  medium: { label: 'Medium', color: '#F59E0B', bars: 3 },
+  strong: { label: 'Strong', color: '#10B981', bars: 5 },
+};
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -13,6 +37,11 @@ export default function LoginScreen() {
   
   const login = useAuthStore((state) => state.login);
   const setActiveScreen = useUIStore((state) => state.setActiveScreen);
+
+  const { level: strengthLevel, score: strengthScore } = useMemo(
+    () => getPasswordStrength(password),
+    [password]
+  );
 
   const handleLogin = () => {
     setError('');
@@ -25,6 +54,13 @@ export default function LoginScreen() {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setError('Please enter a valid email address.');
+      return;
+    }
+
+    // Enforce password policy on sign-in
+    const failedRules = PASSWORD_RULES.filter(r => !r.test(password));
+    if (failedRules.length > 0) {
+      setError(`Password must include: ${failedRules.map(r => r.label.toLowerCase()).join(', ')}.`);
       return;
     }
 
@@ -111,6 +147,47 @@ export default function LoginScreen() {
                 {showPassword ? <EyeOff color="#9CA3AF" size={18} /> : <Eye color="#9CA3AF" size={18} />}
               </TouchableOpacity>
             </View>
+
+            {/* ── Password strength indicator ── */}
+            {password.length > 0 && (
+              <View style={tw`mt-2.5 gap-1.5`}>
+                {/* Strength bars */}
+                <View style={tw`flex-row gap-1`}>
+                  {[1, 2, 3, 4, 5].map(bar => (
+                    <View
+                      key={bar}
+                      style={[
+                        tw`flex-1 h-1 rounded-full`,
+                        {
+                          backgroundColor:
+                            bar <= STRENGTH_CONFIG[strengthLevel].bars
+                              ? STRENGTH_CONFIG[strengthLevel].color
+                              : '#E5E7EB',
+                        },
+                      ]}
+                    />
+                  ))}
+                </View>
+
+                {/* Strength label */}
+                <Text
+                  style={[
+                    tw`text-xs font-semibold ml-0.5`,
+                    { color: STRENGTH_CONFIG[strengthLevel].color },
+                  ]}
+                >
+                  {STRENGTH_CONFIG[strengthLevel].label} password
+                </Text>
+
+                {/* Unmet rule hints */}
+                {PASSWORD_RULES.filter(r => !r.test(password)).map(rule => (
+                  <View key={rule.label} style={tw`flex-row items-center gap-1.5`}>
+                    <AlertCircle color="#9CA3AF" size={11} />
+                    <Text style={tw`text-[10px] text-gray-400`}>{rule.label}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
           </View>
 
           <TouchableOpacity 
@@ -129,7 +206,7 @@ export default function LoginScreen() {
                <Text style={tw`text-[10px] font-bold uppercase tracking-wider text-blue-800`}>Demo Credentials</Text>
              </View>
              <Text style={tw`text-xs text-blue-600`}>Email: <Text style={tw`font-bold`}>admin@sync.com</Text></Text>
-             <Text style={tw`text-xs text-blue-600`}>Password: <Text style={tw`font-bold`}>password123</Text></Text>
+             <Text style={tw`text-xs text-blue-600`}>Password: <Text style={tw`font-bold`}>Admin@1234</Text></Text>
           </View>
           
           <Text style={tw`text-[10px] text-center text-gray-400`}>
