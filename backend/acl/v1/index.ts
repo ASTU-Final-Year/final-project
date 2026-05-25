@@ -1572,7 +1572,10 @@ export const queryAuth = {
         where: (req, { session }) =>
           or(
             ...(session as EmployeeSession).employments.map((employment) =>
-              eq(tables.employee.organizationId, employment.organizationId),
+              eq(
+                tables.organizationCalendar.organizationId,
+                employment.organizationId,
+              ),
             ),
           ),
       },

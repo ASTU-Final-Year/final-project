@@ -17,74 +17,79 @@ import RequestHandler from "@/lib/request-handler";
 import CalendarGrid from "@/components/calendar/grid";
 
 export default function SmartCalendarPage() {
-  const { calendar_id } = useParams();
+  const { employment_id } = useParams();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [calendar, setCalendar] = useState(null);
-  const [organization, setOrganization] = useState(null);
+  const [employment, setEmployment] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [calendarMode, setCalendarMode] = useState("gregorian");
   const [language, setLanguage] = useState("en"); // 'en' or 'am'
 
   useEffect(() => {
-    RequestHandler.Get("/query/v1/organization").then(async (res) => {
+    RequestHandler.Get(
+      `/query/v1/employee?~id=${employment_id}&select=${encodeURIComponent(`{"organizationCalendar":true,"organization":["name"]}`)}`,
+    ).then(async (res) => {
       if (res.ok) {
-        const { organizations } = await res.json();
-        setOrganization(organizations?.[0]);
+        const { employees } = await res.json();
+        setEmployment(employees?.[0]);
+        console.log(employees);
       }
     });
-  }, []);
+  }, [employment_id]);
 
   const fetchCalendar = useCallback(async () => {
-    if (!calendar_id) return;
+    if (!employment) return;
 
     try {
-      const dataRes = await RequestHandler.Get(
-        encodeURI(
-          `/query/v1/organizationCalendar?~id=${calendar_id}&select={"":true,"organization":["name"]}`,
-        ),
-      );
+      // const dataRes = await RequestHandler.Get(
+      //   encodeURI(
+      //     `/query/v1/organizationCalendar?~id=${calendar_id}&select={"":true,"organization":["name"]}`,
+      //   ),
+      // );
 
-      if (dataRes.ok) {
-        const { organizationCalendars } = await dataRes.json();
-        let result = organizationCalendars?.[0];
+      // if (dataRes.ok) {
+      // const { organizationCalendars } = await dataRes.json();
+      // let result = organizationCalendars?.[0];
+      let result = employment.organizationCalendar;
+      result.organization = employment.organization;
 
-        if (result) {
-          result = {
-            ...result,
-            available: {
-              ...(result.available ?? {}),
-              ranges: result.available?.ranges
-                ? result.available.ranges.map(({ from, to }) => ({
-                    from: new Date(from),
-                    to: new Date(to),
-                  }))
-                : [],
-              exactly: result.available?.exactly
-                ? result.available.exactly.map((e) => new Date(e))
-                : [],
-            },
-            unavailable: {
-              ...(result.unavailable ?? {}),
-              ranges: result.unavailable?.ranges
-                ? result.unavailable.ranges.map(({ from, to }) => ({
-                    from: new Date(from),
-                    to: new Date(to),
-                  }))
-                : [],
-              exactly: result.unavailable?.exactly
-                ? result.unavailable.exactly.map((e) => new Date(e))
-                : [],
-            },
-          };
-          setCalendar(result);
-        }
+      if (result) {
+        result = {
+          ...result,
+          available: {
+            ...(result.available ?? {}),
+            ranges: result.available?.ranges
+              ? result.available.ranges.map(({ from, to }) => ({
+                  from: new Date(from),
+                  to: new Date(to),
+                }))
+              : [],
+            exactly: result.available?.exactly
+              ? result.available.exactly.map((e) => new Date(e))
+              : [],
+          },
+          unavailable: {
+            ...(result.unavailable ?? {}),
+            ranges: result.unavailable?.ranges
+              ? result.unavailable.ranges.map(({ from, to }) => ({
+                  from: new Date(from),
+                  to: new Date(to),
+                }))
+              : [],
+            exactly: result.unavailable?.exactly
+              ? result.unavailable.exactly.map((e) => new Date(e))
+              : [],
+          },
+        };
+        setCalendar(result);
       }
+      // }
     } catch (error) {
       console.error("Failed to fetch calendar:", error);
     } finally {
       setIsLoading(false);
     }
-  }, [calendar_id]);
+  }, [employment]);
 
   useEffect(() => {
     (async () => fetchCalendar())();

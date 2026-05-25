@@ -423,10 +423,7 @@ export default function EmploymentsPage() {
                     {employment.calendarId ? (
                       <Button variant="ghost" size="icon" asChild>
                         <Link
-                          href={
-                            "/dashboard/employee/calendar/" +
-                            employment.calendarId
-                          }
+                          href={`/dashboard/employee/employment/${employment.id}/calendar`}
                         >
                           <CalendarIcon />
                         </Link>
