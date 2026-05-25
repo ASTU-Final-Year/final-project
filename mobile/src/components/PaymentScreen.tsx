@@ -185,8 +185,8 @@ export default function PaymentScreen() {
             </View>
          )}
 
-         {/* Mobile Money Details (Conditional) */}
-         {(selectedMethod === 'telebirr' || selectedMethod === 'cbebirr') && (
+         {/* Telebirr Details */}
+         {selectedMethod === 'telebirr' && (
             <View style={tw`bg-white p-5 rounded-3xl border border-gray-100 shadow-sm mb-8`}>
                <View>
                   <Text style={tw`text-xs font-bold text-gray-700 mb-2 ml-1`}>Phone Number</Text>
@@ -194,8 +194,38 @@ export default function PaymentScreen() {
                      <View style={tw`bg-gray-100 py-3.5 px-4 rounded-l-2xl border border-r-0 border-gray-100`}>
                         <Text style={tw`font-bold text-gray-600`}>+251</Text>
                      </View>
-                     <TextInput 
+                     <TextInput
                         placeholder="911 234 567"
+                        placeholderTextColor="#C4C9D4"
+                        keyboardType="phone-pad"
+                        style={tw`flex-1 bg-gray-50 border border-gray-100 rounded-r-2xl py-3.5 px-4 text-gray-900 font-medium`}
+                     />
+                  </View>
+               </View>
+            </View>
+         )}
+
+         {/* CBE Birr Details */}
+         {selectedMethod === 'cbebirr' && (
+            <View style={tw`bg-white p-5 rounded-3xl border border-gray-100 shadow-sm mb-8`}>
+               <View style={tw`mb-4`}>
+                  <Text style={tw`text-xs font-bold text-gray-700 mb-2 ml-1`}>CBE Account Number</Text>
+                  <TextInput
+                     placeholder="e.g. 1000123456789"
+                     placeholderTextColor="#C4C9D4"
+                     keyboardType="numeric"
+                     style={tw`w-full bg-gray-50 border border-gray-100 rounded-2xl py-3.5 px-4 text-gray-900 font-medium`}
+                  />
+               </View>
+               <View>
+                  <Text style={tw`text-xs font-bold text-gray-700 mb-2 ml-1`}>Phone Number</Text>
+                  <View style={tw`flex-row items-center`}>
+                     <View style={tw`bg-gray-100 py-3.5 px-4 rounded-l-2xl border border-r-0 border-gray-100`}>
+                        <Text style={tw`font-bold text-gray-600`}>+251</Text>
+                     </View>
+                     <TextInput
+                        placeholder="911 234 567"
+                        placeholderTextColor="#C4C9D4"
                         keyboardType="phone-pad"
                         style={tw`flex-1 bg-gray-50 border border-gray-100 rounded-r-2xl py-3.5 px-4 text-gray-900 font-medium`}
                      />
