@@ -200,15 +200,7 @@ export default function LoginScreen() {
         </View>
 
         <View style={tw`mt-auto pt-8`}>
-          <View style={tw`bg-blue-50 p-4 rounded-2xl border border-blue-100 mb-6`}>
-             <View style={tw`flex-row items-center gap-2 mb-1`}>
-               <CheckCircle color="#1E40AF" size={14} />
-               <Text style={tw`text-[10px] font-bold uppercase tracking-wider text-blue-800`}>Demo Credentials</Text>
-             </View>
-             <Text style={tw`text-xs text-blue-600`}>Email: <Text style={tw`font-bold`}>admin@sync.com</Text></Text>
-             <Text style={tw`text-xs text-blue-600`}>Password: <Text style={tw`font-bold`}>Admin@1234</Text></Text>
-          </View>
-          
+
           <Text style={tw`text-[10px] text-center text-gray-400`}>
             By signing in you agree to our <Text style={tw`text-gray-600 underline`}>Privacy Policy</Text> and <Text style={tw`text-gray-600 underline`}>Terms of Service</Text>.
           </Text>
