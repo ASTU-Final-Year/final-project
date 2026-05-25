@@ -55,6 +55,7 @@ export default {
           limit: parseInt(q.l || "5"),
           iservice: q.iservice !== undefined,
           iemployee: q.iemployee !== undefined,
+          icalendar: q.icalendar !== undefined,
         };
       },
     ],
@@ -161,6 +162,7 @@ export default {
         limit: number;
         iservice: boolean;
         iemployee: boolean;
+        icalendar: boolean;
       };
     };
   }

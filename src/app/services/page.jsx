@@ -21,7 +21,6 @@ import {
 import RequestHandler from "@/lib/request-handler";
 import Image from "next/image";
 import Link from "next/link";
-import { config } from "@/lib/config";
 import ServiceCard from "@/components/public/service-card";
 
 // Sector filter chips
@@ -46,7 +45,6 @@ export default function ServicesSearchPage() {
     const fetchServices = async () => {
       try {
         // Example using your RequestHandler – adjust endpoint as needed
-        // const ilike = config.prodDatabase ? "ilike" : "like";
         // const q = searchQuery;
         // const query = q
         //   ? "&" +
@@ -55,7 +53,7 @@ export default function ServicesSearchPage() {
         //         .split(/\s,/g)
         //         .map(
         //           (q) =>
-        //             `~name.${ilike}=%${q}%|~description.${ilike}=%${q}%|~organization.name.${ilike}=%${q}%`,
+        //             `~name.ilike=%${q}%|~description.ilike=%${q}%|~organization.name.ilike=%${q}%`,
         //         )
         //         .join("|"),
         //     )
@@ -66,12 +64,11 @@ export default function ServicesSearchPage() {
         const offset = null;
         const limit = 20;
         const query = searchQuery;
-        const ilike = config.prodDatabase ? "ilike" : "like";
         const queryTokens = query.split(/\s|,|:/);
         const searchFilter = queryTokens
           .map((q) => {
             const query = encodeURIComponent(q);
-            return `~name.${ilike}=%25${query}%25|~description.${ilike}=%25${query}%25|~organization.sector.${ilike}=%25${query}%25|~organization.name.${ilike}=%25${query}%25|~organization.description.${ilike}=%25${query}%25|~organization.address.${ilike}=%25${query}%25`;
+            return `~name.ilike=%25${query}%25|~description.ilike=%25${query}%25|~organization.name.ilike=%25${query}%25|~organization.sector.ilike=%25${query}%25|~organization.description.ilike=%25${query}%25|~organization.address.ilike=%25${query}%25`;
           })
           .join("&");
         const sparams = new URLSearchParams({
@@ -79,12 +76,10 @@ export default function ServicesSearchPage() {
           ...(limit ? { limit: limit.toFixed() } : {}),
           "~isActive": true,
         });
-
-        const dataRes = await RequestHandler.Get(
-          searchQuery
-            ? `/query/v1/organizationService?guest&${sparams.toString()}${activeSector ? `&~organization.sector.${ilike}=${activeSector.toLowerCase()}` : ""}&${searchFilter}`
-            : `/query/v1/organizationService?guest&${sparams.toString()}${activeSector ? `&~organization.sector.${ilike}=${activeSector.toLowerCase()}` : ""}`,
-        );
+        const url = searchQuery
+          ? `/query/v1/organizationService?guest&${sparams.toString()}${activeSector ? `&~organization.sector.ilike=${activeSector}` : ""}&${searchFilter}`
+          : `/query/v1/organizationService?guest&${sparams.toString()}${activeSector ? `&~organization.sector.ilike=${activeSector}` : ""}`;
+        const dataRes = await RequestHandler.Get(url);
         if (dataRes.ok) {
           const { organizationServices } = await dataRes.json();
           setServices(organizationServices || []);
@@ -128,34 +123,38 @@ export default function ServicesSearchPage() {
   // }, [searchQuery, activeSector, services]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-accent">
+    <div className="min-h-screen flex flex-col ">
       <SiteHeader />
 
       <main className="flex-1">
         {/* Hero Section */}
+        {/* <section className="relative text-white overflow-hidden bg-primary"> */}
         <section
-          className="relative bg-primary text-white overflow-hidden bg-cover bg-center backdrop-blur-md"
+          className="relative bg-cover bg-center flex flex-col items-center pt-8 px-6"
           style={{
             backgroundImage:
-              'url("/images/pexels-lovetosmile-36200692-blurred-dim.jpg")',
+              'url("/images/pexels-lovetosmile-36200692-blurred.jpg")',
           }}
         >
-          <div className="container mx-auto px-4 py-16 md:py-24 relative z-10">
+          {/* Dark Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-r from-[#0B132B]/95 via-[#0B132B]/80 to-transparent z-0" />
+          <div className="absolute inset-0 bg-gradient-to-tl from-[#0B132B] via-transparent to-transparent z-0 opacity-80" />
+          <div className="container mx-auto px-4 py-8 relative z-10">
             <div className="max-w-3xl mx-auto text-center">
               {/* <Badge className="mb-4 bg-primary/20 text-foreground border-primary">
                 <Sparkles className="h-3.5 w-3.5 mr-1" />
                 Discover Excellence
               </Badge> */}
-              <h1
-                className="text-4xl md:text-4xl font-bold tracking-tight mb-4"
+              {/* <h1
+                className="text-2xl md:text-2xl font-bold text-white/90 tracking-tight mb-4"
                 style={{ letterSpacing: "1px" }}
               >
-                find the services you are looking for
-              </h1>
-              <p className=" text-lg mb-8">
+                Find the services you are looking for
+              </h1> */}
+              {/* <p className=" text-lg mb-8">
                 Perfect Browse hundreds of trusted services across healthcare,
                 automotive, beauty, and more.
-              </p>
+              </p> */}
               {/* Search Bar */}
               <div className="relative max-w-xl mx-auto text-white rounded-full overflow-hidden">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5" />
@@ -169,12 +168,8 @@ export default function ServicesSearchPage() {
               </div>
             </div>
           </div>
-        </section>
-
-        {/* Filters & Results */}
-        <section className="container mx-auto px-4 py-12">
           {/* Sector Filters */}
-          <div className="flex flex-wrap gap-2 justify-center mb-10">
+          <div className="flex flex-wrap gap-2 justify-center mb-10 z-10">
             {sectors.map((cat) => {
               const Icon = cat.icon;
               return (
@@ -183,8 +178,8 @@ export default function ServicesSearchPage() {
                   variant={activeSector === cat.id ? "default" : "outline"}
                   className={`rounded-full gap-2 ${
                     activeSector === cat.id
-                      ? "bg-primary hover:bg-primary text-white"
-                      : "border-border  hover:bg-indigo-50"
+                      ? "bg-primary border-white hover:bg-primary text-white"
+                      : "border-border text-foreground hover:bg-indigo-50"
                   }`}
                   onClick={() => setActiveSector(cat.id)}
                 >
@@ -194,11 +189,14 @@ export default function ServicesSearchPage() {
               );
             })}
           </div>
+        </section>
 
+        {/* Filters & Results */}
+        <section className="container mx-auto px-4 py-12">
           {/* Results Count */}
           <div className="flex justify-between items-center mb-6 flex-wrap gap-3">
             <div>
-              <h2 className="text-2xl font-bold text-indigo-950">
+              <h2 className="text-2xl font-bold text-black/80">
                 Found {filteredServices.length} services
               </h2>
               {searchQuery && (
@@ -207,9 +205,9 @@ export default function ServicesSearchPage() {
                 </p>
               )}
             </div>
-            <Button variant="outline" size="sm" className="gap-2 border-border">
+            {/* <Button variant="outline" size="sm" className="gap-2 border-border">
               <Filter className="h-4 w-4" /> Filter
-            </Button>
+            </Button> */}
           </div>
 
           {/* Services Grid */}

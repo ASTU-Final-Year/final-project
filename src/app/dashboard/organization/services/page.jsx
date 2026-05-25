@@ -241,6 +241,7 @@ export default function ServicesPage() {
       description: service.description,
       isActive: service.isActive,
       calendarId: service.calendarId,
+      imageUrl: service.imageUrl,
       price: service.price,
     });
     setIsEditOpen(true);

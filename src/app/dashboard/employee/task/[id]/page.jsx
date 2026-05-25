@@ -1170,6 +1170,7 @@ export default function EmployeeTaskDetailsPage() {
         const {
           tasks: [taskData],
         } = await res.json();
+        if (!taskData) return;
         setTask(taskData);
         setAppointment(taskData.appointment);
         setClient(taskData.client);
@@ -1515,14 +1516,6 @@ export default function EmployeeTaskDetailsPage() {
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-xs text-muted-foreground">
-                    Assigned to
-                  </Label>
-                  <p className="text-sm">
-                    {task.employee.firstname} {task.employee.lastname}
-                  </p>
-                </div>
                 {previousTasks[0] && (
                   <div>
                     <Label className="text-xs text-muted-foreground">
@@ -1532,8 +1525,22 @@ export default function EmployeeTaskDetailsPage() {
                       {previousTasks[0].employee.firstname}{" "}
                       {previousTasks[0].employee.lastname}
                     </p>
+                    <span className="text-sm text-muted-foreground">
+                      {previousTasks[0].employee.email}
+                    </span>
                   </div>
                 )}
+                <div>
+                  <Label className="text-xs text-muted-foreground">
+                    Assigned to
+                  </Label>
+                  <p className="text-sm">
+                    {task.employee.firstname} {task.employee.lastname}
+                  </p>
+                  <span className="text-sm text-muted-foreground">
+                    {task.employee.email}
+                  </span>
+                </div>
                 <div>
                   <Label className="text-xs text-muted-foreground">
                     Created

@@ -53,7 +53,7 @@ import { CalendarDatePicker } from "../calendar-date-picker";
 import { redirect, useRouter } from "next/navigation";
 import { useSessionStore } from "@/store";
 import Link from "next/link";
-import { config } from "@/lib/config";
+import { fallbackServiceImage } from "@/lib/constants";
 
 const sectorIcons = {
   Beauty: Scissors,
@@ -67,7 +67,7 @@ const sectorIcons = {
   Government: Building2,
 };
 
-const fallbackImage = config.fallbackServiceImage;
+const fallbackImage = fallbackServiceImage;
 
 export default function PublicOrganizationService({ service }) {
   const router = useRouter();

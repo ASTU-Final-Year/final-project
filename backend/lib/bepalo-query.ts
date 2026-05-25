@@ -78,7 +78,7 @@ export const operatorMap: Record<
   lt,
   lte,
   like,
-  ilike,
+  ilike: ilike ?? like,
   notLike,
   notIlike,
   in: (col: Column, val: string) => inArray(col, val.split(",")), // handle comma-separated lists

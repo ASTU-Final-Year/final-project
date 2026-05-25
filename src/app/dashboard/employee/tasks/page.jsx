@@ -68,7 +68,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { config } from "@/lib/config";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { useRouter } from "next/navigation";
@@ -415,6 +414,12 @@ export default function TasksPage() {
   const router = useRouter();
   const [tasks, setTasks] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
+  const [stats, setStats] = useState({
+    total: 0,
+    pending: 0,
+    active: 0,
+    completed: 0,
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [employments, setEmployments] = useState([]);
@@ -487,34 +492,56 @@ export default function TasksPage() {
   const fetchTasks = useCallback(async () => {
     if (!userRole) return;
 
-    setIsLoading(true);
-    const offset = (page - 1) * limit;
-    const ilike = config.prodDatabase ? "ilike" : "like";
-
-    let filters = [];
-    if (statusFilter !== "all") {
-      filters.push(`~status=${statusFilter}`);
-    }
-    if (employeeFilter !== "all" && employeeFilter) {
-      filters.push(`~employeeId=${employeeFilter}`);
-    }
-    if (searchQuery) {
-      filters.push(
-        searchQuery
-          .split(/\s,/g)
-          .map(
-            (q) =>
-              `~client.firstname.${ilike}=%${q}%|~client.lastname.${ilike}=%${q}%|~service.name.${ilike}=%${q}%`,
-          )
-          .join("|"),
-      );
-    }
-
-    const filterString = filters.length > 0 ? `&${filters.join("&")}` : "";
-    const sortString = `&order=["${sortBy}.${sortOrder}"]`;
-    const url = `/query/v1/task?offset=${offset}&limit=${limit}${filterString}${sortString}`;
-
+    // setIsLoading(true);
     try {
+      const [
+        totalCountRes,
+        pendingCountRes,
+        activeCountRes,
+        completedCountRes,
+      ] = await Promise.all([
+        RequestHandler.Get(`/query/v1/task?mine&countOnly`),
+        RequestHandler.Get(`/query/v1/task?mine&countOnly&~status=pending`),
+        RequestHandler.Get(`/query/v1/task?mine&countOnly&~status=active`),
+        RequestHandler.Get(`/query/v1/task?mine&countOnly&~status=completed`),
+      ]);
+      (async () =>
+        setStats({
+          total: (totalCountRes.ok && (await totalCountRes.json()).count) || 0,
+          pending:
+            (pendingCountRes.ok && (await pendingCountRes.json()).count) || 0,
+          active:
+            (activeCountRes.ok && (await activeCountRes.json()).count) || 0,
+          completed:
+            (completedCountRes.ok && (await completedCountRes.json()).count) ||
+            0,
+        }))();
+
+      const offset = (page - 1) * limit;
+
+      let filters = [];
+      if (statusFilter !== "all") {
+        filters.push(`~status=${statusFilter}`);
+      }
+      // if (employeeFilter !== "all" && employeeFilter) {
+      //   filters.push(`~employeeId=${employeeFilter}`);
+      // }
+      if (searchQuery) {
+        filters.push(
+          searchQuery
+            .split(/\s,/g)
+            .map(
+              (q) =>
+                `~client.firstname.ilike=%${q}%|~client.lastname.ilike=%${q}%|~service.name.ilike=%${q}%`,
+            )
+            .join("|"),
+        );
+      }
+
+      const filterString = filters.length > 0 ? `&${filters.join("&")}` : "";
+      const sortString = `&order=["${sortBy}.${sortOrder}"]`;
+      const url = `/query/v1/task?mine&offset=${offset}&limit=${limit}${filterString}${sortString}`;
+
       const res = await RequestHandler.Get(encodeURI(url));
       if (res.ok) {
         const { tasks: taskList, count } = await res.json();
@@ -534,13 +561,13 @@ export default function TasksPage() {
     searchQuery,
     sortBy,
     sortOrder,
-    employeeFilter,
+    // employeeFilter,
     userRole,
   ]);
 
   useEffect(() => {
     if (userRole) {
-      fetchTasks();
+      (async () => fetchTasks())();
     }
   }, [fetchTasks, userRole]);
 
@@ -716,13 +743,13 @@ export default function TasksPage() {
     );
   }
 
-  const pendingCount = tasks.filter(
-    (t) => t.status === "pending" && !t.isDone,
-  ).length;
-  const activeCount = tasks.filter((t) => t.status === "active").length;
-  const completedCount = tasks.filter(
-    (t) => t.status === "completed" || t.isDone,
-  ).length;
+  // const pendingCount = tasks.filter(
+  //   (t) => t.status === "pending" && !t.isDone,
+  // ).length;
+  // const activeCount = tasks.filter((t) => t.status === "active").length;
+  // const completedCount = tasks.filter(
+  //   (t) => t.status === "completed" || t.isDone,
+  // ).length;
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -748,8 +775,8 @@ export default function TasksPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-foreground">Total Tasks</p>
-                <p className="text-2xl font-bold">{totalCount}</p>
+                <p className="text-sm text-foreground">All Tasks</p>
+                <p className="text-2xl font-bold">{stats.total}</p>
               </div>
               <Clock className="w-8 h-8 text-blue-500" />
             </div>
@@ -760,7 +787,7 @@ export default function TasksPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-foreground">Pending</p>
-                <p className="text-2xl font-bold">{pendingCount}</p>
+                <p className="text-2xl font-bold">{stats.pending}</p>
               </div>
               <Clock className="w-8 h-8 text-yellow-500" />
             </div>
@@ -770,8 +797,8 @@ export default function TasksPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-foreground">In Progress</p>
-                <p className="text-2xl font-bold">{activeCount}</p>
+                <p className="text-sm text-foreground">Active</p>
+                <p className="text-2xl font-bold">{stats.active}</p>
               </div>
               <PlayCircle className="w-8 h-8 text-blue-500" />
             </div>
@@ -782,7 +809,7 @@ export default function TasksPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-foreground">Completed</p>
-                <p className="text-2xl font-bold">{completedCount}</p>
+                <p className="text-2xl font-bold">{stats.completed}</p>
               </div>
               <CheckCircle className="w-8 h-8 text-green-500" />
             </div>
@@ -804,17 +831,16 @@ export default function TasksPage() {
             </div>
 
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[160px] bg-background">
+              <SelectTrigger className="w-[180px] bg-background">
                 <Filter className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="active">In Progress</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
                 <SelectItem value="completed">Completed</SelectItem>
                 <SelectItem value="blocked">Blocked</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
               </SelectContent>
             </Select>
 
@@ -837,7 +863,7 @@ export default function TasksPage() {
             )}
 
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-[160px] bg-background">
+              <SelectTrigger className="w-[200px] bg-background">
                 <ArrowUpDown className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
                 <SelectValue placeholder="Sort By" />
               </SelectTrigger>
@@ -886,7 +912,8 @@ export default function TasksPage() {
           <Table>
             <TableHeader className="bg-muted/30 uppercase">
               <TableRow>
-                <TableHead className="font-bold">Task / Service</TableHead>
+                <TableHead className="font-bold">Task</TableHead>
+                <TableHead className="font-bold">Service</TableHead>
                 <TableHead className="font-bold">Client</TableHead>
                 <TableHead className="font-bold">Status</TableHead>
                 <TableHead className="font-bold">Timeline</TableHead>
@@ -902,15 +929,19 @@ export default function TasksPage() {
                     }
                     className="cursor-pointer"
                   >
-                    <div className="font-semibold text-primary">
-                      {task.name || "Untitled Task"} / {task.service?.name}
+                    <div className="text-sm font-semibold text-primary">
+                      {task.name || "Untitled Task"}
                     </div>
-                    {task.service?.description && (
+                    <div className="text-sm text-muted-foreground truncate max-w-xs">
+                      {task.description}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {task.service?.name && (
                       <div className="text-sm text-foreground">
-                        {task.service.description}
+                        {task.service.name}
                       </div>
                     )}
-                    <div className="text-muted-foreground">{task.name}</div>
                   </TableCell>
                   <TableCell>
                     {task.client ? (
@@ -954,46 +985,39 @@ export default function TasksPage() {
                         <DropdownMenuItem onClick={() => openView(task)}>
                           <Eye className="mr-2 h-4 w-4" /> View Details
                         </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => {
-                            setSelectedTask(task);
-                            setIsRequirementsBuilderOpen(true);
-                          }}
-                        >
-                          <FileText className="mr-2 h-4 w-4" /> Set Requirements
-                        </DropdownMenuItem>
-                        {/* {hasPendingRequirements(task) && (
-                          <DropdownMenuItem
-                            onClick={() => openRequirements(task)}
-                          >
-                            <FileText className="mr-2 h-4 w-4" /> Complete
-                            Requirements
-                          </DropdownMenuItem>
-                        )} */}
-                        <DropdownMenuItem
-                          onClick={() => {
-                            setSelectedTaskForNext(task);
-                            setIsCreateNextTaskOpen(true);
-                          }}
-                        >
-                          <Plus className="mr-2 h-4 w-4" /> Create Next Task
-                        </DropdownMenuItem>
                         {!task.isDone && task.status !== "completed" && (
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setSelectedTaskForNext(task);
-                              setIsCreateNextTaskOpen(true);
-                            }}
-                          >
-                            <Plus className="mr-2 h-4 w-4" /> Create Follow-up
-                            Task
-                          </DropdownMenuItem>
-                        )}
-                        {!task.isDone && task.status !== "completed" && (
-                          <DropdownMenuItem onClick={() => openUpdate(task)}>
-                            <PlayCircle className="mr-2 h-4 w-4" /> Update
-                            Status
-                          </DropdownMenuItem>
+                          <>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setSelectedTask(task);
+                                setIsRequirementsBuilderOpen(true);
+                              }}
+                            >
+                              <FileText className="mr-2 h-4 w-4" /> Set
+                              Requirements
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setSelectedTaskForNext(task);
+                                setIsCreateNextTaskOpen(true);
+                              }}
+                            >
+                              <Plus className="mr-2 h-4 w-4" /> Create Next Task
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setSelectedTaskForNext(task);
+                                setIsCreateNextTaskOpen(true);
+                              }}
+                            >
+                              <Plus className="mr-2 h-4 w-4" /> Create Follow-up
+                              Task
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openUpdate(task)}>
+                              <PlayCircle className="mr-2 h-4 w-4" /> Update
+                              Status
+                            </DropdownMenuItem>
+                          </>
                         )}
                         {isAdmin && (
                           <DropdownMenuItem
@@ -1020,8 +1044,13 @@ export default function TasksPage() {
             >
               <CardHeader className="pb-3 border-b bg-muted/5">
                 <div className="flex items-start justify-between">
-                  <CardTitle className="font-bold text-primary truncate pr-4">
-                    {task.name || "Untitled Task"} / {task.service?.name}
+                  <CardTitle className="truncate pr-4">
+                    <p className="font-bold text-primary">
+                      {task.name || "Untitled Task"}
+                    </p>
+                    <p className="text-muted-foreground">
+                      {task.service?.name}
+                    </p>
                   </CardTitle>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -1063,11 +1092,7 @@ export default function TasksPage() {
                 </div>
               </CardHeader>
               <CardContent className="flex-grow space-y-3 pt-4">
-                {task.service?.description && (
-                  <p className="text-sm text-foreground">
-                    {task.service.description}
-                  </p>
-                )}
+                <p className="text-sm text-foreground">{task.description}</p>
                 <div className="pt-2 border-t">
                   <p className="text-xs font-medium text-foreground">Client:</p>
                   {task.client ? (
@@ -1170,48 +1195,53 @@ export default function TasksPage() {
       {/* Other Dialogs remain the same... */}
       {/* View Task Dialog */}
       <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md overflow-auto">
           <DialogHeader>
             <DialogTitle>Task Details</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Service</Label>
-              <p className="text-sm font-medium">
-                {selectedTask?.service?.name || "N/A"}
-              </p>
-            </div>
-            <div>
-              <Label>Description</Label>
-              <p className="text-sm">
-                {selectedTask?.service?.description || "N/A"}
-              </p>
-            </div>
-            <div>
-              <Label>Client</Label>
-              {selectedTask?.client && (
-                <p className="text-sm">
-                  {`${selectedTask.client.gender === "F" ? "Mrs." : "Mr."} ${selectedTask.client.firstname} ${selectedTask.client.lastname}`}
+          {selectedTask && (
+            <div className="space-y-4">
+              <div>
+                {/* <Label>Service</Label> */}
+                <p className="text-sm font-medium">
+                  {selectedTask.name || "Untitled Task"}
                 </p>
-              )}
-            </div>
-            <div>
-              <Label>Status</Label>
-              <div className="mt-1">
-                {selectedTask &&
-                  getStatusBadge(selectedTask.status, selectedTask.isDone)}
+                <p className="text-sm text-muted-foreground font-medium">
+                  {selectedTask.description}
+                </p>
               </div>
-            </div>
-            {selectedTask?.submissions &&
-              Object.keys(selectedTask.submissions).length > 0 && (
-                <div>
-                  <Label>Submissions</Label>
-                  <pre className="text-xs bg-muted p-2 rounded mt-1 overflow-auto max-h-40">
-                    {JSON.stringify(selectedTask.submissions, null, 2)}
-                  </pre>
+              <div>
+                <Label>Service</Label>
+                <p className="text-sm text-muted-foreground">
+                  {selectedTask?.service?.description || "N/A"}
+                </p>
+              </div>
+              <div>
+                <Label>Client</Label>
+                {selectedTask?.client && (
+                  <p className="text-sm text-muted-foreground">
+                    {`${selectedTask.client.gender === "F" ? "Mrs." : "Mr."} ${selectedTask.client.firstname} ${selectedTask.client.lastname}`}
+                  </p>
+                )}
+              </div>
+              <div>
+                <Label>Status</Label>
+                <div className="mt-1">
+                  {selectedTask &&
+                    getStatusBadge(selectedTask.status, selectedTask.isDone)}
                 </div>
-              )}
-          </div>
+              </div>
+              {selectedTask?.submissions &&
+                Object.keys(selectedTask.submissions).length > 0 && (
+                  <div>
+                    <Label>Submissions</Label>
+                    <pre className="text-xs bg-muted p-2 rounded mt-1 overflow-auto max-h-40 max-w-sm">
+                      {JSON.stringify(selectedTask.submissions, null, 2)}
+                    </pre>
+                  </div>
+                )}
+            </div>
+          )}
           <DialogFooter>
             <Button onClick={() => setIsViewOpen(false)}>Close</Button>
           </DialogFooter>
@@ -1237,7 +1267,7 @@ export default function TasksPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="active">In Progress</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="completed">Completed</SelectItem>
                   <SelectItem value="blocked">Blocked</SelectItem>
                 </SelectContent>
@@ -1977,7 +2007,7 @@ const CreateNextTaskDialog = ({
           }
         };
         flattenObject(currentTask.submissions);
-        setAvailableSubmissions(flattened);
+        (async () => setAvailableSubmissions(flattened))();
       }
 
       // Pre-fill task name based on current task

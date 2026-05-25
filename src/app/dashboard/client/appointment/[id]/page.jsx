@@ -358,7 +358,10 @@ export default function AppointmentDetailsPage() {
                   !isCompleted && hasRequirements && !task.submissions;
 
                 return (
-                  <div key={task.id} className="flex gap-3 items-start">
+                  <div
+                    key={task.id}
+                    className="flex gap-2 items-start rounded hover:bg-primary/10 p-1"
+                  >
                     <div className="mt-0.5">
                       {isCompleted ? (
                         <CheckCircle className="h-5 w-5 text-green-600" />
@@ -368,17 +371,22 @@ export default function AppointmentDetailsPage() {
                         <Circle className="h-5 w-5 text-gray-300" />
                       )}
                     </div>
-                    <div className="flex-1">
+                    <div className="flex-1  grid grid-cols-4 gap-2">
                       <p
                         className={`font-medium ${isCompleted ? "text-gray-500 line-through" : "text-gray-900"}`}
                       >
                         {task.name}
                       </p>
-                      {task.employee?.user && (
-                        <p className="text-xs text-gray-500">
-                          Assigned to: {task.employee.user.firstname}{" "}
-                          {task.employee.user.lastname}
-                        </p>
+                      {task.employee && (
+                        <>
+                          <span className="text-right">
+                            {task.employment.jobTitle}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {task.employee.firstname} {task.employee.lastname}
+                          </span>
+                          <span>{task.employee.email}</span>
+                        </>
                       )}
                       {needsAction && (
                         <Button

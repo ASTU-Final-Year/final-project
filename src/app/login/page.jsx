@@ -5,7 +5,7 @@ import { Loader2 } from "lucide-react";
 export default function LoginPage({ searchParams }) {
   return (
     <div
-      className="bg-cover min-h-screen bg-accent flex flex-col py-16 px-4"
+      className="min-h-screen  flex flex-col py-16 px-4 bg-cover bg-center bg-fixed"
       style={{
         backgroundImage:
           'url("/images/pexels-lovetosmile-36200692-blurred-dim.jpg")',

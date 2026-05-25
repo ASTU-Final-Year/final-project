@@ -1,4 +1,5 @@
-// backend/lib/task-scheduler.ts
+// backend/lib/task-scheduler.ts - Complete fixed version
+
 import { db } from "~/db";
 import { tables } from "~/db/schema";
 import { and, eq, sql } from "drizzle-orm";
@@ -29,6 +30,7 @@ export async function processPendingAppointments() {
         service: {
           id: tables.organizationService.id,
           name: tables.organizationService.name,
+          description: tables.organizationService.description,
           organizationId: tables.organizationService.organizationId,
         },
         organization: {
@@ -71,14 +73,9 @@ export async function processPendingAppointments() {
         // Get the first employee assigned to this service
         const [firstEmployee] = await db
           .select({
-            id: tables.serviceFirstEmployee.employeeId,
-            employee: tables.employee,
+            employeeId: tables.serviceFirstEmployee.employeeId,
           })
           .from(tables.serviceFirstEmployee)
-          .innerJoin(
-            tables.employee,
-            eq(tables.serviceFirstEmployee.employeeId, tables.employee.id),
-          )
           .where(eq(tables.serviceFirstEmployee.serviceId, apt.serviceId))
           .limit(1);
 
@@ -92,16 +89,61 @@ export async function processPendingAppointments() {
           continue;
         }
 
+        // Verify the employee exists and is active
+        const [employeeData] = await db
+          .select({
+            id: tables.employee.id,
+            userId: tables.employee.userId,
+            isActive: tables.employee.isActive,
+            organizationId: tables.employee.organizationId,
+          })
+          .from(tables.employee)
+          .where(eq(tables.employee.id, firstEmployee.employeeId));
+
+        if (!employeeData || !employeeData.isActive) {
+          results.skipped++;
+          results.details.push({
+            appointmentId: apt.id,
+            status: "skipped",
+            reason: "Employee not found or inactive",
+          });
+          continue;
+        }
+
+        // Verify employee belongs to the same organization
+        if (employeeData.organizationId !== apt.organizationId) {
+          results.skipped++;
+          results.details.push({
+            appointmentId: apt.id,
+            status: "skipped",
+            reason: "Employee does not belong to the correct organization",
+          });
+          continue;
+        }
+
         // Create initial task for the appointment
+        const taskName = `Start ${apt.service.name} for ${apt.client.firstname} ${apt.client.lastname}`;
+        const taskDescription = `Appointment scheduled for ${new Date(apt.startTime).toLocaleString()}. Service: ${apt.service.name}`;
+
+        // Use appointment's start and end times for the task
+        const startTime = apt.startTime;
+        const endTime = apt.endTime;
+        const now = new Date();
+
         const [newTask] = await db
           .insert(tables.task)
           .values({
-            name: `Complete ${apt.service.name} for ${apt.client.firstname} ${apt.client.lastname}`,
+            name: taskName,
+            description: taskDescription,
             status: "pending",
+            isDone: false,
+            startTime: startTime, // Add this - use appointment start time
+            endTime: endTime, // Add this - use appointment end time
             appointmentId: apt.id,
-            employeeId: firstEmployee.id,
+            employeeId: firstEmployee.employeeId,
             organizationId: apt.organizationId,
-            createdBy: apt.clientId,
+            createdAt: now,
+            updatedAt: now,
           })
           .returning();
 
@@ -113,8 +155,8 @@ export async function processPendingAppointments() {
         });
 
         // Notify the employee about the new task
-        if (firstEmployee.employee?.userId) {
-          await NotificationService.create(firstEmployee.employee.userId, {
+        if (employeeData.userId) {
+          NotificationService.create(employeeData.userId, {
             type: "task_assigned",
             title: "New Task Assigned",
             message: `You have been assigned to complete "${apt.service.name}" for ${apt.client.firstname} ${apt.client.lastname}.`,
@@ -125,21 +167,8 @@ export async function processPendingAppointments() {
               serviceName: apt.service.name,
             },
             actionUrl: `/dashboard/employee/task/${newTask.id}`,
-          });
+          }).catch((err) => console.error("Notification failed:", err));
         }
-
-        // Notify the client that their appointment is being processed
-        await NotificationService.create(apt.clientId, {
-          type: "appointment_created",
-          title: "Appointment Confirmed",
-          message: `Your appointment for "${apt.service.name}" on ${new Date(apt.startTime).toLocaleDateString()} has been confirmed and is being processed.`,
-          priority: "medium",
-          metadata: {
-            appointmentId: apt.id,
-            serviceName: apt.service.name,
-          },
-          actionUrl: `/dashboard/client/appointment/${apt.id}`,
-        });
       } catch (error) {
         results.errors++;
         results.details.push({
@@ -211,20 +240,10 @@ export async function reassignOrphanedTasks() {
         // Find a new employee for this service
         const [newEmployee] = await db
           .select({
-            id: tables.serviceFirstEmployee.employeeId,
-            employee: tables.employee,
+            employeeId: tables.serviceFirstEmployee.employeeId,
           })
           .from(tables.serviceFirstEmployee)
-          .innerJoin(
-            tables.employee,
-            eq(tables.serviceFirstEmployee.employeeId, tables.employee.id),
-          )
-          .where(
-            and(
-              eq(tables.serviceFirstEmployee.serviceId, task.serviceId),
-              eq(tables.employee.isActive, true),
-            ),
-          )
+          .where(eq(tables.serviceFirstEmployee.serviceId, task.serviceId))
           .limit(1);
 
         if (!newEmployee) {
@@ -237,11 +256,31 @@ export async function reassignOrphanedTasks() {
           continue;
         }
 
+        // Verify the new employee is active
+        const [employeeData] = await db
+          .select({
+            id: tables.employee.id,
+            userId: tables.employee.userId,
+            isActive: tables.employee.isActive,
+          })
+          .from(tables.employee)
+          .where(eq(tables.employee.id, newEmployee.employeeId));
+
+        if (!employeeData || !employeeData.isActive) {
+          results.failed++;
+          results.details.push({
+            taskId: task.id,
+            status: "failed",
+            reason: "New employee is not active",
+          });
+          continue;
+        }
+
         // Reassign the task
         await db
           .update(tables.task)
           .set({
-            employeeId: newEmployee.id,
+            employeeId: newEmployee.employeeId,
             updatedAt: new Date(),
           })
           .where(eq(tables.task.id, task.id));
@@ -249,13 +288,13 @@ export async function reassignOrphanedTasks() {
         results.reassigned++;
         results.details.push({
           taskId: task.id,
-          newEmployeeId: newEmployee.id,
+          newEmployeeId: newEmployee.employeeId,
           status: "reassigned",
         });
 
         // Notify the new employee
-        if (newEmployee.employee?.userId) {
-          await NotificationService.create(newEmployee.employee.userId, {
+        if (employeeData.userId) {
+          NotificationService.create(employeeData.userId, {
             type: "task_assigned",
             title: "Task Reassigned",
             message: `A task has been reassigned to you: "${task.name}".`,
@@ -265,7 +304,7 @@ export async function reassignOrphanedTasks() {
               previousEmployeeId: task.employeeId,
             },
             actionUrl: `/dashboard/employee/task/${task.id}`,
-          });
+          }).catch((err) => console.error("Notification failed:", err));
         }
       } catch (error) {
         results.failed++;

@@ -118,6 +118,9 @@ export default function AppointmentsPage() {
       limit: limit.toFixed(),
       order: `["startTime.asc"]`,
     });
+    if (statusFilter && statusFilter !== "all") {
+      params.set("~status", statusFilter);
+    }
 
     const [dataRes] = await Promise.all([
       // RequestHandler.Get(`/query/v1/appointment?countOnly`),
@@ -129,12 +132,9 @@ export default function AppointmentsPage() {
       (async () => setTotalCount(count))();
       let results = appointments || [];
 
-      console.log(results);
-      if (statusFilter !== "all") {
-        results = results.filter(
-          (s) => s.isActive === (statusFilter === "active"),
-        );
-      }
+      // if (statusFilter !== "all") {
+      //   results = results.filter((s) => s.status === statusFilter);
+      // }
       if (searchQuery) {
         results = results.filter(
           (s) =>
@@ -200,14 +200,17 @@ export default function AppointmentsPage() {
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[160px] bg-background">
+              <SelectTrigger className="w-[180px] bg-background">
                 <Filter className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
+                <SelectItem value="scheduled">Scheduled</SelectItem>
+                <SelectItem value="in-progress">In Progress</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="canceled">Canceled</SelectItem>
+                <SelectItem value="archived">Archived</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -260,7 +263,9 @@ export default function AppointmentsPage() {
                     />
                   </TableCell>
                   <TableCell>
-                    <Link href={`/dashboard/client/appointment/${appointment.id}`}>
+                    <Link
+                      href={`/dashboard/client/appointment/${appointment.id}`}
+                    >
                       <div className="font-semibold text-primary">
                         {appointment.service.name}
                       </div>

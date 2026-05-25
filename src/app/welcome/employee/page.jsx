@@ -178,7 +178,7 @@ function WelcomeContent() {
 export default function EmployeeWelcomePage() {
   return (
     <div
-      className="min-h-screen bg-cover flex justify-center items-start py-12 px-4"
+      className="min-h-screen flex justify-center items-start py-12 px-4 bg-cover bg-center bg-fixed"
       style={{
         backgroundImage:
           'url("/images/pexels-lovetosmile-36200692-blurred-dim.jpg")',

@@ -281,7 +281,7 @@ export default function CalendarGrid({
                   dayObj.isCurrentMonth ? "bg-primary" : "bg-muted/30",
                   isAvailable
                     ? "border border-primary/50 hover:ring-1 hover:ring-primary/70 shadow-sm rounded"
-                    : "bg-black/5 border border-black/10 rounded hover:bg-accent/20",
+                    : "bg-black/5 border border-black/10 rounded hover:/20",
                 )}
               >
                 <div className="flex justify-between items-start">

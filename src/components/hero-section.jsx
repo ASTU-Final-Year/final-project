@@ -25,29 +25,6 @@ export default function HeroSection({ className, ...props }) {
       }}
       {...props}
     >
-      {/* Dynamic Floating Animations (Self-contained) */}
-      <style
-        dangerouslySetInnerHTML={{
-          __html: `
-        @keyframes float {
-          0%, 100% { transform: rotateZ(7deg) translateY(0px); }
-          50% { transform: rotateZ(7deg) translateY(-15px); }
-        }
-        @keyframes float-delayed {
-          0%, 100% { transform: rotateZ(7deg) translateY(0px); }
-          50% { transform: rotateZ(7deg) translateY(-12px); }
-        }
-        @keyframes float-slow {
-          0%, 100% { transform: rotateZ(7deg) translateY(0px); }
-          50% { transform: rotateZ(7deg) translateY(-8px); }
-        }
-        .animate-float { animation: float 6s ease-in-out infinite; }
-        .animate-float-delayed { animation: float-delayed 7s ease-in-out infinite 2s; }
-        .animate-float-slow { animation: float-slow 8s ease-in-out infinite 1s; }
-      `,
-        }}
-      />
-
       {/* Dark Gradient Overlay */}
       <div className="absolute inset-0 bg-gradient-to-r from-[#0B132B]/95 via-[#0B132B]/80 to-transparent z-0" />
       <div className="absolute inset-0 bg-gradient-to-tl from-[#0B132B] via-transparent to-transparent z-0 opacity-80" />

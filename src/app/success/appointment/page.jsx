@@ -22,7 +22,7 @@ function BookingSuccessContent() {
 
   return (
     <div
-      className="w-full h-[100vh] bg-cover"
+      className="w-full h-[100vh] bg-cover bg-center bg-fixed"
       style={{
         backgroundImage:
           'url("/images/pexels-lovetosmile-36200692-blurred-dim.jpg")',

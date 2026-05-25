@@ -181,6 +181,7 @@ export default function ServiceFirstEmployeesPage() {
       limit: limit.toFixed(),
       iemployee: 1,
       iservice: 1,
+      icalendar: 1,
     });
 
     const [countRes, dataRes] = await Promise.all([
@@ -359,15 +360,15 @@ export default function ServiceFirstEmployeesPage() {
                 <TableHead className="font-bold">Fullname</TableHead>
                 <TableHead className="font-bold">Gender</TableHead>
                 <TableHead className="font-bold">Job</TableHead>
-                {/* <TableHead className="font-bold text-center">
+                <TableHead className="font-bold text-center">
                   Calendar
-                </TableHead> */}
+                </TableHead>
                 <TableHead className="font-bold text-center">Status</TableHead>
                 <TableHead className="text-right font-bold">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {firstEmployees?.map(({ employee, user }) => (
+              {firstEmployees?.map(({ employee, user, calendar }) => (
                 <TableRow key={employee.id}>
                   <TableCell className="w-8">
                     <Checkbox
@@ -415,11 +416,14 @@ export default function ServiceFirstEmployeesPage() {
                       <div>{employee.jobDescription}</div>
                     </div>
                   </TableCell>
-                  {/* <TableCell>
+                  <TableCell>
                     <div className="text-xs text-muted-foreground truncate max-w-[400px] overflow-auto">
-                      {employee.calendar?.name}
+                      <h2 className="font-bold">{calendar?.name}</h2>
+                      <p className="text-muted-foreground">
+                        {calendar?.description}
+                      </p>
                     </div>
-                  </TableCell> */}
+                  </TableCell>
                   <TableCell className="text-center">
                     <AcriveBadge isActive={employee.isActive} />
                   </TableCell>

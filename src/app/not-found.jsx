@@ -28,7 +28,7 @@ import { ArrowLeft, Home } from "lucide-react";
 export default function GlobalNotFound() {
   return (
     <main
-      className="bg-cover"
+      className="bg-cover bg-center bg-fixed"
       style={{
         backgroundImage:
           'url("/images/pexels-lovetosmile-36200692-blurred-dim.jpg")',

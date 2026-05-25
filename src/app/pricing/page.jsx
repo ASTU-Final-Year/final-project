@@ -458,7 +458,7 @@ export default function PricingPlansPage() {
     <div>
       <SiteHeader />
       <div
-        className="min-h-screen py-16 px-4 md:px-8 flex flex-col items-center bg-accent bg-cover"
+        className="min-h-screen py-16 px-4 md:px-8 flex flex-col items-center bg-cover bg-center bg-fixed"
         style={{
           backgroundImage:
             'url("/images/pexels-lovetosmile-36200692-blurred-dim.jpg")',

@@ -4,7 +4,7 @@ import RegisterOrganizationContent from "./register-organization-content";
 export default function RegisterOrganizationPage({ searchParams }) {
   return (
     <div
-      className="min-h-screen bg-accent flex flex-col py-16 px-4 bg-cover"
+      className="min-h-screen  flex flex-col py-16 px-4 bg-cover bg-center bg-fixed"
       style={{
         backgroundImage:
           'url("/images/pexels-lovetosmile-36200692-blurred-dim.jpg")',

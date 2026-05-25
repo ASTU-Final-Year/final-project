@@ -277,7 +277,7 @@ export default function DashboardOverview() {
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       {/* Organization Profile Header */}
-      <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-transparent">
+      <Card className="border-primary/20">
         <CardContent className="p-6">
           <div className="flex items-start justify-between flex-wrap gap-4">
             <div className="flex items-start gap-6">

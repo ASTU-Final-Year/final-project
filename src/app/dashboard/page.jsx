@@ -44,8 +44,8 @@ export default function PortalDashboard() {
     return redirect("/dashboard/client", RedirectType.replace);
   }
   return (
-    <div className="min-h-dvh flex flex-col p-4 bg-accent">
-      <div className="bg-background border rounded">
+    <div className="min-h-dvh flex flex-col p-4">
+      <div className="border rounded">
         <h2 className="text-lg mb-2 px-4 pt-2">Session</h2>
         <hr />
         <pre className="p-4 font-mono textsm px-4">

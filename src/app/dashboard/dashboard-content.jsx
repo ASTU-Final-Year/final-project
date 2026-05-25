@@ -65,8 +65,8 @@ export function DashboardContent({
   if (!isLoggedIn) return null;
 
   return (
-    <SidebarInset>
-      <header className="flex h-16 justify-between shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 border-b px-4">
+    <SidebarInset className=" bg-transparent">
+      <header className="flex h-16 justify-between shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 border-b px-4 bg-background">
         <div className="flex items-center gap-2">
           <SidebarTrigger className="-ml-1" />
           <Button variant="default" onClick={() => router.back()}>
@@ -112,13 +112,13 @@ export function DashboardContent({
                       : "#"
               }
             >
-              <Avatar className="w-12 h-12 border-4 rounded-[12px] border-border/40 ring-1 ring-primary/10 shadow-lg">
+              <Avatar className="w-12 h-12 border-4 rounded-full border-border/40 ring-1 ring-primary/10 shadow-lg">
                 <AvatarImage
-                  className="rounded"
+                  className="rounded-full"
                   src={`/api/v1/user/profile_picture?${profileUpdateHash}`}
                   alt={`${session?.user?.firstname || ""} ${session?.user?.lastname || ""}`}
                 />
-                <AvatarFallback className="bg-indigo-500 text-white text-2xl">
+                <AvatarFallback className="bg-indigo-500 text-white text-2xl rounded-full">
                   {session?.user.firstname?.[0] || ""}
                   {session?.user.lastname?.[0] || ""}
                 </AvatarFallback>
@@ -129,7 +129,7 @@ export function DashboardContent({
       </header>
 
       {/* Main Content Area */}
-      <div className="flex flex-1 flex-col gap-4 p-4 pt-0 bg-accent">
+      <div className="flex flex-1 flex-col gap-4 p-4 pt-0 bg-transparent">
         <main className="py-6 h-full">{children}</main>
       </div>
     </SidebarInset>

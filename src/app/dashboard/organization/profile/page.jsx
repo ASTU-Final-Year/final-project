@@ -302,13 +302,13 @@ export default function OrganizationProfilePage() {
           <div className="flex flex-col md:flex-row gap-6 items-start md:items-end justify-between">
             <div className="flex gap-6 items-end">
               <div className="relative group">
-                <Avatar className="w-28 h-28 border-4 shadow-lg rounded-[12px] border-border/40 ring-1 ring-primary/10 overflow-clip">
+                <Avatar className="w-28 h-28 border-4 shadow-lg rounded-full border-border/40 ring-1 ring-primary/10 overflow-clip">
                   <AvatarImage
                     className="rounded"
                     src={`/api/v1/user/profile_picture?${profileUpdateHash}`}
                     alt={organization.name}
                   />
-                  <AvatarFallback className="bg-primary text-primary-foreground text-2xl rounded">
+                  <AvatarFallback className="bg-primary text-primary-foreground text-2xl rounded-full">
                     {orgInitials}
                   </AvatarFallback>
                 </Avatar>

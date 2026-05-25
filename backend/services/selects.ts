@@ -220,17 +220,20 @@ export const fullOrganizationServiceFirstEmployeeSelect = {
   service: pureOrganizationServiceSelect,
   employee: pureEmployeeSelect,
   user: pureUserSelect,
+  calendar: pureOrganizationCalendarSelect,
 };
 
 export const organizationServiceFirstEmployeesWithServiceSelect = {
   ...pureOrganizationServiceFirstEmployeeSelect,
   service: pureOrganizationServiceSelect,
+  calendar: pureOrganizationCalendarSelect,
 };
 
 export const organizationServiceFirstEmployeesWithFirstEmployeeSelect = {
   ...pureOrganizationServiceFirstEmployeeSelect,
   employee: pureEmployeeSelect,
   user: pureUserSelect,
+  calendar: pureOrganizationCalendarSelect,
 };
 
 export const taskWithServiceSelect = {

@@ -21,7 +21,7 @@ export default function PublicOrganization({ organization, services }) {
   const rating = organization.rating || 0;
 
   return (
-    <div className="min-h-screen bg-accent text-foreground font-sans selection:bg-primary/20 selection:text-primary relative flex flex-col">
+    <div className="min-h-screen  text-foreground font-sans selection:bg-primary/20 selection:text-primary relative flex flex-col">
       {/* Hero Banner Area */}
       <div
         className="h-60 w-full bg-muted/30 border-b relative z-0 flex items-center justify-center overflow-hidden"

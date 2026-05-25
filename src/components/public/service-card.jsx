@@ -3,10 +3,10 @@ import { Badge } from "../ui/badge";
 import { Card, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
 import Link from "next/link";
-import { config } from "@/lib/config";
+import { fallbackServiceImage } from "@/lib/constants";
 
 // Fallback image for services
-const fallbackImage = config.fallbackServiceImage;
+const fallbackImage = fallbackServiceImage;
 
 // Individual Service Card Component
 export default function ServiceCard({ service }) {
@@ -35,15 +35,17 @@ export default function ServiceCard({ service }) {
           alt={name}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
-        {price && (
-          <Badge className="absolute top-3 right-3 p-2 py-3 rounded-full bg-white/90 border border-2 border-primary/50 backdrop-blur-sm text-primary text-lg">
-            {price} Birr
-          </Badge>
-        )}
       </div>
 
       <CardContent className="px-5 pb-4">
-        {sector && <Badge variant="outline">{sector}</Badge>}
+        <div className="flex gap-2 justify-between">
+          {sector && <Badge variant="outline">{sector}</Badge>}
+          {price && (
+            <Badge className="p-2 py-3 bg-transparent shadow-none text-primary text-lg">
+              {price === 0 ? "Free" : `${price} Birr`}
+            </Badge>
+          )}
+        </div>
         <h3 className="text-xl font-semibold mb-2 line-clamp-1">{name}</h3>
         <p className="text-muted-foreground text-sm mb-3 line-clamp-2">
           {description}

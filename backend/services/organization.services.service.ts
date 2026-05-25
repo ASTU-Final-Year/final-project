@@ -558,6 +558,10 @@ export default class OrganizationServicesService {
       )
       .leftJoin(employees, eq(employees.id, serviceFirstEmployees.employeeId))
       .leftJoin(users, eq(users.id, employees.userId))
+      .leftJoin(
+        organizationCalendars,
+        eq(organizationCalendars.id, employees.calendarId),
+      )
       .where(eq(serviceFirstEmployees.serviceId, serviceId))
       .limit(limit)
       .offset(offset)) as unknown as OrganizationServiceFirstEmployee[];
@@ -582,6 +586,10 @@ export default class OrganizationServicesService {
         eq(organizationServices.id, serviceFirstEmployees.serviceId),
       )
       .leftJoin(users, eq(users.id, employees.userId))
+      .leftJoin(
+        organizationCalendars,
+        eq(organizationCalendars.id, employees.calendarId),
+      )
       .where(eq(serviceFirstEmployees.serviceId, serviceId))
       .limit(limit)
       .offset(
@@ -605,6 +613,10 @@ export default class OrganizationServicesService {
       .from(serviceFirstEmployees)
       .leftJoin(employees, eq(employees.id, serviceFirstEmployees.employeeId))
       .leftJoin(users, eq(users.id, serviceFirstEmployees.employeeId))
+      .leftJoin(
+        organizationCalendars,
+        eq(organizationCalendars.id, employees.calendarId),
+      )
       .where(eq(serviceFirstEmployees.serviceId, serviceId))
       .limit(limit)
       .offset(
@@ -626,6 +638,10 @@ export default class OrganizationServicesService {
     const servicesResult = (await db
       .select(pureOrganizationServiceFirstEmployeeSelect)
       .from(serviceFirstEmployees)
+      .leftJoin(
+        organizationCalendars,
+        eq(organizationCalendars.id, employees.calendarId),
+      )
       .where(eq(serviceFirstEmployees.serviceId, serviceId))
       .limit(limit)
       .offset(offset)) as OrganizationServiceFirstEmployeePure[];
