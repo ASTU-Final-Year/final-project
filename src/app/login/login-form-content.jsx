@@ -128,13 +128,12 @@ export default function LoginFormContent({ searchParams }) {
                   <Label htmlFor="password" className="text-sm font-medium">
                     Password *
                   </Label>
-                  <Button
-                    type="button"
-                    variant="link"
-                    className="p-0 h-auto text-[11px] font-semibold text-primary hover:underline"
+                  <Link
+                    href="/forgot-password"
+                    className="text-[11px] font-semibold text-primary hover:underline"
                   >
                     Forgot password?
-                  </Button>
+                  </Link>
                 </div>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

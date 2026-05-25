@@ -27,6 +27,7 @@ import {
 import { cn } from "@/lib/utils";
 import Auth from "@/lib/auth";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { COUNTRY_CODES, formatCountryLabel } from "@/lib/country-codes";
 
 export default function RegisterUserContent() {
   const router = useRouter();
@@ -35,13 +36,16 @@ export default function RegisterUserContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
 
+  const [phonePrefix, setPhonePrefix] = useState("+251");
+  const [phoneBody, setPhoneBody] = useState("");
+
   const [formData, setFormData] = useState({
     firstname: "",
     lastname: "",
     gender: "",
     email: "",
     role: "client",
-    phone: "",
+    phone: "+251",
     password: "",
   });
 
@@ -50,6 +54,19 @@ export default function RegisterUserContent() {
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: null }));
+  };
+
+  const handlePhoneBodyChange = (body, prefix = phonePrefix) => {
+    const digits = body.replace(/\D/g, "");
+    setPhoneBody(digits);
+    const fullPhone = digits ? `${prefix}${digits}` : prefix;
+    setFormData((prev) => ({ ...prev, phone: fullPhone }));
+    if (errors.phone) setErrors((prev) => ({ ...prev, phone: null }));
+  };
+
+  const handlePhonePrefixChange = (prefix) => {
+    setPhonePrefix(prefix);
+    handlePhoneBodyChange(phoneBody, prefix);
   };
 
   const validateForm = () => {
@@ -302,19 +319,51 @@ export default function RegisterUserContent() {
                   <Label className="text-slate-700 font-medium">
                     Phone Number <span className="text-red-500">*</span>
                   </Label>
-                  <div className="relative">
-                    <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <Input
-                      className={cn(
-                        "pl-11 h-12",
-                        errors.phone &&
-                        "border-red-500 focus-visible:ring-red-500",
-                      )}
-                      placeholder="+251 900000000"
-                      value={formData.phone}
-                      onChange={(e) => handleChange("phone", e.target.value)}
-                    />
+                  <div className="flex gap-2">
+                    <Select value={phonePrefix} onValueChange={handlePhonePrefixChange}>
+                      <SelectTrigger
+                        className={cn(
+                          "h-12 min-w-[240px] max-w-[280px] shrink-0 font-medium",
+                          errors.phone && "border-red-500",
+                        )}
+                      >
+                        <SelectValue>
+                          {formatCountryLabel(
+                            COUNTRY_CODES.find((c) => c.code === phonePrefix) ??
+                              COUNTRY_CODES.find((c) => c.country === "Ethiopia"),
+                          )}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent className="max-h-72">
+                        {COUNTRY_CODES.map((c) => (
+                          <SelectItem
+                            key={`${c.country}-${c.code}`}
+                            value={c.code}
+                            className="font-medium"
+                          >
+                            {formatCountryLabel(c)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <div className="relative flex-1">
+                      <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Input
+                        className={cn(
+                          "pl-11 h-12",
+                          errors.phone &&
+                            "border-red-500 focus-visible:ring-red-500",
+                        )}
+                        placeholder="900000000"
+                        inputMode="numeric"
+                        value={phoneBody}
+                        onChange={(e) => handlePhoneBodyChange(e.target.value)}
+                      />
+                    </div>
                   </div>
+                  <p className="text-xs text-slate-500">
+                    Full number: {formData.phone || phonePrefix}
+                  </p>
                   {errors.phone && (
                     <p className="text-xs font-medium text-red-500 mt-1">
                       {errors.phone}
