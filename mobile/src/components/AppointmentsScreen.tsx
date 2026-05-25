@@ -1,16 +1,44 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { useUIStore, useAppointmentStore, useBookingStore } from '../store';
 import { ChevronRight, Clock, MapPin, Receipt, RefreshCw } from 'lucide-react-native';
 import { tw } from '../lib/native-utils';
 import { AppointmentStatus } from '../types';
-import { BUSINESSES } from '../data/mockData';
+import { BUSINESSES, getStepsByCategory } from '../data/mockData';
+import { apiClient } from '../lib/apiClient';
 
 export default function AppointmentsScreen() {
   const { setActiveScreen, setViewingAppointment, appointmentTab, setAppointmentTab } = useUIStore();
-  const { appointments, cancelAppointment } = useAppointmentStore();
+  const { appointments, cancelAppointment, addAppointment } = useAppointmentStore();
   const { setCategory, setBusiness, setService } = useBookingStore();
+  
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      try {
+        const response = await apiClient('/query/v1/appointment?mine');
+        if (response.ok) {
+          const data = await response.json();
+          const fetchedAppointments = data.appointments || data.appointment || [];
+          useAppointmentStore.setState({ appointments: fetchedAppointments.map((a: any) => ({
+            id: a.id,
+            businessId: a.organizationId,
+            businessName: a.organization?.name || 'Business',
+            serviceId: a.serviceId,
+            serviceName: a.service?.name || 'Service',
+            date: a.startTime ? a.startTime.split('T')[0] : '2024-05-12',
+            time: a.startTime ? new Date(a.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '12:00 PM',
+            status: a.status || 'Booked',
+            price: a.service?.price || 0,
+            progressSteps: []
+          }))});
+        }
+      } catch (e) {
+        console.error('Failed to fetch appointments', e);
+      }
+    };
+    fetchAppointments();
+  }, [appointmentTab]);
   
   const filteredAppointments = appointments.filter(app => {
     if (appointmentTab === 'Upcoming') {

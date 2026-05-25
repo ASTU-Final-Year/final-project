@@ -1,10 +1,11 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { useUIStore, useBookingStore, useAppointmentStore } from '../store';
 import { ArrowLeft, Star, MapPin, ChevronRight, Clock, Check } from 'lucide-react-native';
 import { CATEGORIES, BUSINESSES, getStepsByCategory } from '../data/mockData';
 import { tw } from '../lib/native-utils';
+import { apiClient } from '../lib/apiClient';
 
 export default function BookingScreen() {
   const setActiveScreen = useUIStore((state) => state.setActiveScreen);
@@ -13,26 +14,123 @@ export default function BookingScreen() {
   
   const { 
     selectedCategory, selectedBusiness, selectedService, selectedDate, selectedTime,
-    setCategory, setBusiness, setService, setDate, setTime, reset
+    setCategory, setBusiness, setService, setDate, setTime, reset,
+    businessesData, setBusinessesData
   } = useBookingStore();
 
-  const handleConfirm = () => {
+  useEffect(() => {
+    const fetchBusinesses = async () => {
+      try {
+        const res = await apiClient('/query/v1/organizationService?guest&limit=50&~isActive=true');
+        if (res.ok) {
+          const { organizationServices } = await res.json();
+          const orgMap = new Map();
+          
+          const mapSectorToCategory = (sector: string) => {
+            if (!sector) return 'home';
+            const s = sector.toLowerCase();
+            if (s.includes('auto')) return 'auto';
+            if (s.includes('health') || s.includes('medical')) return 'health';
+            if (s.includes('gov')) return 'gov';
+            if (s.includes('beauty') || s.includes('salon')) return 'beauty';
+            if (s.includes('legal') || s.includes('law')) return 'legal';
+            if (s.includes('civil')) return 'civil';
+            return 'home';
+          };
+          
+          (organizationServices || []).forEach((os: any) => {
+            const org = os.organization;
+            if (!org) return;
+            
+            if (!orgMap.has(org.id)) {
+              orgMap.set(org.id, {
+                id: org.id,
+                name: org.name || 'Unknown Business',
+                category: mapSectorToCategory(org.sector),
+                rating: org.rating || 4.5,
+                location: org.address || 'Addis Ababa',
+                image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&auto=format',
+                availableTimes: ['9:00 AM', '10:00 AM', '11:00 AM', '2:00 PM', '4:00 PM'],
+                services: []
+              });
+            }
+            
+            const b = orgMap.get(org.id);
+            b.services.push({
+              id: os.id,
+              name: os.name,
+              price: 500, // mock price if missing
+              duration: '30 mins',
+              description: os.description || 'Service description'
+            });
+          });
+          
+          if (orgMap.size > 0) {
+            setBusinessesData(Array.from(orgMap.values()));
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load businesses', err);
+      }
+    };
+    fetchBusinesses();
+  }, []);
+
+  const handleConfirm = async () => {
     if (selectedBusiness && selectedService && selectedDate && selectedTime) {
-      addAppointment({
-        id: Math.random().toString(36).substring(2, 9),
-        businessId: selectedBusiness.id,
-        businessName: selectedBusiness.name,
-        serviceId: selectedService.id,
-        serviceName: selectedService.name,
-        date: selectedDate,
-        time: selectedTime,
-        status: 'Booked',
-        price: selectedService.price,
-        progressSteps: getStepsByCategory(selectedBusiness.category, selectedService.name)
-      });
-      reset();
-      setAppointmentTab('Upcoming');
-      setActiveScreen('ACTIVE');
+      try {
+        // Parse "10:00 AM" into hours and minutes
+        const timeMatch = selectedTime.match(/(\d+):(\d+)\s+(AM|PM)/);
+        let startDateTime = new Date();
+        let endDateTime = new Date();
+        
+        if (timeMatch) {
+          let hours = parseInt(timeMatch[1], 10);
+          const minutes = parseInt(timeMatch[2], 10);
+          const ampm = timeMatch[3];
+          
+          if (ampm === 'PM' && hours < 12) hours += 12;
+          if (ampm === 'AM' && hours === 12) hours = 0;
+          
+          startDateTime = new Date(`${selectedDate}T${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00`);
+          endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000); // 1 hour duration
+        }
+
+        const response = await apiClient('/query/v1/appointment?mine', {
+          method: 'POST',
+          body: JSON.stringify({
+            serviceId: selectedService.id,
+            startTime: startDateTime.toISOString(),
+            endTime: endDateTime.toISOString(),
+            notes: 'Booked via mobile app'
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const appointmentData = data.appointments?.[0] || data.appointment?.[0] || {};
+          
+          addAppointment({
+            id: appointmentData.id || Math.random().toString(36).substring(2, 9),
+            businessId: selectedBusiness.id,
+            businessName: selectedBusiness.name,
+            serviceId: selectedService.id,
+            serviceName: selectedService.name,
+            date: selectedDate,
+            time: selectedTime,
+            status: 'Booked',
+            price: selectedService.price,
+            progressSteps: getStepsByCategory(selectedBusiness.category, selectedService.name)
+          });
+          reset();
+          setAppointmentTab('Upcoming');
+          setActiveScreen('ACTIVE');
+        } else {
+          console.error('Failed to book appointment', await response.text());
+        }
+      } catch (err) {
+        console.error('Network error', err);
+      }
     }
   };
 
@@ -47,8 +145,8 @@ export default function BookingScreen() {
   const times = ['9:00 AM', '10:00 AM', '11:00 AM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM'];
 
   const filteredBusinesses = selectedCategory 
-    ? BUSINESSES.filter(b => b.category === selectedCategory)
-    : BUSINESSES;
+    ? businessesData.filter(b => b.category === selectedCategory || selectedCategory === 'all')
+    : businessesData;
 
   return (
     <View style={tw`flex-1 bg-white`}>

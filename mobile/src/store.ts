@@ -1,7 +1,7 @@
 
 import { create } from 'zustand';
 import { User, Role, Appointment, Business, Service, AppointmentStatus, Notification } from './types';
-import { MOCK_APPOINTMENTS, MOCK_NOTIFICATIONS } from './data/mockData';
+import { MOCK_NOTIFICATIONS } from './data/mockData';
 
 // ... (existing stores)
 
@@ -64,6 +64,9 @@ interface BookingState {
   setDate: (date: string | null) => void;
   setTime: (time: string | null) => void;
   reset: () => void;
+
+  businessesData: any[];
+  setBusinessesData: (data: any[]) => void;
 }
 
 export const useBookingStore = create<BookingState>((set) => ({
@@ -85,6 +88,9 @@ export const useBookingStore = create<BookingState>((set) => ({
     selectedDate: null, 
     selectedTime: null 
   }),
+  
+  businessesData: [],
+  setBusinessesData: (data) => set({ businessesData: data }),
 }));
 
 // --- Appointment Store ---
@@ -96,7 +102,7 @@ interface AppointmentState {
 }
 
 export const useAppointmentStore = create<AppointmentState>((set) => ({
-  appointments: MOCK_APPOINTMENTS,
+  appointments: [],
   addAppointment: (appointment) => set((state) => ({ 
     appointments: [appointment, ...state.appointments] 
   })),

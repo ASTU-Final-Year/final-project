@@ -4,6 +4,7 @@ import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform
 import { useAuthStore, useUIStore } from '../store';
 import { Mail, Lock, Eye, EyeOff, CheckCircle } from 'lucide-react-native';
 import { tw } from '../lib/native-utils';
+import { apiClient } from '../lib/apiClient';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -14,7 +15,7 @@ export default function LoginScreen() {
   const login = useAuthStore((state) => state.login);
   const setActiveScreen = useUIStore((state) => state.setActiveScreen);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     setError('');
 
     if (!email || !password) {
@@ -28,8 +29,42 @@ export default function LoginScreen() {
       return;
     }
 
-    login(email, 'Client');
-    setActiveScreen('HOME');
+    try {
+      const response = await apiClient('/query/v1/session', {
+        method: 'POST',
+        body: JSON.stringify({ email, password })
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error('Login failed:', errText);
+        let errMsg = 'Invalid email or password.';
+        try {
+          const errObj = JSON.parse(errText);
+          if (errObj.message) errMsg = errObj.message;
+          if (errObj.error) errMsg = errObj.error;
+        } catch (e) {}
+        setError(errMsg);
+        return;
+      }
+
+      const data = await response.json();
+      const session = data.sessions?.[0] || data.session?.[0] || data;
+      const user = session?.user || data.user;
+      if (user) {
+        // use firstname + lastname as name if available
+        const name = user.firstname ? `${user.firstname} ${user.lastname}` : user.name;
+        login(email, user.role || 'client');
+        useAuthStore.getState().updateUser({ name });
+        setActiveScreen('HOME');
+      } else {
+        console.error('Login success but no user:', data);
+        setError('Failed to fetch user profile.');
+      }
+    } catch (err: any) {
+      console.error('Login network error:', err);
+      setError(`Network error: ${err.message || 'Please try again.'}`);
+    }
   };
 
   return (

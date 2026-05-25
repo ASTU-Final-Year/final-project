@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, TextInput, Switch } from 'rea
 import { useAuthStore, useUIStore } from '../store';
 import { User, CreditCard, Bell, Globe, HelpCircle, Shield, LogOut, ChevronRight, Moon, Mail, Phone, Save, X } from 'lucide-react-native';
 import { tw } from '../lib/native-utils';
+import { apiClient } from '../lib/apiClient';
 
 export default function ProfileScreen() {
   const { user, logout, updateUser } = useAuthStore();
@@ -14,7 +15,12 @@ export default function ProfileScreen() {
   const [editEmail, setEditEmail] = useState(user?.email || '');
   const [editPhone, setEditPhone] = useState(user?.phone || '');
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await apiClient('/query/v1/session?mine', { method: 'DELETE' });
+    } catch (e) {
+      // Ignore errors on logout
+    }
     logout();
     setActiveScreen('LOGIN');
   };

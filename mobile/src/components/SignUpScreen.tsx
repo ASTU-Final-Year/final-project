@@ -4,6 +4,7 @@ import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingVi
 import { useAuthStore, useUIStore } from '../store';
 import { Mail, Lock, User, Phone, Circle } from 'lucide-react-native';
 import { tw } from '../lib/native-utils';
+import { apiClient } from '../lib/apiClient';
 
 export default function SignUpScreen() {
   const [name, setName] = useState('');
@@ -16,7 +17,7 @@ export default function SignUpScreen() {
   const login = useAuthStore((state) => state.login);
   const setActiveScreen = useUIStore((state) => state.setActiveScreen);
 
-  const handleSignUp = () => {
+  const handleSignUp = async () => {
     setError('');
 
     if (!name || !email || !phone || !password || !confirmPassword) {
@@ -40,8 +41,47 @@ export default function SignUpScreen() {
       return;
     }
 
-    login(email, 'Client');
-    setActiveScreen('HOME');
+    const [firstname, ...lastnames] = name.trim().split(' ');
+    const lastname = lastnames.length > 0 ? lastnames.join(' ') : 'User';
+
+    try {
+      const response = await apiClient('/query/v1/user', {
+        method: 'POST',
+        body: JSON.stringify({
+          firstname,
+          lastname,
+          email,
+          phone,
+          password,
+          gender: 'U',
+          role: 'client'
+        })
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        setError(errData.message || 'Registration failed.');
+        return;
+      }
+
+      // Auto login after signup
+      const sessionResponse = await apiClient('/query/v1/session', {
+        method: 'POST',
+        body: JSON.stringify({ email, password })
+      });
+
+      if (sessionResponse.ok) {
+        const data = await sessionResponse.json();
+        const session = data.sessions?.[0] || data.session?.[0] || data;
+        const user = session?.user || data.user;
+        login(email, user?.role || 'client');
+        setActiveScreen('HOME');
+      } else {
+        setActiveScreen('LOGIN');
+      }
+    } catch (err) {
+      setError('Network error. Please try again.');
+    }
   };
 
   return (

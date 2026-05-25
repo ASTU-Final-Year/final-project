@@ -1,22 +1,92 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, TextInput, Image, FlatList } from 'react-native';
 import { useAuthStore, useUIStore, useAppointmentStore, useBookingStore, useNotificationStore } from '../store';
 import { Search, Bell, Star, Clock, MapPin, ChevronRight, Sliders } from 'lucide-react-native';
-import { CATEGORIES, BUSINESSES } from '../data/mockData';
+import { CATEGORIES } from '../data/mockData';
 import { tw } from '../lib/native-utils';
+import { apiClient } from '../lib/apiClient';
 
 export default function HomeScreen() {
   const { user } = useAuthStore();
   const { setActiveScreen, setViewingAppointment } = useUIStore();
   const { appointments } = useAppointmentStore();
-  const { selectedCategory, setCategory, setBusiness } = useBookingStore();
+  const { selectedCategory, setCategory, setBusiness, businessesData, setBusinessesData } = useBookingStore();
   const { notifications } = useNotificationStore();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   const recentAppointments = appointments.slice(0, 2);
-  const popularBusinesses = BUSINESSES.slice(0, 3);
+
+  useEffect(() => {
+    const fetchBusinesses = async () => {
+      setIsLoading(true);
+      try {
+        const queryFilter = searchQuery
+          ? `&~name.ilike=%25${encodeURIComponent(searchQuery)}%25|~description.ilike=%25${encodeURIComponent(searchQuery)}%25|~organization.name.ilike=%25${encodeURIComponent(searchQuery)}%25`
+          : '';
+        const res = await apiClient(`/query/v1/organizationService?guest&limit=20&~isActive=true${queryFilter}`);
+        if (res.ok) {
+          const { organizationServices } = await res.json();
+          const orgMap = new Map();
+          
+          const mapSectorToCategory = (sector: string) => {
+            if (!sector) return 'home';
+            const s = sector.toLowerCase();
+            if (s.includes('auto')) return 'auto';
+            if (s.includes('health') || s.includes('medical')) return 'health';
+            if (s.includes('gov')) return 'gov';
+            if (s.includes('beauty') || s.includes('salon')) return 'beauty';
+            if (s.includes('legal') || s.includes('law')) return 'legal';
+            if (s.includes('civil')) return 'civil';
+            return 'home';
+          };
+          
+          (organizationServices || []).forEach((os: any) => {
+            const org = os.organization;
+            if (!org) return;
+            
+            if (!orgMap.has(org.id)) {
+              orgMap.set(org.id, {
+                id: org.id,
+                name: org.name || 'Unknown Business',
+                category: mapSectorToCategory(org.sector),
+                rating: org.rating || 4.5,
+                location: org.address || 'Addis Ababa',
+                image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&auto=format',
+                availableTimes: ['9:00 AM', '10:00 AM', '11:00 AM', '2:00 PM', '4:00 PM'],
+                services: []
+              });
+            }
+            
+            const b = orgMap.get(org.id);
+            b.services.push({
+              id: os.id,
+              name: os.name,
+              price: os.price || 500,
+              duration: '30 mins',
+              description: os.description || 'Service description'
+            });
+          });
+          
+          setBusinessesData(Array.from(orgMap.values()));
+        }
+      } catch (err) {
+        console.error('Failed to load businesses', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    const timeoutId = setTimeout(() => {
+      fetchBusinesses();
+    }, 300);
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery]);
+
+  const popularBusinesses = businessesData.slice(0, 5);
 
   return (
     <View style={tw`flex-1 bg-gray-50`}>
@@ -48,6 +118,8 @@ export default function HomeScreen() {
             <TextInput
               placeholder="What service do you need?"
               placeholderTextColor="#9CA3AF"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
               style={tw`w-full bg-gray-50 border border-gray-100 rounded-2xl py-4 pl-12 pr-4 text-gray-900 text-sm font-medium`}
             />
           </View>
@@ -108,7 +180,7 @@ export default function HomeScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={tw`gap-4`}
           >
-            {BUSINESSES.filter(b => !selectedCategory || b.category === selectedCategory).map((biz) => (
+            {popularBusinesses.filter(b => !selectedCategory || b.category === selectedCategory).map((biz) => (
               <TouchableOpacity
                 key={biz.id}
                 onPress={() => {
