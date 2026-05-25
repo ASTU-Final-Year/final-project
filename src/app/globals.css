@@ -72,8 +72,8 @@
   --secondary-foreground: #ffffff;
   --muted: #f3f4f6;
   --muted-foreground: #6b7280;
-  --accent: #dbeafe;
-  --accent-foreground: #1e40af;
+  --accent: #dbdff2;
+  --accent-foreground: #0d1e6b;
   --destructive: #dc2626;
   --border: #e5e7eb;
   --input: #f3f4f6;
@@ -109,8 +109,8 @@
   --secondary-foreground: #0f172a;
   --muted: #334155;
   --muted-foreground: #94a3b8;
-  --accent: #1e3a8a;
-  --accent-foreground: #dbeafe;
+  --accent: #0d1e6b;
+  --accent-foreground: #dbdff2;
   --destructive: #ef4444;
   --border: #334155;
   --input: #1f2937;
@@ -268,7 +268,7 @@
 
   /* From Uiverse.io by kencode7 */
   .bg-main {
-    background-color: #d1d4e1;
+    background-color: #dbdff2;
   }
 
   @keyframes float {
