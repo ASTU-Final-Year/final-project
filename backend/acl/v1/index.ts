@@ -6,6 +6,10 @@ import {
   onTaskAssigned,
   onTaskCompleted,
   onTaskRequiresAction,
+  onEmployeeHired,
+  onEmployeeRemoved,
+  onOrganizationCreated,
+  onProfileUpdated,
 } from "~/hooks/notificationHooks";
 
 import {
@@ -26,7 +30,7 @@ import {
 } from "~/lib/bepalo-query-utils";
 import { ArkErrors, type } from "arktype";
 import { db, type Transaction } from "~/db";
-import { clearCookie, setCookie, Status } from "@bepalo/router";
+import { clearCookie, json, setCookie, Status } from "@bepalo/router";
 import { config, securityConfig } from "~/config";
 import {
   hashPassword,
@@ -38,6 +42,8 @@ import {
   type Session,
 } from "~/middleware";
 import { JWT } from "@bepalo/jwt";
+import NotificationService from "~/services/notifcation.service";
+import { getErrorResponse } from "~/lib";
 
 const clientUser = aliasedTable(tables.user, "client");
 const employeeUser = aliasedTable(tables.user, "employee");
@@ -118,6 +124,23 @@ async function checkCalendarAvailability(
 
   return overlapping.count === 0;
 }
+
+const onQueryError = (req, ctx) => {
+  ctx.dontThrow = true;
+  const error =
+    ctx.error.cause || ctx.error.code
+      ? getErrorResponse(ctx.error)
+      : {
+          error: ctx.error?.message,
+          status: ctx.error?.status,
+        };
+  return json(
+    {
+      error: error.error,
+    },
+    { status: error.status || 500 },
+  );
+};
 
 export const queryAuth = {
   pricingPlan: {
@@ -404,6 +427,8 @@ export const queryAuth = {
             );
           }
         },
+
+        onQueryError,
       },
     },
 
@@ -949,6 +974,7 @@ export const queryAuth = {
             );
           }
         },
+        onQueryError,
       },
     },
 
@@ -1190,6 +1216,24 @@ export const queryAuth = {
           if (!admin) throw new HttpError("Insert admin user failed", 500);
           body.adminId = admin.id;
         },
+        afterQuery: async (req, ctx) => {
+          const organization = ctx.result.organizations?.[0];
+          const admin = (ctx.data as any).admin;
+          if (!organization || !admin) return;
+
+          // Defer notification INSERT to after the transaction commits
+          setTimeout(
+            () =>
+              onOrganizationCreated(organization, admin).catch((err) =>
+                console.error(
+                  "[notification] onOrganizationCreated failed:",
+                  err,
+                ),
+              ),
+            0,
+          );
+        },
+        onQueryError,
       },
     },
     PATCH: {
@@ -1295,6 +1339,7 @@ export const queryAuth = {
           ...body,
           organizationId: (session as OrganizationSession).organization.id,
         }),
+        onQueryError,
       },
     },
     PATCH: {
@@ -1436,14 +1481,18 @@ export const queryAuth = {
           omit(tables.organizationService, [
             "id",
             "organizationId",
+            "rating",
+            "total_ratings",
             "createdAt",
             "updatedAt",
           ]),
+          { imageUrl: true },
         ),
         injectBody: (body, req, { session }) => ({
           ...body,
           organizationId: (session as OrganizationSession).organization.id,
         }),
+        onQueryError,
       },
     },
     PATCH: {
@@ -1453,6 +1502,8 @@ export const queryAuth = {
           omit(tables.organizationService, [
             "id",
             "organizationId",
+            "rating",
+            "total_ratings",
             "createdAt",
             "updatedAt",
           ]),
@@ -1580,6 +1631,50 @@ export const queryAuth = {
             organizationId: (session as OrganizationSession).organization.id,
           };
         },
+        afterQuery: async (req, ctx) => {
+          const employee = ctx.result.employees?.[0];
+          if (!employee) return;
+
+          // Fetch employee user and organization while still in transaction (reads only)
+          const [row] = await ctx.transaction
+            .select({
+              user: {
+                id: tables.user.id,
+                firstname: tables.user.firstname,
+                lastname: tables.user.lastname,
+                email: tables.user.email,
+              },
+              organization: {
+                id: tables.organization.id,
+                name: tables.organization.name,
+                adminId: tables.organization.adminId,
+              },
+            })
+            .from(tables.employee)
+            .innerJoin(tables.user, eq(tables.user.id, employee.userId))
+            .innerJoin(
+              tables.organization,
+              eq(tables.organization.id, employee.organizationId),
+            )
+            .where(eq(tables.employee.id, employee.id))
+            .limit(1);
+
+          // Defer notification INSERT to after transaction commits
+          if (row) {
+            setTimeout(
+              () =>
+                onEmployeeHired(employee, row.user, row.organization).catch(
+                  (err) =>
+                    console.error(
+                      "[notification] onEmployeeHired failed:",
+                      err,
+                    ),
+                ),
+              0,
+            );
+          }
+        },
+        onQueryError,
       },
     },
     PATCH: {
@@ -1609,6 +1704,49 @@ export const queryAuth = {
             tables.employee.organizationId,
             (session as OrganizationSession).organization.id,
           ),
+        afterQuery: async (req, ctx) => {
+          const employee = ctx.result.employees?.[0];
+          if (!employee) return;
+
+          // Fetch employee user and organization while still in transaction (reads only)
+          const [row] = await ctx.transaction
+            .select({
+              user: {
+                id: tables.user.id,
+                firstname: tables.user.firstname,
+                lastname: tables.user.lastname,
+                email: tables.user.email,
+              },
+              organization: {
+                id: tables.organization.id,
+                name: tables.organization.name,
+                adminId: tables.organization.adminId,
+              },
+            })
+            .from(tables.employee)
+            .innerJoin(tables.user, eq(tables.user.id, employee.userId))
+            .innerJoin(
+              tables.organization,
+              eq(tables.organization.id, employee.organizationId),
+            )
+            .where(eq(tables.employee.id, employee.id))
+            .limit(1);
+
+          // Defer notification INSERT to after transaction commits
+          if (row) {
+            setTimeout(
+              () =>
+                onEmployeeRemoved(employee, row.user, row.organization).catch(
+                  (err) =>
+                    console.error(
+                      "[notification] onEmployeeRemoved failed:",
+                      err,
+                    ),
+                ),
+              0,
+            );
+          }
+        },
       },
     },
   },
@@ -1647,6 +1785,32 @@ export const queryAuth = {
           ...body,
           password: hashPassword(body.password as string),
         }),
+        afterQuery: async (req, ctx) => {
+          const user = ctx.result.users?.[0];
+          if (!user) return;
+
+          // Create notification for successful account creation
+          setTimeout(
+            () =>
+              NotificationService.create(user.id, {
+                type: "account_created",
+                title: "Welcome!",
+                message: `Your ${user.role === "employee" ? "employee" : "client"} account has been successfully created.`,
+                priority: "high",
+                metadata: {
+                  userRole: user.role,
+                  createdAt: new Date().toISOString(),
+                },
+              }).catch((err) =>
+                console.error(
+                  "[notification] account creation notification failed:",
+                  err,
+                ),
+              ),
+            0,
+          );
+        },
+        onQueryError,
       },
     },
     PATCH: {
@@ -1664,6 +1828,31 @@ export const queryAuth = {
               }
             : body,
         where: (req, { session }) => eq(tables.user.id, session.userId),
+        afterQuery: async (req, ctx) => {
+          const user = ctx.result.users?.[0];
+          if (!user) return;
+
+          // Get list of changed fields
+          const changes = Object.keys(ctx.body ?? {})
+            .filter((k) => k !== "id" && ctx.body?.[k] !== undefined)
+            .map((k) =>
+              k === "password"
+                ? "password changed"
+                : k.charAt(0).toUpperCase() + k.slice(1),
+            );
+
+          // Defer notification INSERT to after transaction commits
+          if (changes.length > 0) {
+            setTimeout(
+              () =>
+                onProfileUpdated(user, changes).catch((err) =>
+                  console.error("[notification] onProfileUpdated failed:", err),
+                ),
+              0,
+            );
+          }
+        },
+        onQueryError,
       },
     },
     DELETE: {
@@ -1744,6 +1933,7 @@ export const queryAuth = {
           );
           ctx.result.token = sessionCookieToken;
         },
+        onQueryError,
       },
     },
     DELETE: {

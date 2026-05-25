@@ -716,9 +716,16 @@ export const getBepaloQueryRouter = <
               } catch (error) {
                 if (authProtected.onQueryError) {
                   ctx.error = error as Error;
-                  await authProtected.onQueryError(req, ctx);
+                  const res = await authProtected.onQueryError(req, ctx);
+                  if (res instanceof Response) {
+                    ctx.response = res;
+                  }
+                } else if (!IS_PRODUCTION) {
+                  console.error(error);
                 }
-                throw error;
+                if (ctx.dontRollback !== undefined && !ctx.dontRollback)
+                  transaction.rollback();
+                if (ctx.dontThrow !== undefined && !ctx.dontThrow) throw error;
               }
               return json(ctx.result);
             } else {
@@ -964,9 +971,14 @@ export const getBepaloQueryRouter = <
               } catch (error) {
                 if (authProtected.onQueryError) {
                   ctx.error = error as Error;
-                  await authProtected.onQueryError(req, ctx);
+                  const errorRes = await authProtected.onQueryError(req, ctx);
+                  if (errorRes instanceof Response) {
+                    return errorRes;
+                  }
                 }
-                throw error;
+                if (ctx.dontRollback !== undefined && !ctx.dontRollback)
+                  transaction.rollback();
+                if (ctx.dontThrow !== undefined && !ctx.dontThrow) throw error;
               }
               // if (req.method === "GET") return json(ctx.result);
               const content = JSON.stringify(ctx.result);
@@ -1147,48 +1159,57 @@ export const getBepaloQueryRouter = <
                 : undefined;
             await database.transaction(async (transaction) => {
               ctx.transaction = transaction;
-              let body = ctx.body;
-              if (authProtected.validateBody != null) {
-                if (Array.isArray(body)) {
-                  for (let i = 0; i < body.length; i++) {
-                    const vb = await authProtected.validateBody(
-                      body[i],
-                      req,
-                      ctx,
-                    );
+              try {
+                let body = ctx.body;
+                if (authProtected.validateBody != null) {
+                  if (Array.isArray(body)) {
+                    for (let i = 0; i < body.length; i++) {
+                      const vb = await authProtected.validateBody(
+                        body[i],
+                        req,
+                        ctx,
+                      );
+                      if (vb instanceof ArkErrors) {
+                        throw new HttpError(
+                          vb.toString(),
+                          Status._400_BadRequest,
+                        );
+                      } else if (vb instanceof Response) {
+                        ctx.response = vb;
+                        return;
+                      }
+                      body[i] = vb;
+                    }
+                  } else {
+                    const vb = await authProtected.validateBody(body, req, ctx);
                     if (vb instanceof ArkErrors) {
                       throw new HttpError(
                         vb.toString(),
                         Status._400_BadRequest,
                       );
+                    } else if (vb instanceof Response) {
+                      ctx.response = vb;
+                      return;
                     }
-                    body[i] = vb;
+                    body = vb;
                   }
-                } else {
-                  const vb = await authProtected.validateBody(body, req, ctx);
-                  if (vb instanceof ArkErrors) {
-                    throw new HttpError(vb.toString(), Status._400_BadRequest);
-                  }
-                  body = vb;
                 }
-              }
-              if (authProtected.injectBody != null) {
-                if (Array.isArray(body)) {
-                  for (let i = 0; i < body.length; i++) {
-                    const vb = await authProtected.injectBody(
-                      body[i],
-                      req,
-                      ctx,
-                    );
-                    if (vb != null) body[i] = vb;
+                if (authProtected.injectBody != null) {
+                  if (Array.isArray(body)) {
+                    for (let i = 0; i < body.length; i++) {
+                      const vb = await authProtected.injectBody(
+                        body[i],
+                        req,
+                        ctx,
+                      );
+                      if (vb != null) body[i] = vb;
+                    }
+                  } else {
+                    const vb = await authProtected.injectBody(body, req, ctx);
+                    if (vb != null) body = vb;
                   }
-                } else {
-                  const vb = await authProtected.injectBody(body, req, ctx);
-                  if (vb != null) body = vb;
                 }
-              }
-              ctx.body = body;
-              try {
+                ctx.body = body;
                 if (authProtected.beforeQuery) {
                   await authProtected.beforeQuery(req, ctx);
                 }
@@ -1204,13 +1225,20 @@ export const getBepaloQueryRouter = <
                     };
 
                 if (authProtected.afterQuery) {
-                  await authProtected.afterQuery(req, ctx);
+                  const res = await authProtected.afterQuery(req, ctx);
+                  if (res instanceof Response) {
+                    ctx.response = res;
+                    return;
+                  }
                 }
               } catch (error) {
                 if (authProtected.onQueryError) {
                   ctx.error = error as Error;
-                  await authProtected.onQueryError(req, ctx);
-                } else {
+                  const res = await authProtected.onQueryError(req, ctx);
+                  if (res instanceof Response) {
+                    ctx.response = res;
+                  }
+                } else if (!IS_PRODUCTION) {
                   console.error(error);
                 }
                 if (ctx.dontRollback !== undefined && !ctx.dontRollback)
@@ -1218,6 +1246,7 @@ export const getBepaloQueryRouter = <
                 if (ctx.dontThrow !== undefined && !ctx.dontThrow) throw error;
               }
             });
+            if (ctx.response instanceof Response) return ctx.response;
             return ctx.result
               ? json(ctx.result, { status: Status._201_Created })
               : json(
@@ -1491,40 +1520,43 @@ export const getBepaloQueryRouter = <
             );
             await database.transaction(async (transaction) => {
               ctx.transaction = transaction;
-              let body = ctx.body;
-              if (authProtected.validateBody != null) {
-                if (Array.isArray(body)) {
-                  body.map(async (b) => {
-                    const vb = await authProtected.validateBody(b, req, ctx);
+              try {
+                let body = ctx.body;
+                if (authProtected.validateBody != null) {
+                  if (Array.isArray(body)) {
+                    body.map(async (b) => {
+                      const vb = await authProtected.validateBody(b, req, ctx);
+                      if (vb instanceof ArkErrors) {
+                        throw new HttpError(
+                          vb.toString(),
+                          Status._400_BadRequest,
+                        );
+                      }
+                      return vb;
+                    });
+                  } else {
+                    const vb = await authProtected.validateBody(body, req, ctx);
                     if (vb instanceof ArkErrors) {
                       throw new HttpError(
                         vb.toString(),
                         Status._400_BadRequest,
                       );
                     }
-                    return vb;
-                  });
-                } else {
-                  const vb = await authProtected.validateBody(body, req, ctx);
-                  if (vb instanceof ArkErrors) {
-                    throw new HttpError(vb.toString(), Status._400_BadRequest);
+                    body = vb;
                   }
-                  body = vb;
                 }
-              }
-              if (authProtected.injectBody != null) {
-                if (Array.isArray(body)) {
-                  body.map(async (b) => {
-                    const vb = await authProtected.injectBody(b, req, ctx);
-                    return vb == null ? b : vb;
-                  });
-                } else {
-                  const vb = await authProtected.injectBody(body, req, ctx);
-                  if (vb != null) body = vb;
+                if (authProtected.injectBody != null) {
+                  if (Array.isArray(body)) {
+                    body.map(async (b) => {
+                      const vb = await authProtected.injectBody(b, req, ctx);
+                      return vb == null ? b : vb;
+                    });
+                  } else {
+                    const vb = await authProtected.injectBody(body, req, ctx);
+                    if (vb != null) body = vb;
+                  }
                 }
-              }
-              ctx.body = body;
-              try {
+                ctx.body = body;
                 if (authProtected.beforeQuery) {
                   await authProtected.beforeQuery(req, ctx);
                 }
@@ -1569,8 +1601,11 @@ export const getBepaloQueryRouter = <
               } catch (error) {
                 if (authProtected.onQueryError) {
                   ctx.error = error as Error;
-                  await authProtected.onQueryError(req, ctx);
-                } else {
+                  const res = await authProtected.onQueryError(req, ctx);
+                  if (res instanceof Response) {
+                    ctx.response = res;
+                  }
+                } else if (!IS_PRODUCTION) {
                   console.error(error);
                 }
                 if (ctx.dontRollback !== undefined && !ctx.dontRollback)
@@ -1856,8 +1891,11 @@ export const getBepaloQueryRouter = <
               } catch (error) {
                 if (authProtected.onQueryError) {
                   ctx.error = error as Error;
-                  await authProtected.onQueryError(req, ctx);
-                } else {
+                  const res = await authProtected.onQueryError(req, ctx);
+                  if (res instanceof Response) {
+                    ctx.response = res;
+                  }
+                } else if (!IS_PRODUCTION) {
                   console.error(error);
                 }
                 if (ctx.dontRollback !== undefined && !ctx.dontRollback)

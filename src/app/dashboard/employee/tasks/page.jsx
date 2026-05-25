@@ -468,9 +468,7 @@ export default function TasksPage() {
   useEffect(() => {
     const fetchEmployments = async () => {
       try {
-        const res = await RequestHandler.Get(
-          "/query/v1/employee?organization_admin",
-        );
+        const res = await RequestHandler.Get("/query/v1/employee");
         if (res.ok) {
           const { employees } = await res.json();
           setEmployments(employees || []);

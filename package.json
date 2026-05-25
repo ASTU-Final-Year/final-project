@@ -7,7 +7,7 @@
     "dev": "concurrently \"bun --bun run dev:frontend\" \"bun --bun run dev:backend\"",
     "dev:frontend": "bun --bun next dev --turbopack",
     "dev:backend": "cd backend && bun dev",
-    "start": "NODE_ENV=production concurrently \"bun --bun run start:frontend\" \"bun --bun run start:backend\"",
+    "start": "NODE_ENV=production PROD_DATABASE=1 concurrently \"bun --bun run start:frontend\" \"bun --bun run start:backend\"",
     "start:frontend": "bun --bun next start",
     "start:backend": "cd backend && bun start",
     "build": "bun --bun next build",

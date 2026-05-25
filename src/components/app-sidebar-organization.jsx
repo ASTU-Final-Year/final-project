@@ -15,6 +15,7 @@ import {
   Plus,
   Activity,
   User,
+  Bell,
 } from "lucide-react";
 
 import {
@@ -60,6 +61,11 @@ const navData = [
     title: "Calendars",
     url: "/dashboard/organization/calendars",
     icon: CalendarDays,
+  },
+  {
+    title: "Notifications",
+    url: "/dashboard/organization/notifications",
+    icon: Bell,
   },
   {
     title: "Profile",

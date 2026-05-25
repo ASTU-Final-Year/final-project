@@ -162,9 +162,9 @@ type _QueryAuthEntry<
       XContext &
         CTXCookie &
         CTXBody &
-        CTXAuth & { transaction: TX; result: any }
+        CTXAuth & { transaction: TX; dontThrow?: boolean; result: any }
     >,
-  ) => void | Promise<void>;
+  ) => Response | void | Promise<Response | void>;
 };
 
 export type QueryAuthEntry<

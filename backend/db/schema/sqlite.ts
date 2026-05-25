@@ -13,6 +13,7 @@ import {
   index,
   foreignKey,
 } from "drizzle-orm/sqlite-core";
+import { randomCUUID } from "~/lib";
 
 export const cpuuid = customType<{ data: string; driverData: string }>({
   dataType() {
@@ -27,12 +28,6 @@ export const cpuuid = customType<{ data: string; driverData: string }>({
     return Buffer.from(hex, "hex").toString("base64url");
   },
 });
-
-const randomCUUID = (): string => {
-  const v = crypto.randomUUID();
-  const hex = `${v[0]}${v[1]}${v[2]}${v[3]}${v[4]}${v[5]}${v[6]}${v[7]}${v[9]}${v[10]}${v[11]}${v[12]}${v[14]}${v[15]}${v[16]}${v[17]}${v[19]}${v[20]}${v[21]}${v[22]}${v[24]}${v[25]}${v[26]}${v[27]}${v[28]}${v[29]}${v[30]}${v[31]}${v[32]}${v[33]}${v[34]}${v[35]}`;
-  return Buffer.from(hex, "hex").toString("base64url");
-};
 
 export const genderEnum = ["M", "F", "U"] as const;
 export const appointmentStatusEnum = [
@@ -281,13 +276,13 @@ export const sqAppointments = sqliteTable("appointments", {
     .notNull()
     .references(() => sqOrganizationServices.id, {
       onUpdate: "cascade",
-      onDelete: "no action",
+      onDelete: "set null",
     }),
   clientId: cpuuid("client_id")
     .notNull()
     .references(() => sqUsers.id, {
       onUpdate: "cascade",
-      onDelete: "no action",
+      onDelete: "set null",
     }),
   // employeeId: cpuuid("employee_id").references(() => sqliteEmployees.id, {
   //   onDelete: "set null",
@@ -319,22 +314,22 @@ export const sqTasks = sqliteTable("tasks", {
   appointmentId: cpuuid("appointment_id")
     .references(() => sqAppointments.id, {
       onUpdate: "cascade",
-      onDelete: "no action",
+      onDelete: "set null",
     })
     .notNull(),
   employeeId: cpuuid("employee_id")
     .references(() => sqEmployees.id, {
       onUpdate: "cascade",
-      onDelete: "no action",
+      onDelete: "set null",
     })
     .notNull(),
   previousTaskId: cpuuid("previous_task_id").references(() => sqTasks.id, {
-    onUpdate: "no action",
-    onDelete: "no action",
+    onUpdate: "set null",
+    onDelete: "set null",
   }),
   nextTaskId: cpuuid("next_task_id").references(() => sqTasks.id, {
-    onUpdate: "no action",
-    onDelete: "no action",
+    onUpdate: "set null",
+    onDelete: "set null",
   }),
   completedAt: integer("completed_at", { mode: "timestamp" }),
   ...timestamps,
@@ -342,18 +337,36 @@ export const sqTasks = sqliteTable("tasks", {
 // backend/db/schema/sqlite.ts
 
 export const notificationTypeEnum = [
+  // Appointment related
   "appointment_created",
   "appointment_updated",
   "appointment_cancelled",
   "appointment_reminder",
+
+  // Task related
   "task_assigned",
   "task_completed",
   "task_requires_action",
+  "task_submission_received",
+
+  // Payment related
   "payment_received",
   "payment_failed",
+
+  // Service related
   "service_rated",
-  "organization_invite",
-  "employee_assigned",
+
+  // Organization related
+  "organization_created",
+  "organization_updated",
+  "employee_hired",
+  "employee_removed",
+
+  // Account related
+  "account_created", // Add this for user registration
+  "profile_updated", // Add this for profile updates
+
+  // General
   "system_alert",
 ] as const;
 

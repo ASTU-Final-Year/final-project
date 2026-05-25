@@ -1,6 +1,6 @@
 // backend/routes/api/v1/cron/send-reminders/route.ts
 import { json, type RouterHandlers } from "@bepalo/router";
-import { sendAppointmentReminders } from "~/hooks/notificationHooks";
+// import { sendAppointmentReminders } from "~/hooks/notificationHooks";
 
 export default {
   GET: {
@@ -12,7 +12,7 @@ export default {
           return json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        await sendAppointmentReminders();
+        // await sendAppointmentReminders();
 
         return json({ success: true, timestamp: new Date().toISOString() });
       },

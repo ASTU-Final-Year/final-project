@@ -15,6 +15,7 @@ import {
   primaryKey,
   index,
 } from "drizzle-orm/pg-core";
+import { randomCUUID } from "~/lib";
 
 // export const cpuuid = uuid;
 
@@ -38,12 +39,6 @@ export const cpuuid = customType<{ data: string; driverData: string }>({
   },
 });
 
-const randomCUUID = (): string => {
-  const v = crypto.randomUUID();
-  const hex = `${v[0]}${v[1]}${v[2]}${v[3]}${v[4]}${v[5]}${v[6]}${v[7]}${v[9]}${v[10]}${v[11]}${v[12]}${v[14]}${v[15]}${v[16]}${v[17]}${v[19]}${v[20]}${v[21]}${v[22]}${v[24]}${v[25]}${v[26]}${v[27]}${v[28]}${v[29]}${v[30]}${v[31]}${v[32]}${v[33]}${v[34]}${v[35]}`;
-  return Buffer.from(hex, "hex").toString("base64url");
-};
-
 export const genderEnum = pgEnum("gender", ["M", "F", "U"]);
 
 export const appointmentStatusEnum = pgEnum("appointment_status", [
@@ -65,24 +60,41 @@ export const roleEnum = pgEnum("role", [
   "employee",
   "client",
 ]);
+// backend/db/schema/pg.ts - Update the notification type enum
 
-// Enums
 export const notificationTypeEnum = pgEnum("notification_type", [
+  // Appointment related
   "appointment_created",
   "appointment_updated",
   "appointment_cancelled",
   "appointment_reminder",
+
+  // Task related
   "task_assigned",
   "task_completed",
   "task_requires_action",
+  "task_submission_received",
+
+  // Payment related
   "payment_received",
   "payment_failed",
+
+  // Service related
   "service_rated",
-  "organization_invite",
-  "employee_assigned",
+
+  // Organization related
+  "organization_created",
+  "organization_updated",
+  "employee_hired",
+  "employee_removed",
+
+  // Account related
+  "account_created", // Add this for user registration
+  "profile_updated", // Add this for profile updates
+
+  // General
   "system_alert",
 ]);
-
 export const notificationPriorityEnum = pgEnum("notification_priority", [
   "low",
   "medium",
@@ -306,13 +318,13 @@ export const pgAppointments = pgTable("appointments", {
     .notNull()
     .references(() => pgOrganizationServices.id, {
       onUpdate: "cascade",
-      onDelete: "no action",
+      onDelete: "set null",
     }),
   clientId: cpuuid("client_id")
     .notNull()
     .references(() => pgUsers.id, {
       onUpdate: "cascade",
-      onDelete: "no action",
+      onDelete: "set null",
     }),
   startTime: timestamp("start_time", { withTimezone: true }).notNull(),
   endTime: timestamp("end_time", { withTimezone: true }).notNull(),
@@ -337,32 +349,32 @@ export const pgTasks = pgTable("tasks", {
   appointmentId: cpuuid("appointment_id")
     .references(() => pgAppointments.id, {
       onUpdate: "cascade",
-      onDelete: "no action",
+      onDelete: "set null",
     })
     .notNull(),
   employeeId: cpuuid("employee_id")
     .references(() => pgEmployees.id, {
       onUpdate: "cascade",
-      onDelete: "no action",
+      onDelete: "set null",
     })
     .notNull(),
   previousTaskId: cpuuid("previous_task_id").references(() => pgTasks.id, {
     onUpdate: "cascade",
-    onDelete: "no action",
+    onDelete: "set null",
   }),
   nextTaskId: cpuuid("next_task_id").references(() => pgTasks.id, {
     onUpdate: "cascade",
-    onDelete: "no action",
+    onDelete: "set null",
   }),
   completedAt: timestamp("completed_at", { withTimezone: true }),
   ...timestamps,
 });
 // Notifications Table
-export const notifications = pgTable(
+export const pgNotifications = pgTable(
   "notifications",
   {
-    id: uuid("id").defaultRandom().primaryKey(),
-    userId: uuid("user_id")
+    id: cpuuid("id").primaryKey().notNull().$defaultFn(randomCUUID),
+    userId: cpuuid("user_id")
       .notNull()
       .references(() => pgUsers.id, {
         onUpdate: "cascade",
@@ -490,9 +502,9 @@ export const pgAppointmentsRelations = relations(pgAppointments, ({ one }) => ({
 }));
 
 // Relations
-export const notificationsRelations = relations(notifications, ({ one }) => ({
+export const notificationsRelations = relations(pgNotifications, ({ one }) => ({
   user: one(pgUsers, {
-    fields: [notifications.userId],
+    fields: [pgNotifications.userId],
     references: [pgUsers.id],
   }),
 }));
@@ -540,7 +552,7 @@ export const pgTables = {
   serviceFirstEmployee: pgServiceFirstEmployees,
   task: pgTasks,
   appointment: pgAppointments,
-  notification: notifications,
+  notification: pgNotifications,
 };
 
 export const pgRelations = {

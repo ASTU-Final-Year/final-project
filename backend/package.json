@@ -11,8 +11,8 @@
     "db:studio": "NODE_ENV=production PROD_DATABASE=1 drizzle-kit studio --config=drizzle.config.ts",
     "db:studio:sqlite": "PROD_DATABASE= drizzle-kit studio --config=drizzle.config.sqlite.ts",
     "dev": "bun db:push:sqlite && bun --watch ./index.ts",
-    "dev:prod": "PROD_DATABASE=1 bun db:push:sqlite && bun --watch ./index.ts",
-    "start": "NODE_ENV=production bun db:push && bun ./index.ts",
+    "dev:prod": "PROD_DATABASE=1 bun db:push && PROD_DATABASE=1 bun --watch ./index.ts",
+    "start": "NODE_ENV=production PROD_DATABASE=1 bun db:push && bun ./index.ts",
     "postinstall": "bun ./postinstall.js"
   },
   "devDependencies": {

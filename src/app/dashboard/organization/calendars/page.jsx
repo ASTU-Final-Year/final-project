@@ -1,3 +1,4 @@
+// src/app/dashboard/organization/calendar/page.jsx
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
@@ -19,14 +20,23 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
-  Filter,
   LayoutGrid,
   List,
   MoreVertical,
   Loader2,
-  Minus,
   X,
   CalendarIcon,
+  Clock,
+  PlusCircle,
+  MinusCircle,
+  Copy,
+  Check,
+  AlarmClock,
+  Sun,
+  Moon,
+  Coffee,
+  CalendarDays,
+  Sparkles,
 } from "lucide-react";
 import {
   Select,
@@ -61,7 +71,6 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import AcriveBadge from "@/components/ui/active-badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { EthiopianCalendar } from "@/components/ui/ethiopian-calendar";
 import { Calendar } from "@/components/ui/calendar";
@@ -71,6 +80,11 @@ import { EthDateTime } from "ethiopian-calendar-date-converter";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useOrganizationStore } from "@/store";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 const startMonth = new Date();
 const endMonth = new Date(Date.now() + 10 * 365.25 * 24 * 60 * 60 * 1000);
@@ -107,6 +121,589 @@ const monthStrs = {
   ],
 };
 
+const DAYS = [
+  { value: 0, label: "Monday", short: "M" },
+  { value: 1, label: "Tuesday", short: "T" },
+  { value: 2, label: "Wednesday", short: "W" },
+  { value: 3, label: "Thursday", short: "T" },
+  { value: 4, label: "Friday", short: "F" },
+  { value: 5, label: "Saturday", short: "S" },
+  { value: 6, label: "Sunday", short: "S" },
+];
+
+// Predefined time slot templates
+const TIME_SLOT_TEMPLATES = {
+  "Standard Business": [["09:00", "17:00"]],
+  "Morning Shift": [["08:00", "12:00"]],
+  "Afternoon Shift": [["13:00", "17:00"]],
+  "Full Day": [["08:00", "20:00"]],
+  "Split Shift": [
+    ["09:00", "12:00"],
+    ["13:00", "17:00"],
+  ],
+  "Extended Hours": [["07:00", "19:00"]],
+  "Night Shift": [
+    ["20:00", "23:00"],
+    ["00:00", "04:00"],
+  ],
+  "Weekend Special": [["10:00", "15:00"]],
+};
+
+const BREAK_TEMPLATES = {
+  "Lunch Break": ["12:00", "13:00"],
+  "Coffee Break": ["10:30", "11:00"],
+  "Afternoon Break": ["15:30", "16:00"],
+  "Prayer Break": ["13:00", "13:30"],
+  "Tea Break": ["11:00", "11:15"],
+};
+// Collapsible Section Component
+const CollapsibleSection = ({
+  title,
+  icon: Icon,
+  children,
+  defaultOpen = true,
+  color = "primary",
+}) => {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+
+  return (
+    <div className="border rounded-lg overflow-hidden">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={cn(
+          "w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors",
+          color === "green" && "hover:bg-green-50/50",
+          color === "orange" && "hover:bg-orange-50/50",
+        )}
+      >
+        <div className="flex items-center gap-2">
+          <Icon
+            className={cn(
+              "h-5 w-5",
+              color === "green"
+                ? "text-green-600"
+                : color === "orange"
+                  ? "text-orange-600"
+                  : "text-primary",
+            )}
+          />
+          <h3
+            className={cn(
+              "font-semibold",
+              color === "green"
+                ? "text-green-600"
+                : color === "orange"
+                  ? "text-orange-600"
+                  : "",
+            )}
+          >
+            {title}
+          </h3>
+        </div>
+        <ChevronRight
+          className={cn("h-4 w-4 transition-transform", isOpen && "rotate-90")}
+        />
+      </button>
+      {isOpen && <div className="p-4 border-t">{children}</div>}
+    </div>
+  );
+};
+
+// Improved TimeSlot Editor Component with collapsible
+const TimeSlotEditor = ({
+  value = [],
+  onChange,
+  label,
+  color = "primary",
+  collapsible = false,
+}) => {
+  const [hours, setHours] = useState(
+    value.map((v) => ({ from: v[0], to: v[1] })),
+  );
+  const [selectedTemplate, setSelectedTemplate] = useState("");
+  const [isOpen, setIsOpen] = useState(true);
+
+  const updateHours = (newHours) => {
+    setHours(newHours);
+    onChange(newHours.map((h) => [h.from, h.to]));
+  };
+
+  const addSlot = () => {
+    updateHours([...hours, { from: "09:00", to: "17:00" }]);
+  };
+
+  const removeSlot = (index) => {
+    updateHours(hours.filter((_, i) => i !== index));
+  };
+
+  const updateSlot = (index, field, val) => {
+    const newHours = [...hours];
+    newHours[index][field] = val;
+    updateHours(newHours);
+  };
+
+  const applyTemplate = () => {
+    if (selectedTemplate && TIME_SLOT_TEMPLATES[selectedTemplate]) {
+      const template = TIME_SLOT_TEMPLATES[selectedTemplate];
+      updateHours(template.map(([from, to]) => ({ from, to })));
+    }
+  };
+
+  const addBreak = (breakTemplate) => {
+    if (BREAK_TEMPLATES[breakTemplate]) {
+      const [from, to] = BREAK_TEMPLATES[breakTemplate];
+      updateHours([...hours, { from, to }]);
+    }
+  };
+
+  const duplicateSlot = (index) => {
+    const slot = hours[index];
+    updateHours([...hours, { ...slot }]);
+  };
+
+  const EditorContent = () => (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <Label
+          className={cn(
+            "text-sm font-medium",
+            color === "orange" && "text-orange-600",
+          )}
+        >
+          {label}
+        </Label>
+        <div className="flex gap-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button type="button" variant="outline" size="sm">
+                <Sparkles className="h-3.5 w-3.5 mr-1" />
+                Templates
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-56 p-2">
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-muted-foreground mb-2">
+                  Time Slot Templates
+                </p>
+                {Object.keys(TIME_SLOT_TEMPLATES).map((template) => (
+                  <Button
+                    key={template}
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start text-sm"
+                    onClick={() => {
+                      setSelectedTemplate(template);
+                      applyTemplate();
+                    }}
+                  >
+                    <Clock className="h-3.5 w-3.5 mr-2" />
+                    {template}
+                  </Button>
+                ))}
+                <div className="border-t my-2" />
+                <p className="text-xs font-medium text-muted-foreground mb-2">
+                  Add Break
+                </p>
+                {Object.keys(BREAK_TEMPLATES).map((breakTemplate) => (
+                  <Button
+                    key={breakTemplate}
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start text-sm"
+                    onClick={() => addBreak(breakTemplate)}
+                  >
+                    <Coffee className="h-3.5 w-3.5 mr-2" />
+                    {breakTemplate}
+                  </Button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+          <Button type="button" variant="outline" size="sm" onClick={addSlot}>
+            <PlusCircle className="h-3.5 w-3.5 mr-1" />
+            Add Slot
+          </Button>
+        </div>
+      </div>
+
+      {hours.length === 0 ? (
+        <div className="text-sm text-muted-foreground p-4 border-2 border-dashed rounded-md text-center">
+          <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
+          <p>No time slots configured</p>
+          <p className="text-xs mt-1">
+            Click "Add Slot" or use a template to get started
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {hours.map((slot, idx) => (
+            <div
+              key={idx}
+              className="flex items-center gap-2 p-2 bg-muted/20 rounded-md"
+            >
+              <div className="flex-1 flex items-center gap-2">
+                <Input
+                  type="time"
+                  value={slot.from}
+                  onChange={(e) => updateSlot(idx, "from", e.target.value)}
+                  className="w-28"
+                />
+                <span className="text-muted-foreground">to</span>
+                <Input
+                  type="time"
+                  value={slot.to}
+                  onChange={(e) => updateSlot(idx, "to", e.target.value)}
+                  className="w-28"
+                />
+              </div>
+              <div className="flex items-center gap-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => duplicateSlot(idx)}
+                  className="h-8 w-8"
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => removeSlot(idx)}
+                  className="h-8 w-8 text-destructive hover:text-destructive"
+                >
+                  <MinusCircle className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  if (collapsible) {
+    return (
+      <div className="border rounded-lg overflow-hidden">
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors"
+        >
+          <span
+            className={cn(
+              "text-sm font-medium",
+              color === "orange" && "text-orange-600",
+            )}
+          >
+            {label}
+          </span>
+          <ChevronRight
+            className={cn(
+              "h-4 w-4 transition-transform",
+              isOpen && "rotate-90",
+            )}
+          />
+        </button>
+        {isOpen && <div className="p-4 border-t">{EditorContent()}</div>}
+      </div>
+    );
+  }
+
+  return EditorContent();
+};
+
+// Improved Weekly Hours Editor Component with collapsible days
+const WeeklyHoursEditor = ({
+  value = {},
+  onChange,
+  label,
+  color = "primary",
+}) => {
+  const [weeklyHours, setWeeklyHours] = useState(value);
+  const [copyFromDay, setCopyFromDay] = useState(null);
+  const [expandedDays, setExpandedDays] = useState({});
+
+  const toggleDay = (dayIndex) => {
+    setExpandedDays((prev) => ({ ...prev, [dayIndex]: !prev[dayIndex] }));
+  };
+
+  const updateDayHours = (dayIndex, from, to) => {
+    const newHours = { ...weeklyHours };
+    if (from && to) {
+      newHours[dayIndex] = [from, to];
+    } else {
+      delete newHours[dayIndex];
+    }
+    setWeeklyHours(newHours);
+    onChange(newHours);
+  };
+
+  const copyHoursToAll = () => {
+    const sourceDay = copyFromDay !== null ? copyFromDay : 0;
+    const sourceHours = weeklyHours[sourceDay];
+    if (sourceHours) {
+      const newHours = {};
+      DAYS.forEach((day) => {
+        newHours[day.value] = [...sourceHours];
+      });
+      setWeeklyHours(newHours);
+      onChange(newHours);
+    }
+  };
+
+  const applyToAllDays = (from, to) => {
+    const newHours = {};
+    DAYS.forEach((day) => {
+      newHours[day.value] = [from, to];
+    });
+    setWeeklyHours(newHours);
+    onChange(newHours);
+  };
+
+  const clearAllDays = () => {
+    setWeeklyHours({});
+    onChange({});
+  };
+
+  const hasHours = (dayIndex) => {
+    return (
+      weeklyHours[dayIndex] &&
+      weeklyHours[dayIndex][0] &&
+      weeklyHours[dayIndex][1]
+    );
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <Label
+          className={cn(
+            "text-sm font-medium",
+            color === "orange" && "text-orange-600",
+          )}
+        >
+          {label}
+        </Label>
+        <div className="flex gap-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button type="button" variant="outline" size="sm">
+                <Copy className="h-3.5 w-3.5 mr-1" />
+                Bulk Actions
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 p-2">
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground">
+                  Copy from day:
+                </p>
+                <Select onValueChange={(val) => setCopyFromDay(parseInt(val))}>
+                  <SelectTrigger className="h-8">
+                    <SelectValue placeholder="Select day" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DAYS.map((day) => (
+                      <SelectItem key={day.value} value={day.value.toString()}>
+                        {day.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  size="sm"
+                  className="w-full"
+                  onClick={copyHoursToAll}
+                  disabled={copyFromDay === null}
+                >
+                  Copy to All Days
+                </Button>
+                <div className="border-t my-2" />
+                <div className="flex gap-2">
+                  <Input
+                    type="time"
+                    placeholder="Start"
+                    className="h-8 text-sm"
+                    id="bulk-start"
+                  />
+                  <Input
+                    type="time"
+                    placeholder="End"
+                    className="h-8 text-sm"
+                    id="bulk-end"
+                  />
+                </div>
+                <Button
+                  size="sm"
+                  className="w-full"
+                  onClick={() => {
+                    const start = document.getElementById("bulk-start")?.value;
+                    const end = document.getElementById("bulk-end")?.value;
+                    if (start && end) applyToAllDays(start, end);
+                  }}
+                >
+                  Apply to All Days
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  className="w-full"
+                  onClick={clearAllDays}
+                >
+                  Clear All Days
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-2">
+        {DAYS.map((day) => {
+          const isExpanded = expandedDays[day.value];
+          const configured = hasHours(day.value);
+
+          return (
+            <div key={day.value} className="border rounded-md overflow-hidden">
+              <button
+                onClick={() => toggleDay(day.value)}
+                className={cn(
+                  "w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors",
+                  configured && "bg-green-50/30 dark:bg-green-950/20",
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{day.label}</span>
+                  {configured && (
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] bg-green-100 text-green-700 border-green-200"
+                    >
+                      {weeklyHours[day.value][0]} - {weeklyHours[day.value][1]}
+                    </Badge>
+                  )}
+                </div>
+                <ChevronRight
+                  className={cn(
+                    "h-4 w-4 transition-transform",
+                    isExpanded && "rotate-90",
+                  )}
+                />
+              </button>
+              {isExpanded && (
+                <div className="p-3 border-t bg-muted/10">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="time"
+                      value={weeklyHours[day.value]?.[0] || ""}
+                      onChange={(e) =>
+                        updateDayHours(
+                          day.value,
+                          e.target.value,
+                          weeklyHours[day.value]?.[1] || "",
+                        )
+                      }
+                      placeholder="Start"
+                      className="w-28"
+                    />
+                    <span>to</span>
+                    <Input
+                      type="time"
+                      value={weeklyHours[day.value]?.[1] || ""}
+                      onChange={(e) =>
+                        updateDayHours(
+                          day.value,
+                          weeklyHours[day.value]?.[0] || "",
+                          e.target.value,
+                        )
+                      }
+                      placeholder="End"
+                      className="w-28"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => updateDayHours(day.value, "", "")}
+                      className="text-destructive"
+                    >
+                      Clear
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// Quick Stats Component
+const QuickStats = ({ calendars }) => {
+  const totalCalendars = calendars.length;
+  const calendarsWithHours = calendars.filter(
+    (c) =>
+      c.available?.hours?.length > 0 ||
+      Object.keys(c.available?.weeklyHours || {}).length > 0,
+  ).length;
+  const calendarsWithWeekly = calendars.filter(
+    (c) => c.available?.weekly?.length > 0,
+  ).length;
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">Total Calendars</p>
+              <p className="text-2xl font-bold">{totalCalendars}</p>
+            </div>
+            <CalendarIcon className="h-8 w-8 text-primary" />
+          </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">With Time Slots</p>
+              <p className="text-2xl font-bold">{calendarsWithHours}</p>
+            </div>
+            <Clock className="h-8 w-8 text-blue-500" />
+          </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">Weekly Schedule</p>
+              <p className="text-2xl font-bold">{calendarsWithWeekly}</p>
+            </div>
+            <CalendarDays className="h-8 w-8 text-green-500" />
+          </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">Active</p>
+              <p className="text-2xl font-bold">
+                {calendars.filter((c) => c.isActive !== false).length}
+              </p>
+            </div>
+            <Check className="h-8 w-8 text-green-500" />
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
 export default function CalendarsPage() {
   const organization = useOrganizationStore(({ organization }) => organization);
   const setOrganization = useOrganizationStore(
@@ -120,24 +717,19 @@ export default function CalendarsPage() {
   const setCalendarCount = useOrganizationStore(
     ({ setCalendarCount }) => setCalendarCount,
   );
-  // const [calendars, setCalendars] = useState([]);
+
   const [calendarMode, setCalendarMode] = useState("ethiopian");
   const [selectedCalendars, setSelectedCalendars] = useState({});
-  // const [selectedDates, setSelectedDates] = useState([]);
   const [activeAvailableRange, setActiveAvailableRange] = useState(0);
   const [activeUnavailableRange, setActiveUnavailableRange] = useState(0);
-  const [weeklySelects, setWeeklySelects] = useState([]);
-  const [weeklyDeselects, setWeeklyDeselects] = useState([]);
   const [selectedDateMode, setSelectedDateMode] = useState("multiple");
-  // const [calendarCount, setCalendarCount] = useState(0);
-  // const [organizationId, setOrganizationId] = useState(null);
   const [isLoading, setIsLoading] = useState(calendars == null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showStats, setShowStats] = useState(true);
 
   // View & Filter States
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const [statusFilter, setStatusFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [view, setView] = useState("table");
 
@@ -151,12 +743,25 @@ export default function CalendarsPage() {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    available: null,
-    unavailable: null,
+    available: {
+      weekly: [],
+      weeklyHours: {},
+      hours: [],
+      ranges: [],
+      exactly: [],
+    },
+    unavailable: {
+      weekly: [],
+      weeklyHours: {},
+      hours: [],
+      ranges: [],
+      exactly: [],
+    },
   });
 
   const organizationId = organization?.id;
-  // --- Data Fetching ---
+
+  // ... (keep existing fetch logic)
   useEffect(() => {
     if (organization == null) {
       RequestHandler.Get("/api/v1/organization").then(async (res) => {
@@ -170,7 +775,6 @@ export default function CalendarsPage() {
 
   const fetchCalendars = useCallback(async () => {
     if (!organizationId) return;
-    // (async () => setIsLoading(true))();
 
     const offset = (page - 1) * limit;
     const params = new URLSearchParams({
@@ -187,18 +791,13 @@ export default function CalendarsPage() {
 
     if (countRes.ok) {
       const { count } = await countRes.json();
-      (async () => setCalendarCount(count))();
+      setCalendarCount(count);
     }
 
     if (dataRes.ok) {
       const { organizationCalendars } = await dataRes.json();
       let results = organizationCalendars || [];
 
-      if (statusFilter !== "all") {
-        results = results.filter(
-          (s) => s.isActive === (statusFilter === "active"),
-        );
-      }
       if (searchQuery) {
         results = results.filter(
           (s) =>
@@ -206,52 +805,46 @@ export default function CalendarsPage() {
             s.description.toLowerCase().includes(searchQuery.toLowerCase()),
         );
       }
+
       results = results.map((res) => ({
         ...res,
         available: {
-          ...(res.available ?? {}),
-          ranges: res.available?.ranges
-            ? res.available.ranges.map(({ from, to }) => ({
-                from: new Date(from),
-                to: new Date(to),
-              }))
-            : [],
-          exactly: res.available?.exactly
-            ? res.available.exactly.map((e) => new Date(e))
-            : [],
+          weekly: res.available?.weekly || [],
+          weeklyHours: res.available?.weeklyHours || {},
+          hours: res.available?.hours || [],
+          ranges:
+            res.available?.ranges?.map(({ from, to }) => ({
+              from: new Date(from),
+              to: new Date(to),
+            })) || [],
+          exactly: res.available?.exactly?.map((e) => new Date(e)) || [],
         },
         unavailable: {
-          ...(res.unavailable ?? {}),
-          ranges: res.unavailable?.ranges
-            ? res.unavailable.ranges
-                .map(({ from, to }) => ({
-                  from: new Date(from),
-                  to: new Date(to),
-                }))
-                .sort((a, b) => a.from.getTime() - b.from.getTime())
-            : [],
-          exactly: res.unavailable?.exactly
-            ? res.unavailable.exactly
-                .map((e) => new Date(e))
-                .sort((a, b) => a.getTime() - b.getTime())
-            : [],
+          weekly: res.unavailable?.weekly || [],
+          weeklyHours: res.unavailable?.weeklyHours || {},
+          hours: res.unavailable?.hours || [],
+          ranges:
+            res.unavailable?.ranges?.map(({ from, to }) => ({
+              from: new Date(from),
+              to: new Date(to),
+            })) || [],
+          exactly: res.unavailable?.exactly?.map((e) => new Date(e)) || [],
         },
       }));
       setCalendars(results);
     }
-    (async () => setIsLoading(false))();
+    setIsLoading(false);
   }, [
     setCalendarCount,
     setCalendars,
     organizationId,
     page,
     limit,
-    statusFilter,
     searchQuery,
   ]);
 
   useEffect(() => {
-    fetchCalendars();
+    (async () => fetchCalendars())();
   }, [fetchCalendars]);
 
   const formatLocaleShortDate = (d) => {
@@ -263,30 +856,44 @@ export default function CalendarsPage() {
     return `${monthStrs[isEthiopian ? "am" : "en"][month]} ${day}, ${year}`;
   };
 
-  // --- CRUD Handlers ---
+  // CRUD Handlers
   const handleAddCalendar = async () => {
     setIsSubmitting(true);
+    const payload = {
+      name: formData.name,
+      description: formData.description,
+      available: formData.available,
+      unavailable: formData.unavailable,
+    };
+
     const res = await RequestHandler.Post(
-      // `/api/v1/organization/${organizationId}/calendar`,
-      `/query/v1/organizationCalendar?mine'`,
-      {
-        body: {
-          name: formData.name,
-          description: formData.description,
-          available: formData.available,
-          unavailable: formData.unavailable,
-        },
-      },
+      `/query/v1/organizationCalendar?mine`,
+      { body: payload },
     );
     if (res.ok) {
       setIsAddOpen(false);
       setFormData({
         name: "",
         description: "",
-        available: null,
-        unavailable: null,
+        available: {
+          weekly: [],
+          weeklyHours: {},
+          hours: [],
+          ranges: [],
+          exactly: [],
+        },
+        unavailable: {
+          weekly: [],
+          weeklyHours: {},
+          hours: [],
+          ranges: [],
+          exactly: [],
+        },
       });
       fetchCalendars();
+      toast.success("Calendar created successfully");
+    } else {
+      toast.error("Failed to create calendar");
     }
     setIsSubmitting(false);
   };
@@ -308,6 +915,9 @@ export default function CalendarsPage() {
       setIsEditOpen(false);
       setSelectedCalendar(null);
       fetchCalendars();
+      toast.success("Calendar updated successfully");
+    } else {
+      toast.error("Failed to update calendar");
     }
     setIsSubmitting(false);
   };
@@ -315,82 +925,38 @@ export default function CalendarsPage() {
   const handleDeleteCalendar = async () => {
     setIsSubmitting(true);
     const res = await RequestHandler.Delete(
-      // `/api/v1/organization/${organizationId}/calendar/${selectedCalendar.id}`,
       `/query/v1/organizationCalendar?mine&~id='${selectedCalendar.id}'`,
     );
     if (res.ok) {
       setIsDeleteOpen(false);
       setSelectedCalendar(null);
       fetchCalendars();
+      toast.success("Calendar deleted successfully");
+    } else {
+      toast.error("Failed to delete calendar");
     }
     setIsSubmitting(false);
   };
-
-  // const handleMarkAvailable = (selectedDates) => {
-  //   const { ranges, weekly, monthly, exactly } = formData.available ?? {};
-  //   const rangeMode = selectedDateMode !== "multiple";
-  //   const available =
-  //     rangeMode && !Array.isArray(selectedDates)
-  //       ? {
-  //           ...formData.available,
-  //           ranges: [
-  //             ...(ranges ?? []),
-  //             {
-  //               from: selectedDates.from,
-  //               to: selectedDates.to,
-  //             },
-  //           ],
-  //         }
-  //       : {
-  //           ...formData.available,
-  //           exactly: [...(exactly ?? []), ...(selectedDates ?? [])].filter(
-  //             (d) => d != null,
-  //           ),
-  //         };
-  //   if (available.ranges?.length === 0) delete available.ranges;
-  //   if (available.exactly?.length === 0) delete available.exactly;
-  //   setFormData((prev) => ({
-  //     ...prev,
-  //     available,
-  //   }));
-  // };
-
-  // const handleMarkUnavailable = (selectedDates) => {
-  //   const { ranges, weekly, monthly, exactly } = formData.unavailable ?? {};
-  //   const rangeMode = selectedDateMode !== "multiple";
-  //   const unavailable =
-  //     rangeMode && !Array.isArray(selectedDates)
-  //       ? {
-  //           ...formData.available,
-  //           ranges: [
-  //             ...(ranges ?? []),
-  //             {
-  //               from: selectedDates.from,
-  //               to: selectedDates.to,
-  //             },
-  //           ],
-  //         }
-  //       : {
-  //           ...formData.available,
-  //           exactly: [...(exactly ?? []), ...(selectedDates ?? [])].filter(
-  //             (d) => d != null,
-  //           ),
-  //         };
-  //   if (unavailable.ranges?.length === 0) delete unavailable.ranges;
-  //   if (unavailable.exactly?.length === 0) delete unavailable.exactly;
-  //   setFormData((prev) => ({
-  //     ...prev,
-  //     unavailable,
-  //   }));
-  // };
 
   const openEdit = (calendar) => {
     setSelectedCalendar(calendar);
     setFormData({
       name: calendar.name,
       description: calendar.description,
-      available: calendar.available,
-      unavailable: calendar.unavailable,
+      available: calendar.available || {
+        weekly: [],
+        weeklyHours: {},
+        hours: [],
+        ranges: [],
+        exactly: [],
+      },
+      unavailable: calendar.unavailable || {
+        weekly: [],
+        weeklyHours: {},
+        hours: [],
+        ranges: [],
+        exactly: [],
+      },
     });
     setIsEditOpen(true);
   };
@@ -408,13 +974,17 @@ export default function CalendarsPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Calendars</h1>
           <p className="text-sm text-muted-foreground">
-            Manage your organization&apos;s calendars.
+            Manage your organization&apos;s calendars with availability
+            schedules.
           </p>
         </div>
         <Button onClick={() => setIsAddOpen(true)}>
           <Plus className="mr-2 h-4 w-4" /> Add Calendar
         </Button>
       </div>
+
+      {/* Quick Stats */}
+      {showStats && calendars && <QuickStats calendars={calendars} />}
 
       {/* Toolbar */}
       <Card className="p-3 bg-muted/20 border-none shadow-none bg-background">
@@ -429,17 +999,14 @@ export default function CalendarsPage() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            {/* <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[160px] bg-background">
-                <Filter className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-              </SelectContent>
-            </Select> */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowStats(!showStats)}
+              className="hidden sm:flex"
+            >
+              {showStats ? "Hide Stats" : "Show Stats"}
+            </Button>
           </div>
           <Tabs value={view} onValueChange={setView}>
             <TabsList className="bg-background border">
@@ -461,12 +1028,12 @@ export default function CalendarsPage() {
         </div>
       ) : view === "table" ? (
         <div className="rounded border bg-card overflow-hidden">
-          <Table className=" font-mono">
+          <Table className="font-mono">
             <TableHeader className="bg-muted/30 uppercase">
               <TableRow>
                 <TableHead className="px-2"></TableHead>
                 <TableHead className="font-bold">Calendar</TableHead>
-                {/* <TableHead className="font-bold text-center">Status</TableHead> */}
+                <TableHead className="font-bold">Schedule</TableHead>
                 <TableHead className="text-right font-bold">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -496,21 +1063,31 @@ export default function CalendarsPage() {
                         {calendar.name}
                       </Link>
                     </div>
-                    <div className="text-xs text-muted-foreground truncate max-w-[400px]">
+                    <div className="text-xs text-muted-foreground truncate max-w-[300px]">
                       {calendar.description}
                     </div>
                   </TableCell>
-                  {/* <TableCell className="text-center">
-                    <AcriveBadge isActive={calendar.isActive} />
-                  </TableCell> */}
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {calendar.available?.weekly?.length > 0 && (
+                        <Badge variant="outline" className="text-xs">
+                          {calendar.available.weekly
+                            .map(
+                              (d) => DAYS.find((day) => day.value === d)?.short,
+                            )
+                            .join(", ")}
+                        </Badge>
+                      )}
+                      {calendar.available?.weeklyHours &&
+                        Object.keys(calendar.available.weeklyHours).length >
+                          0 && (
+                          <Badge variant="outline" className="text-xs">
+                            Hours configured
+                          </Badge>
+                        )}
+                    </div>
+                  </TableCell>
                   <TableCell className="text-right">
-                    {/* <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => openViewCalendar(calendar)}
-                    >
-                      <CalendarClock className="h-4 w-4" />
-                    </Button> */}
                     <Button variant="ghost" size="icon" asChild>
                       <Link
                         href={"/dashboard/organization/calendar/" + calendar.id}
@@ -540,7 +1117,6 @@ export default function CalendarsPage() {
           </Table>
         </div>
       ) : (
-        /* IMPROVED GRID VIEW */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {calendars.map((calendar) => (
             <Card
@@ -576,14 +1152,22 @@ export default function CalendarsPage() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               </CardHeader>
-              <CardContent className="flex-grow">
-                <p className="text-muted-foreground line-clamp-3 min-h-[60px]">
-                  {calendar.description ||
-                    "No description provided for this calendar."}
+              <CardContent className="flex-grow space-y-3 pt-4">
+                <p className="text-muted-foreground line-clamp-2 text-sm">
+                  {calendar.description || "No description provided."}
                 </p>
+                <div className="flex flex-wrap gap-1">
+                  {calendar.available?.weekly?.length > 0 && (
+                    <Badge variant="secondary" className="text-xs">
+                      <Clock className="h-3 w-3 mr-1" />
+                      {calendar.available.weekly
+                        .map((d) => DAYS.find((day) => day.value === d)?.short)
+                        .join(", ")}
+                    </Badge>
+                  )}
+                </div>
               </CardContent>
               <CardFooter className="pt-4 border-t flex justify-between items-center bg-muted/5">
-                {/* <AcriveBadge isActive={calendar.isActive} /> */}
                 <span className="text-[10px] font-mono text-muted-foreground">
                   ID: {calendar.id.slice(0, 8)}
                 </span>
@@ -593,7 +1177,7 @@ export default function CalendarsPage() {
         </div>
       )}
 
-      {/* RESTORED PAGINATION WITH LIMIT SELECTOR */}
+      {/* Pagination */}
       <div className="flex items-center justify-between px-4 py-4 border rounded bg-card">
         <div className="flex items-center gap-6">
           <div className="text-sm text-muted-foreground">
@@ -610,7 +1194,7 @@ export default function CalendarsPage() {
               value={limit.toFixed()}
               onValueChange={(v) => {
                 setLimit(Number(v));
-                setPage(1); // Reset to page 1 on limit change
+                setPage(1);
               }}
             >
               <SelectTrigger className="h-8 w-[80px]">
@@ -651,502 +1235,507 @@ export default function CalendarsPage() {
         </div>
       </div>
 
-      {/* --- Modals (Keep Existing) --- */}
+      {/* Add/Edit Calendar Dialog */}
       <Dialog
         open={isAddOpen || isEditOpen}
         onOpenChange={(val) => {
           if (!val) {
             setIsAddOpen(false);
             setIsEditOpen(false);
+            setFormData({
+              name: "",
+              description: "",
+              available: {
+                weekly: [],
+                weeklyHours: {},
+                ranges: [],
+                exactly: [],
+              },
+              unavailable: {
+                weekly: [],
+                weeklyHours: {},
+                ranges: [],
+                exactly: [],
+              },
+            });
           }
         }}
       >
-        <DialogContent>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {isEditOpen ? "Edit Calendar" : "Add New Calendar"}
             </DialogTitle>
+            <DialogDescription>
+              Configure calendar name, description, availability dates and
+              hours.
+            </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Calendar Name</Label>
-              <Input
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Description</Label>
-              <Textarea
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Availablity</Label>
-              <div className="flex flex-wrap gap-1 overflow-auto">
-                {(formData.available?.ranges ?? []).map(({ from, to }, idx) => (
-                  <Badge
-                    key={idx}
-                    variant={
-                      activeAvailableRange === idx ? "default" : "outline"
-                    }
-                    onClick={() => setActiveAvailableRange(idx)}
-                  >
-                    {`${formatLocaleShortDate(from)} - ${formatLocaleShortDate(to)}`}
-                  </Badge>
-                ))}
-                {(formData.available?.exactly ?? []).map((e, idx) => (
-                  <Badge key={idx} variant="default">
-                    {`${formatLocaleShortDate(e)}`}
-                  </Badge>
-                ))}
-              </div>
-              {/* <Textarea
-                defaultValue=""
-                value={
-                  formData.available == null
-                    ? "<null>"
-                    : JSON.stringify(formData.available, null, 2)
-                }
-              /> */}
-            </div>
-            <div className="space-y-2">
-              <Label>Unavailablity</Label>
-              <div className="flex flex-wrap gap-1 overflow-auto">
-                {(formData.unavailable?.ranges ?? []).map(
-                  ({ from, to }, idx) => (
-                    <Badge
-                      key={idx}
-                      variant={
-                        activeUnavailableRange === idx ? "default" : "outline"
-                      }
-                      onClick={() => setActiveUnavailableRange(idx)}
-                      className="bg-orange-600"
-                    >
-                      {`${formatLocaleShortDate(from)} - ${formatLocaleShortDate(to)}`}
-                    </Badge>
-                  ),
-                )}
-                {(formData.unavailable?.exactly ?? []).map((e, idx) => (
-                  <Badge key={idx} variant="default" className="bg-orange-600">
-                    {formatLocaleShortDate(e)}
-                  </Badge>
-                ))}
-              </div>
-              {/* <Textarea
-                defaultValue=""
-                value={
-                  formData.unavailable == null
-                    ? "<null>"
-                    : JSON.stringify(formData.unavailable, null, 2)
-                }
-              /> */}
-            </div>
-            <div>
-              <Card className="ring-ring/40">
-                <CardContent>
-                  <Tabs
-                    defaultValue="ethiopian"
-                    value={calendarMode}
-                    onValueChange={setCalendarMode}
-                    className="w-full"
-                  >
-                    {/* Tab Select */}
-                    <div className="flex flex-col items-center gap-1">
-                      <div className="border rounded space-x-1 p-1 w-auto mx-auto flex justify-center">
-                        <Button
-                          variant="destructive"
-                          className="border border-danger h-8"
-                          onClick={() => {
-                            setFormData((prev) => ({
-                              ...prev,
-                              available: null,
-                            }));
-                          }}
-                        >
-                          <X />
-                          Availables
-                        </Button>
-                        {selectedDateMode === "range" && (
-                          <Button
-                            variant="outline"
-                            className="size-8"
-                            onClick={() => {
-                              setActiveAvailableRange(
-                                formData.available?.ranges?.length || 0,
-                              );
-                            }}
-                          >
-                            <Plus />
-                          </Button>
-                        )}
-                        <Button
-                          variant="outline"
-                          className=""
-                          onClick={() => {
-                            setSelectedDateMode((m) =>
-                              m === "range" ? "multiple" : "range",
-                            );
-                          }}
-                        >
-                          {selectedDateMode === "range" ? "R" : "M"}
-                        </Button>
 
-                        <TabsList className="grid grid-cols-2 border data-[active=true]:bg-primary/15">
-                          <TabsTrigger value="ethiopian">ኢትዮጵያዊ</TabsTrigger>
-                          <TabsTrigger value="gregorian">Gregorian</TabsTrigger>
-                        </TabsList>
-                        {selectedDateMode === "range" && (
-                          <Button
-                            variant="outline"
-                            className="size-8"
-                            onClick={() => {
-                              setActiveUnavailableRange(
-                                formData.unavailable?.ranges?.length || 0,
-                              );
-                            }}
-                          >
-                            <Plus />
-                          </Button>
-                        )}
-                        <Button
-                          variant="destructive"
-                          className="border border-danger h-8"
-                          onClick={() => {
-                            setFormData((prev) => ({
-                              ...prev,
-                              unavailable: null,
-                            }));
-                          }}
-                        >
-                          <X />
-                          Unavailables
-                        </Button>
-                      </div>
-                    </div>
-                    {/* Calendars */}
-                    <div className="flex gap-2">
-                      <div className="p-2 border border-primary/50 rounded space-y-2">
-                        {/* Weekly */}
-                        <div className="border-b">
-                          <ToggleGroup
-                            className="p-1 bg-background space-x-1 [&>button[data-state=on]]:bg-primary/15 [&>button[data-state=on]]:text-primary [&>button[data-state=on]]:rounded-full"
-                            type="multiple"
-                            value={formData.available?.weekly ?? []}
-                            onValueChange={(weekly) =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                available: { ...prev.available, weekly },
-                              }))
-                            }
-                          >
-                            <ToggleGroupItem size="sm" value={6}>
-                              S
-                            </ToggleGroupItem>
-                            <ToggleGroupItem size="sm" value={0}>
-                              M
-                            </ToggleGroupItem>
-                            <ToggleGroupItem size="sm" value={1}>
-                              T
-                            </ToggleGroupItem>
-                            <ToggleGroupItem size="sm" value={2}>
-                              W
-                            </ToggleGroupItem>
-                            <ToggleGroupItem size="sm" value={3}>
-                              T
-                            </ToggleGroupItem>
-                            <ToggleGroupItem size="sm" value={4}>
-                              F
-                            </ToggleGroupItem>
-                            <ToggleGroupItem size="sm" value={5}>
-                              S
-                            </ToggleGroupItem>
-                          </ToggleGroup>
-                        </div>
-                        {/* Availablity Calendars */}
-                        <TabsContent
-                          value="ethiopian"
-                          className="flex justify-center mt-0"
-                        >
-                          <EthiopianCalendar
-                            mode={selectedDateMode}
-                            selected={
-                              selectedDateMode === "range"
-                                ? formData.available?.ranges?.length > 0
-                                  ? formData.available.ranges[
-                                      activeAvailableRange
-                                    ]
-                                  : null
-                                : formData.available?.exactly
-                            }
-                            onSelect={(values) => {
-                              if (selectedDateMode === "range") {
-                                setFormData((prev) => {
-                                  const prevRanges =
-                                    prev.available?.ranges ?? [];
-                                  let ranges = [...prevRanges];
-                                  if (activeAvailableRange >= ranges.length) {
-                                    ranges.push(values);
-                                  } else {
-                                    ranges[activeAvailableRange] = values;
-                                  }
-                                  ranges = ranges.filter((r) => r != null);
-                                  // if(activeAvailableRange > ranges.length) {
-                                  //   setActiveAvailableRange(ranges.length);
-                                  // }
-                                  return {
-                                    ...prev,
-                                    available: {
-                                      ...prev.available,
-                                      ranges,
-                                    },
-                                  };
-                                });
-                              } else {
-                                setFormData((prev) => ({
-                                  ...prev,
-                                  available: {
-                                    ...prev.available,
-                                    exactly: values,
-                                  },
-                                }));
-                              }
-                            }}
-                            startMonth={startMonth}
-                            endMonth={endMonth}
-                            reverseYears
-                            className="px-0 py-0 pb-1 w-full"
-                            captionLayout="dropdown"
-                          />
-                        </TabsContent>
-                        <TabsContent
-                          value="gregorian"
-                          className="flex justify-center mt-0"
-                        >
-                          <Calendar
-                            mode={selectedDateMode}
-                            selected={
-                              selectedDateMode === "range"
-                                ? formData.available?.ranges?.length > 0
-                                  ? formData.available.ranges[
-                                      activeAvailableRange
-                                    ]
-                                  : null
-                                : formData.available?.exactly
-                            }
-                            onSelect={(values) => {
-                              if (selectedDateMode === "range") {
-                                setFormData((prev) => {
-                                  const prevRanges =
-                                    prev.available?.ranges ?? [];
-                                  let ranges = [...prevRanges];
-                                  if (activeAvailableRange >= ranges.length) {
-                                    ranges.push(values);
-                                  } else {
-                                    ranges[activeAvailableRange] = values;
-                                  }
-                                  ranges = ranges.filter((r) => r != null);
-                                  return {
-                                    ...prev,
-                                    available: {
-                                      ...prev.available,
-                                      ranges,
-                                    },
-                                  };
-                                });
-                              } else {
-                                setFormData((prev) => ({
-                                  ...prev,
-                                  available: {
-                                    ...prev.available,
-                                    exactly: values,
-                                  },
-                                }));
-                              }
-                            }}
-                            startMonth={startMonth}
-                            endMonth={endMonth}
-                            reverseYears
-                            className="px-0 py-2 w-full"
-                            captionLayout="dropdown"
-                          />
-                        </TabsContent>
-                      </div>
-                      <div className="p-2 border border-orange-600/50 rounded space-y-2">
-                        {/* Weekly */}
-                        <div className="border-b">
-                          <ToggleGroup
-                            className="p-1 bg-background space-x-1 [&>button[data-state=on]]:bg-orange-600/15 [&>button[data-state=on]]:text-orange-900 [&>button[data-state=on]]:rounded-full"
-                            type="multiple"
-                            value={formData.unavailable?.weekly}
-                            onValueChange={(weekly) =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                unavailable: { ...prev.unavailable, weekly },
-                              }))
-                            }
-                          >
-                            <ToggleGroupItem size="sm" value={6}>
-                              S
-                            </ToggleGroupItem>
-                            <ToggleGroupItem size="sm" value={0}>
-                              M
-                            </ToggleGroupItem>
-                            <ToggleGroupItem size="sm" value={1}>
-                              T
-                            </ToggleGroupItem>
-                            <ToggleGroupItem size="sm" value={2}>
-                              W
-                            </ToggleGroupItem>
-                            <ToggleGroupItem size="sm" value={3}>
-                              T
-                            </ToggleGroupItem>
-                            <ToggleGroupItem size="sm" value={4}>
-                              F
-                            </ToggleGroupItem>
-                            <ToggleGroupItem size="sm" value={5}>
-                              S
-                            </ToggleGroupItem>
-                          </ToggleGroup>
-                        </div>
-                        {/* Unavailablity Calendars */}
-                        <TabsContent
-                          value="ethiopian"
-                          className="flex justify-center mt-0"
-                        >
-                          <EthiopianCalendar
-                            mode={selectedDateMode}
-                            selected={
-                              selectedDateMode === "range"
-                                ? formData.unavailable?.ranges?.length > 0
-                                  ? formData.unavailable.ranges[
-                                      activeUnavailableRange
-                                    ]
-                                  : null
-                                : formData.unavailable?.exactly
-                            }
-                            onSelect={(values) => {
-                              if (selectedDateMode === "range") {
-                                setFormData((prev) => {
-                                  const prevRanges =
-                                    prev.unavailable?.ranges ?? [];
-                                  let ranges = [...prevRanges];
-                                  if (activeUnavailableRange >= ranges.length) {
-                                    ranges.push(values);
-                                  } else {
-                                    ranges[activeUnavailableRange] = values;
-                                  }
-                                  ranges = ranges.filter((r) => r != null);
-                                  return {
-                                    ...prev,
-                                    unavailable: {
-                                      ...prev.unavailable,
-                                      ranges,
-                                    },
-                                  };
-                                });
-                              } else {
-                                setFormData((prev) => ({
-                                  ...prev,
-                                  unavailable: {
-                                    ...prev.unavailable,
-                                    exactly: values,
-                                  },
-                                }));
-                              }
-                            }}
-                            startMonth={startMonth}
-                            endMonth={endMonth}
-                            reverseYears
-                            className="px-0 py-0 pb-1 w-full"
-                            captionLayout="dropdown"
-                          />
-                        </TabsContent>
-                        <TabsContent
-                          value="gregorian"
-                          className="flex justify-center mt-0"
-                        >
-                          <Calendar
-                            mode={selectedDateMode}
-                            selected={
-                              selectedDateMode === "range"
-                                ? formData.unavailable?.ranges?.length > 0
-                                  ? formData.unavailable.ranges[
-                                      activeUnavailableRange
-                                    ]
-                                  : null
-                                : formData.unavailable?.exactly
-                            }
-                            onSelect={(values) => {
-                              if (selectedDateMode === "range") {
-                                setFormData((prev) => {
-                                  const prevRanges =
-                                    prev.unavailable?.ranges ?? [];
-                                  let ranges = [...prevRanges];
-                                  if (activeUnavailableRange >= ranges.length) {
-                                    ranges.push(values);
-                                  } else {
-                                    ranges[activeUnavailableRange] = values;
-                                  }
-                                  ranges = ranges.filter((r) => r != null);
-                                  return {
-                                    ...prev,
-                                    unavailable: {
-                                      ...prev.unavailable,
-                                      ranges,
-                                    },
-                                  };
-                                });
-                              } else {
-                                setFormData((prev) => ({
-                                  ...prev,
-                                  unavailable: {
-                                    ...prev.unavailable,
-                                    exactly: values,
-                                  },
-                                }));
-                              }
-                            }}
-                            startMonth={startMonth}
-                            endMonth={endMonth}
-                            reverseYears
-                            className="px-0 py-2 w-full"
-                            captionLayout="dropdown"
-                          />
-                        </TabsContent>
-                      </div>
-                    </div>
-                  </Tabs>
-                </CardContent>
-              </Card>
+          <div className="space-y-4 py-4">
+            {/* Basic Info */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Calendar Name</Label>
+                <Input
+                  value={formData.name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
+                  placeholder="e.g., Standard Business Hours"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Description</Label>
+                <Input
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                  placeholder="Brief description"
+                />
+              </div>
             </div>
-            {/* <div className="space-y-2">
-              <Label>Calendar</Label>
-              <input
-                value={formData.calendarId}
-                onChange={(e) =>
-                  setFormData({ ...formData, calendarId: e.target.value })
-                }
-              />
-            </div> */}
-            {/* <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={formData.isActive}
-                onChange={(e) =>
-                  setFormData({ ...formData, isActive: e.target.checked })
-                }
-                id="active-check"
-                className="h-4 w-4 rounded border-gray-300 accent-primary"
-              />
-              <Label htmlFor="active-check">Set as Active</Label>
-            </div> */}
+
+            {/* Availability Section - Collapsible */}
+            <CollapsibleSection
+              title="Availability Schedule"
+              icon={Clock}
+              color="green"
+            >
+              <div className="space-y-4">
+                {/* Weekly Days Selection */}
+                <div className="space-y-2">
+                  <Label>Available Days</Label>
+                  <ToggleGroup
+                    className="flex flex-wrap gap-1"
+                    type="multiple"
+                    value={formData.available?.weekly || []}
+                    onValueChange={(weekly) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        available: { ...prev.available, weekly },
+                      }))
+                    }
+                  >
+                    {DAYS.map((day) => (
+                      <ToggleGroupItem
+                        key={day.value}
+                        value={day.value}
+                        className="data-[state=on]:bg-green-500/20"
+                      >
+                        {day.short}
+                      </ToggleGroupItem>
+                    ))}
+                  </ToggleGroup>
+                </div>
+
+                {/* Global Time Slots - Collapsible */}
+                <TimeSlotEditor
+                  value={formData.available?.hours || []}
+                  onChange={(hours) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      available: { ...prev.available, hours },
+                    }))
+                  }
+                  label="Global Time Slots (applies to all selected days)"
+                  color="green"
+                />
+
+                {/* Daily Hours Configuration - Collapsible */}
+                <WeeklyHoursEditor
+                  value={formData.available?.weeklyHours || {}}
+                  onChange={(weeklyHours) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      available: { ...prev.available, weeklyHours },
+                    }))
+                  }
+                  label="Daily Hours (per day)"
+                  color="green"
+                />
+
+                {/* Date Ranges */}
+                <div className="space-y-2">
+                  <Label>Available Date Ranges</Label>
+                  <div className="flex flex-wrap gap-1">
+                    {(formData.available?.ranges ?? []).map(
+                      ({ from, to }, idx) => (
+                        <Badge
+                          key={idx}
+                          variant={
+                            activeAvailableRange === idx ? "default" : "outline"
+                          }
+                          onClick={() => setActiveAvailableRange(idx)}
+                          className="cursor-pointer"
+                        >
+                          {`${formatLocaleShortDate(from)} - ${formatLocaleShortDate(to)}`}
+                          <X
+                            className="h-3 w-3 ml-1 cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setFormData((prev) => ({
+                                ...prev,
+                                available: {
+                                  ...prev.available,
+                                  ranges:
+                                    prev.available?.ranges?.filter(
+                                      (_, i) => i !== idx,
+                                    ) || [],
+                                },
+                              }));
+                            }}
+                          />
+                        </Badge>
+                      ),
+                    )}
+                  </div>
+                </div>
+              </div>
+            </CollapsibleSection>
+
+            {/* Unavailability Section - Collapsible */}
+            <CollapsibleSection
+              title="Unavailability Schedule"
+              icon={X}
+              color="orange"
+            >
+              <div className="space-y-4">
+                {/* Weekly Days Unavailable */}
+                <div className="space-y-2">
+                  <Label>Unavailable Days</Label>
+                  <ToggleGroup
+                    className="flex flex-wrap gap-1"
+                    type="multiple"
+                    value={formData.unavailable?.weekly || []}
+                    onValueChange={(weekly) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        unavailable: { ...prev.unavailable, weekly },
+                      }))
+                    }
+                  >
+                    {DAYS.map((day) => (
+                      <ToggleGroupItem
+                        key={day.value}
+                        value={day.value}
+                        className="data-[state=on]:bg-orange-500/20"
+                      >
+                        {day.short}
+                      </ToggleGroupItem>
+                    ))}
+                  </ToggleGroup>
+                </div>
+
+                {/* Unavailable Hours - Collapsible */}
+                <TimeSlotEditor
+                  value={formData.unavailable?.hours || []}
+                  onChange={(hours) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      unavailable: { ...prev.unavailable, hours },
+                    }))
+                  }
+                  label="Unavailable Time Slots"
+                  color="orange"
+                />
+
+                {/* Daily Hours Configuration - Collapsible */}
+                <WeeklyHoursEditor
+                  value={formData.unavailable?.weeklyHours || {}}
+                  onChange={(weeklyHours) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      unavailable: { ...prev.unavailable, weeklyHours },
+                    }))
+                  }
+                  label="Daily Hours (per day)"
+                  color="green"
+                />
+
+                {/* Unavailable Date Ranges */}
+                <div className="space-y-2">
+                  <Label>Unavailable Date Ranges</Label>
+                  <div className="flex flex-wrap gap-1">
+                    {(formData.unavailable?.ranges ?? []).map(
+                      ({ from, to }, idx) => (
+                        <Badge
+                          key={idx}
+                          variant={
+                            activeUnavailableRange === idx
+                              ? "default"
+                              : "outline"
+                          }
+                          onClick={() => setActiveUnavailableRange(idx)}
+                          className="cursor-pointer bg-orange-100 hover:bg-orange-200"
+                        >
+                          {`${formatLocaleShortDate(from)} - ${formatLocaleShortDate(to)}`}
+                          <X
+                            className="h-3 w-3 ml-1 cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setFormData((prev) => ({
+                                ...prev,
+                                unavailable: {
+                                  ...prev.unavailable,
+                                  ranges:
+                                    prev.unavailable?.ranges?.filter(
+                                      (_, i) => i !== idx,
+                                    ) || [],
+                                },
+                              }));
+                            }}
+                          />
+                        </Badge>
+                      ),
+                    )}
+                  </div>
+                </div>
+              </div>
+            </CollapsibleSection>
+
+            {/* Date Selection Calendar */}
+            <Card>
+              <CardTitle className="px-4">
+                <h3 className="font-semibold text-green-600 flex items-center gap-2">
+                  <Clock className="h-4 w-4" /> Specific Date Selection
+                </h3>
+              </CardTitle>
+              <CardContent className="pt-4">
+                <Tabs
+                  defaultValue="gregorian"
+                  value={calendarMode}
+                  onValueChange={setCalendarMode}
+                  className="w-full"
+                >
+                  <div className="flex justify-between items-center mb-4">
+                    <TabsList>
+                      <TabsTrigger value="gregorian">Gregorian</TabsTrigger>
+                      <TabsTrigger value="ethiopian">Ethiopian</TabsTrigger>
+                    </TabsList>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          setSelectedDateMode(
+                            selectedDateMode === "range" ? "multiple" : "range",
+                          )
+                        }
+                      >
+                        {selectedDateMode === "range"
+                          ? "Range Mode"
+                          : "Multiple Mode"}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Available Dates Calendar */}
+                    <div className="border rounded-lg p-2">
+                      <Label className="text-green-600 block mb-2">
+                        Select Available Dates
+                      </Label>
+                      <TabsContent value="ethiopian" className="mt-0">
+                        <EthiopianCalendar
+                          mode={selectedDateMode}
+                          selected={
+                            selectedDateMode === "range"
+                              ? formData.available?.ranges?.length > 0
+                                ? formData.available.ranges[
+                                    activeAvailableRange
+                                  ]
+                                : null
+                              : formData.available?.exactly
+                          }
+                          onSelect={(values) => {
+                            if (selectedDateMode === "range") {
+                              setFormData((prev) => {
+                                const ranges = [
+                                  ...(prev.available?.ranges || []),
+                                ];
+                                if (activeAvailableRange >= ranges.length) {
+                                  ranges.push(values);
+                                } else {
+                                  ranges[activeAvailableRange] = values;
+                                }
+                                return {
+                                  ...prev,
+                                  available: {
+                                    ...prev.available,
+                                    ranges: ranges.filter((r) => r != null),
+                                  },
+                                };
+                              });
+                            } else {
+                              setFormData((prev) => ({
+                                ...prev,
+                                available: {
+                                  ...prev.available,
+                                  exactly: values,
+                                },
+                              }));
+                            }
+                          }}
+                          startMonth={startMonth}
+                          endMonth={endMonth}
+                          className="w-full"
+                        />
+                      </TabsContent>
+                      <TabsContent value="gregorian" className="mt-0">
+                        <Calendar
+                          mode={selectedDateMode}
+                          selected={
+                            selectedDateMode === "range"
+                              ? formData.available?.ranges?.length > 0
+                                ? formData.available.ranges[
+                                    activeAvailableRange
+                                  ]
+                                : null
+                              : formData.available?.exactly
+                          }
+                          onSelect={(values) => {
+                            if (selectedDateMode === "range") {
+                              setFormData((prev) => {
+                                const ranges = [
+                                  ...(prev.available?.ranges || []),
+                                ];
+                                if (activeAvailableRange >= ranges.length) {
+                                  ranges.push(values);
+                                } else {
+                                  ranges[activeAvailableRange] = values;
+                                }
+                                return {
+                                  ...prev,
+                                  available: {
+                                    ...prev.available,
+                                    ranges: ranges.filter((r) => r != null),
+                                  },
+                                };
+                              });
+                            } else {
+                              setFormData((prev) => ({
+                                ...prev,
+                                available: {
+                                  ...prev.available,
+                                  exactly: values,
+                                },
+                              }));
+                            }
+                          }}
+                          startMonth={startMonth}
+                          endMonth={endMonth}
+                          className="w-full"
+                        />
+                      </TabsContent>
+                    </div>
+
+                    {/* Unavailable Dates Calendar */}
+                    <div className="border rounded-lg p-2">
+                      <Label className="text-orange-600 block mb-2">
+                        Select Unavailable Dates
+                      </Label>
+                      <TabsContent value="ethiopian" className="mt-0">
+                        <EthiopianCalendar
+                          mode={selectedDateMode}
+                          selected={
+                            selectedDateMode === "range"
+                              ? formData.unavailable?.ranges?.length > 0
+                                ? formData.unavailable.ranges[
+                                    activeUnavailableRange
+                                  ]
+                                : null
+                              : formData.unavailable?.exactly
+                          }
+                          onSelect={(values) => {
+                            if (selectedDateMode === "range") {
+                              setFormData((prev) => {
+                                const ranges = [
+                                  ...(prev.unavailable?.ranges || []),
+                                ];
+                                if (activeUnavailableRange >= ranges.length) {
+                                  ranges.push(values);
+                                } else {
+                                  ranges[activeUnavailableRange] = values;
+                                }
+                                return {
+                                  ...prev,
+                                  unavailable: {
+                                    ...prev.unavailable,
+                                    ranges: ranges.filter((r) => r != null),
+                                  },
+                                };
+                              });
+                            } else {
+                              setFormData((prev) => ({
+                                ...prev,
+                                unavailable: {
+                                  ...prev.unavailable,
+                                  exactly: values,
+                                },
+                              }));
+                            }
+                          }}
+                          startMonth={startMonth}
+                          endMonth={endMonth}
+                          className="w-full"
+                        />
+                      </TabsContent>
+                      <TabsContent value="gregorian" className="mt-0">
+                        <Calendar
+                          mode={selectedDateMode}
+                          selected={
+                            selectedDateMode === "range"
+                              ? formData.unavailable?.ranges?.length > 0
+                                ? formData.unavailable.ranges[
+                                    activeUnavailableRange
+                                  ]
+                                : null
+                              : formData.unavailable?.exactly
+                          }
+                          onSelect={(values) => {
+                            if (selectedDateMode === "range") {
+                              setFormData((prev) => {
+                                const ranges = [
+                                  ...(prev.unavailable?.ranges || []),
+                                ];
+                                if (activeUnavailableRange >= ranges.length) {
+                                  ranges.push(values);
+                                } else {
+                                  ranges[activeUnavailableRange] = values;
+                                }
+                                return {
+                                  ...prev,
+                                  unavailable: {
+                                    ...prev.unavailable,
+                                    ranges: ranges.filter((r) => r != null),
+                                  },
+                                };
+                              });
+                            } else {
+                              setFormData((prev) => ({
+                                ...prev,
+                                unavailable: {
+                                  ...prev.unavailable,
+                                  exactly: values,
+                                },
+                              }));
+                            }
+                          }}
+                          startMonth={startMonth}
+                          endMonth={endMonth}
+                          className="w-full"
+                        />
+                      </TabsContent>
+                    </div>
+                  </div>
+                </Tabs>
+              </CardContent>
+            </Card>
           </div>
+
           <DialogFooter>
             <Button
               variant="outline"
@@ -1170,6 +1759,7 @@ export default function CalendarsPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Delete Dialog */}
       <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
         <DialogContent>
           <DialogHeader>
