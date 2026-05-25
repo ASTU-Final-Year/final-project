@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import { useAuthStore, useUIStore } from '../store';
 import { Mail, Lock, User, Phone, Circle, AlertCircle, Eye, EyeOff } from 'lucide-react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
@@ -210,8 +210,8 @@ export default function SignUpScreen() {
           </View>
 
           <View style={tw`flex-row gap-4`}>
-            <SocialButton icon={(props: any) => <FontAwesome5 name="google" {...props} />} label="Google" />
-            <SocialButton icon={(props: any) => <FontAwesome5 name="apple" {...props} />} label="Apple" />
+            <SocialButton imageSource={{ uri: 'https://img.icons8.com/color/48/000000/google-logo.png' }} label="Google" />
+            <SocialButton imageSource={{ uri: 'https://img.icons8.com/ios-filled/50/000000/mac-os.png' }} label="Apple" />
           </View>
         </View>
       </ScrollView>
@@ -245,10 +245,14 @@ function Input({ label, icon: Icon, rightIcon: RightIcon, onRightIconPress, ...p
   );
 }
 
-function SocialButton({ icon: Icon, label }: any) {
+function SocialButton({ icon: Icon, imageSource, label }: any) {
   return (
     <TouchableOpacity style={tw`flex-1 flex-row items-center justify-center gap-2 py-3 rounded-xl border border-gray-200`}>
-      <Icon color="#000" size={20} />
+      {imageSource ? (
+        <Image source={imageSource} style={tw`w-5 h-5`} resizeMode="contain" />
+      ) : (
+        <Icon color="#000" size={20} />
+      )}
       <Text style={tw`text-xs font-semibold`}>{label}</Text>
     </TouchableOpacity>
   );
