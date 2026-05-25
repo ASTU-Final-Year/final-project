@@ -51,12 +51,6 @@ export default function HomeScreen() {
               style={tw`w-full bg-gray-50 border border-gray-100 rounded-2xl py-4 pl-12 pr-4 text-gray-900 text-sm font-medium`}
             />
           </View>
-          <TouchableOpacity
-            style={tw`p-4 bg-blue-600 rounded-2xl shadow-lg shadow-blue-100`}
-            activeOpacity={0.8}
-          >
-            <Sliders color="white" size={20} />
-          </TouchableOpacity>
         </View>
       </View>
 
