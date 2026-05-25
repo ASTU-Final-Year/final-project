@@ -85,7 +85,7 @@ export default function App() {
           />
           <NavButton 
             icon={CalendarCheck} 
-            label="Booking" 
+            label="Appointment" 
             active={activeScreen === 'ACTIVE' || activeScreen === 'HISTORY'} 
             onClick={() => setActiveScreen('ACTIVE')} 
             badge={upcomingCount > 0 ? upcomingCount : undefined}
