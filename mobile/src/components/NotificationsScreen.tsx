@@ -14,16 +14,19 @@ export default function NotificationsScreen() {
     markAsRead(id);
 
     if (notification) {
-      const todayStr = new Date().toISOString().split('T')[0];
-      const createdDateStr = notification.createdAt.split('T')[0];
+      const title = notification.title.toLowerCase();
 
-      if (createdDateStr === todayStr) {
-        setAppointmentTab('Active');
-        setActiveScreen('ACTIVE');
-      } else if (createdDateStr > todayStr) {
+      if (title.includes('upcoming')) {
         setAppointmentTab('Upcoming');
         setActiveScreen('ACTIVE');
+      } else if (title.includes('progress') || title.includes('confirmed')) {
+        setAppointmentTab('Active');
+        setActiveScreen('ACTIVE');
+      } else if (title.includes('payment')) {
+        setAppointmentTab('History');
+        setActiveScreen('HISTORY');
       } else {
+        // Fallback for general notifications
         setAppointmentTab('History');
         setActiveScreen('HISTORY');
       }
