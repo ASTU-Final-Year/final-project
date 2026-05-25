@@ -3,6 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useAuthStore, useUIStore } from '../store';
 import { Mail, Lock, User, Phone, Circle, AlertCircle, Eye, EyeOff } from 'lucide-react-native';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { tw } from '../lib/native-utils';
 
 // ─── Password policy ────────────────────────────────────────────────────────
@@ -77,6 +78,7 @@ export default function SignUpScreen() {
     setActiveScreen('HOME');
   };
 
+  // Formatted component
   return (
     <View style={tw`flex-1 bg-white`}>
       <ScrollView contentContainerStyle={tw`p-8 flex-grow`} keyboardShouldPersistTaps="handled">
@@ -208,8 +210,8 @@ export default function SignUpScreen() {
           </View>
 
           <View style={tw`flex-row gap-4`}>
-            <SocialButton icon={Circle} label="Google" />
-            <SocialButton icon={Circle} label="Apple" />
+            <SocialButton icon={(props: any) => <FontAwesome5 name="google" {...props} />} label="Google" />
+            <SocialButton icon={(props: any) => <FontAwesome5 name="apple" {...props} />} label="Apple" />
           </View>
         </View>
       </ScrollView>
