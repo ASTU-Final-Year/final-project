@@ -274,6 +274,8 @@ export const sqOrganizationServices = sqliteTable("organization_services", {
   name: text("name", { length: 54 }).notNull(),
   description: text("description", { length: 200 }).notNull().default(""),
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  maxClientsPerSlot: integer("max_clients_per_slot").default(10).notNull(),
+  slotDuration: integer("slot_duration").default(60).notNull(), // in minutes
   price: numeric("price", { mode: "number" }).notNull().default(0.0),
   rating: numeric("rating", { mode: "number" }).notNull().default(0.0),
   total_ratings: integer("total_ratings").notNull().default(0),

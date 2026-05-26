@@ -56,13 +56,19 @@ async function checkCalendarAvailability(
   startTime: Date,
   endTime: Date,
   tx: Transaction,
-): Promise<{ available: boolean; reason?: string }> {
-  // Get service with calendar
+): Promise<{
+  available: boolean;
+  reason?: string;
+  currentBookings?: number;
+  maxCapacity?: number;
+}> {
+  // Get service with calendar and capacity
   const [serviceData] = await tx
     .select({
       calendarId: tables.organizationService.calendarId,
       calendar: tables.organizationCalendar,
-      // duration: tables.organizationService.duration,
+      maxClientsPerSlot: tables.organizationService.maxClientsPerSlot,
+      slotDuration: tables.organizationService.slotDuration,
     })
     .from(tables.organizationService)
     .leftJoin(
@@ -72,38 +78,14 @@ async function checkCalendarAvailability(
     .where(eq(tables.organizationService.id, serviceId));
 
   if (!serviceData || !serviceData.calendar) {
-    return { available: false }; // No calendar restrictions
+    return { available: true };
   }
-  // const cal = serviceData.calendar as any;
-  const calendar = serviceData.calendar as any;
-  // const calendar = {
-  //   ...cal,
-  //   available: {
-  //     weekly: cal.available?.weekly || [],
-  //     weeklyHours: cal.available?.weeklyHours || {},
-  //     hours: cal.available?.hours || [],
-  //     ranges:
-  //       cal.available?.ranges?.map(({ from, to }) => ({
-  //         from: new Date(from),
-  //         to: new Date(to),
-  //       })) || [],
-  //     exactly: cal.available?.exactly?.map((e) => new Date(e)) || [],
-  //   },
-  //   unavailable: {
-  //     weekly: cal.unavailable?.weekly || [],
-  //     weeklyHours: cal.unavailable?.weeklyHours || {},
-  //     hours: cal.unavailable?.hours || [],
-  //     ranges:
-  //       cal.unavailable?.ranges?.map(({ from, to }) => ({
-  //         from: new Date(from),
-  //         to: new Date(to),
-  //       })) || [],
-  //     exactly: cal.unavailable?.exactly?.map((e) => new Date(e)) || [],
-  //   },
-  // };
 
+  const calendar = serviceData.calendar;
+  const maxCapacity = serviceData.maxClientsPerSlot || 5;
   const dayOfWeek = startTime.getDay();
   const adjustedDay = dayOfWeek === 0 ? 7 : dayOfWeek;
+
   // Check weekly availability
   const availableDays = calendar.available?.weekly || [];
   if (!availableDays.includes(adjustedDay)) {
@@ -129,7 +111,7 @@ async function checkCalendarAvailability(
     };
   }
 
-  // Check if date is specifically unavailable - FIX: Convert string to Date
+  // Check if date is specifically unavailable
   const isSpecificallyUnavailable = calendar.unavailable?.exactly?.some(
     (dateStr: string | Date) => {
       const date = dateStr instanceof Date ? dateStr : new Date(dateStr);
@@ -144,7 +126,7 @@ async function checkCalendarAvailability(
     };
   }
 
-  // Check daily working hours (weeklyHours)
+  // Check working hours
   const weeklyHours = calendar.available?.weeklyHours;
   if (weeklyHours && weeklyHours[adjustedDay - 1]) {
     const [startHour, startMinute] = weeklyHours[adjustedDay - 1][0]
@@ -165,7 +147,6 @@ async function checkCalendarAvailability(
       };
     }
   } else {
-    // Fallback to global hours
     const availableHours = calendar.available?.hours || [["09:00", "17:00"]];
     const startHour = startTime.getHours();
     const startMinute = startTime.getMinutes();
@@ -193,28 +174,42 @@ async function checkCalendarAvailability(
     }
   }
 
-  // Check for overlapping appointments
-  const [overlapping] = await tx
+  // Check for overlapping appointments and count current bookings
+  const timeWindowStart = new Date(startTime);
+  timeWindowStart.setMinutes(timeWindowStart.getMinutes() - 5);
+  const timeWindowEnd = new Date(startTime);
+  timeWindowEnd.setMinutes(
+    timeWindowEnd.getMinutes() + (serviceData.slotDuration || 60),
+  );
+
+  const [currentBookings] = await tx
     .select({ count: sql<number>`count(*)` })
     .from(tables.appointment)
     .where(
       and(
         eq(tables.appointment.serviceId, serviceId),
-        sql`${tables.appointment.startTime} < ${endTime.toISOString()}`,
-        sql`${tables.appointment.endTime} > ${startTime.toISOString()}`,
         eq(tables.appointment.isActive, true),
         eq(tables.appointment.status, "scheduled"),
+        // Find overlapping time slots
+        sql`${tables.appointment.startTime} < ${timeWindowEnd.toISOString()}`,
+        sql`${tables.appointment.endTime} > ${timeWindowStart.toISOString()}`,
       ),
     );
 
-  if (overlapping.count > 0) {
+  if (currentBookings.count >= maxCapacity) {
     return {
       available: false,
-      reason: "This time slot is already booked",
+      reason: `This time slot is fully booked (${currentBookings.count}/${maxCapacity} capacity)`,
+      currentBookings: currentBookings.count,
+      maxCapacity: maxCapacity,
     };
   }
 
-  return { available: true };
+  return {
+    available: true,
+    currentBookings: currentBookings.count,
+    maxCapacity: maxCapacity,
+  };
 }
 
 const onQueryError = (req, ctx) => {

@@ -105,6 +105,8 @@ export default function ServicesPage() {
     description: "",
     isActive: true,
     calendarId: null,
+    maxClientsPerSlot: 10,
+    slotDuration: 60,
     imageUrl: null,
     price: 0.0,
   });
@@ -199,6 +201,8 @@ export default function ServicesPage() {
         description: "",
         isActive: true,
         calendarId: null,
+        maxClientsPerSlot: 10,
+        slotDuration: 60,
         imageUrl: null,
         price: 0.0,
       });
@@ -241,6 +245,8 @@ export default function ServicesPage() {
       description: service.description,
       isActive: service.isActive,
       calendarId: service.calendarId,
+      maxClientsPerSlot: service.maxClientsPerSlot,
+      slotDuration: service.slotDuration,
       imageUrl: service.imageUrl,
       price: service.price,
     });
@@ -574,6 +580,34 @@ export default function ServicesPage() {
                 value={formData.price}
                 onChange={(e) =>
                   setFormData({ ...formData, price: parseInt(e.target.value) })
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Clients per Slot</Label>
+              <Input
+                type="number"
+                pattern="/\d{1,7}/"
+                value={formData.price}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    maxClientsPerSlot: parseInt(e.target.value),
+                  })
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Slot Duration</Label>
+              <Input
+                type="number"
+                pattern="/\d{1,7}/"
+                value={formData.price}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    slotDuration: parseInt(e.target.value),
+                  })
                 }
               />
             </div>

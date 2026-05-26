@@ -275,6 +275,12 @@ export const pgOrganizationServices = pgTable("organization_services", {
   name: varchar("name", { length: 54 }).notNull(),
   description: varchar("description", { length: 200 }).notNull().default(""),
   isActive: boolean("is_active").notNull().default(true),
+  maxClientsPerSlot: integer("max_clients_per_slot").default(10).notNull(),
+  slotDuration: integer("slot_duration").default(60).notNull(), // in minutes
+  price: numeric("price", { mode: "number" }).notNull().default(0.0),
+  rating: numeric("rating", { mode: "number" }).notNull().default(0.0),
+  total_ratings: integer("total_ratings").notNull().default(0),
+  imageUrl: varchar("image_url", { length: 256 }),
   calendarId: cpuuid("calendar_id").references(
     () => pgOrganizationCalendars.id,
     {
@@ -288,10 +294,6 @@ export const pgOrganizationServices = pgTable("organization_services", {
       onUpdate: "cascade",
       onDelete: "cascade",
     }),
-  price: numeric("price", { mode: "number" }).notNull().default(0.0),
-  rating: numeric("rating", { mode: "number" }).notNull().default(0.0),
-  total_ratings: integer("total_ratings").notNull().default(0),
-  imageUrl: varchar("image_url", { length: 256 }),
   ...timestamps,
 });
 

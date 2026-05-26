@@ -72,6 +72,8 @@ export default function PublicOrganizationService({ service }) {
   const [isClient, setIsClient] = useState(false);
   const [user, setUser] = useState(null);
   const [createdAppointment, setCreatedAppointment] = useState(null);
+  const [slotCapacities, setSlotCapacities] = useState({});
+  const [isLoadingSlots, setIsLoadingSlots] = useState(false);
 
   // Check if user is logged in
   useEffect(() => {
@@ -92,65 +94,141 @@ export default function PublicOrganizationService({ service }) {
     checkAuth();
   }, []);
 
-  // Generate available time slots based on selected date and calendar
   useEffect(() => {
+    // Reset slot capacities when date changes
+    (async () => setSlotCapacities({}))();
+    (async () => setSelectedTime(null))();
+  }, [selectedDate]);
+
+  useEffect(() => {
+    let isMounted = true;
+
     const generateTimeSlots = async () => {
-      if (selectedDate && service.calendar) {
-        const dayOfWeek = selectedDate.getDay();
-        const adjustedDay = dayOfWeek === 0 ? 7 : dayOfWeek;
-        const isToday =
-          selectedDate.setHours(0, 0, 0, 0) === new Date().setHours(0, 0, 0, 0);
-        const todayHour = new Date().getHours();
-        const todayMinute = new Date().getMinutes();
-        const todayTime = todayHour * 60 + todayMinute;
+      if (!selectedDate || !service.calendar) return;
 
-        const calendar = service.calendar;
-        const availableDays = calendar.available?.weekly || [];
-        const availableHours =
-          calendar.available?.hours?.length > 0
-            ? calendar.available.hours
-            : [["00:00", "24:00"]];
-        const unavailableHours = calendar.unavailable?.hours || [];
+      setIsLoadingSlots(true);
+      // Clear previous slots and capacities immediately
+      setAvailableTimeSlots([]);
+      setSlotCapacities({});
+      setSelectedTime(null);
 
-        const slots = [];
-        if (availableDays.includes(adjustedDay)) {
-          availableHours.forEach((availableHour, idx) => {
-            const unavailableHour = unavailableHours[idx];
-            const [startHour, startMinute] = (availableHour?.[0] || "00:00")
-              .split(":")
-              .map(Number);
-            const [endHour, endMinute] = (availableHour?.[1] || "24:00")
-              .split(":")
-              .map(Number);
-            const [startHourU, startMinuteU] = (unavailableHour?.[0] || "00:00")
-              .split(":")
-              .map(Number);
-            const [endHourU, endMinuteU] = (unavailableHour?.[1] || "00:00")
-              .split(":")
-              .map(Number);
+      const dayOfWeek = selectedDate.getDay();
+      const adjustedDay = dayOfWeek === 0 ? 7 : dayOfWeek;
+      const isToday =
+        selectedDate.setHours(0, 0, 0, 0) === new Date().setHours(0, 0, 0, 0);
+      const todayHour = new Date().getHours();
+      const todayMinute = new Date().getMinutes();
+      const todayTime = todayHour * 60 + todayMinute;
 
-            for (let hour = startHour; hour < endHour; hour++) {
-              const isBeforeNow = isToday && hour * 60 < todayTime;
-              const isInUnavailable = hour >= startHourU && hour < endHourU;
+      const calendar = service.calendar;
+      const availableDays = calendar.available?.weekly || [];
+      const availableHours =
+        calendar.available?.hours?.length > 0
+          ? calendar.available.hours
+          : [["00:00", "24:00"]];
+      const unavailableHours = calendar.unavailable?.hours || [];
 
-              if (!isBeforeNow && !isInUnavailable) {
-                const ampm = hour >= 12 ? "PM" : "AM";
-                const displayHour =
-                  hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-                slots.push(`${displayHour}:00 ${ampm}`);
-              }
+      const slots = [];
+
+      if (availableDays.includes(adjustedDay)) {
+        availableHours.forEach((availableHour, idx) => {
+          const unavailableHour = unavailableHours[idx];
+          const [startHour, startMinute] = (availableHour?.[0] || "00:00")
+            .split(":")
+            .map(Number);
+          const [endHour, endMinute] = (availableHour?.[1] || "24:00")
+            .split(":")
+            .map(Number);
+          const [startHourU, startMinuteU] = (unavailableHour?.[0] || "00:00")
+            .split(":")
+            .map(Number);
+          const [endHourU, endMinuteU] = (unavailableHour?.[1] || "00:00")
+            .split(":")
+            .map(Number);
+
+          for (let hour = startHour; hour < endHour; hour++) {
+            const isBeforeNow = isToday && hour * 60 < todayTime;
+            const isInUnavailable = hour >= startHourU && hour < endHourU;
+
+            if (!isBeforeNow && !isInUnavailable) {
+              const ampm = hour >= 12 ? "PM" : "AM";
+              const displayHour =
+                hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+              slots.push(`${displayHour}:00 ${ampm}`);
             }
-          });
+          }
+        });
+
+        if (isMounted) {
           setAvailableTimeSlots(slots);
-        } else {
-          setAvailableTimeSlots([]);
-          toast.info("This service is not available on the selected day");
         }
-        setSelectedTime(null);
+
+        // Fetch capacity for each slot
+        const capacities = {};
+        for (const slot of slots) {
+          try {
+            const [time, period] = slot.split(" ");
+            let [hours, minutes] = time.split(":");
+            hours = parseInt(hours);
+            if (period === "PM" && hours !== 12) hours += 12;
+            if (period === "AM" && hours === 12) hours = 0;
+
+            const slotDateTime = new Date(selectedDate);
+            slotDateTime.setHours(hours, parseInt(minutes), 0);
+
+            const availabilityRes = await RequestHandler.Get(
+              `/api/v1/availability/check?serviceId=${service.id}&dateTime=${slotDateTime.toISOString()}`,
+            );
+
+            if (availabilityRes.ok && isMounted) {
+              const data = await availabilityRes.json();
+              capacities[slot] = {
+                available: data.available,
+                current: data.currentBookings || 0,
+                max: data.maxCapacity || service.maxClientsPerSlot || 5,
+                remaining: data.remaining || 0,
+              };
+            } else if (isMounted) {
+              capacities[slot] = {
+                available: true,
+                current: 0,
+                max: service.maxClientsPerSlot || 5,
+                remaining: service.maxClientsPerSlot || 5,
+              };
+            }
+          } catch (error) {
+            console.error("Error fetching slot capacity:", error);
+            if (isMounted) {
+              capacities[slot] = {
+                available: true,
+                current: 0,
+                max: service.maxClientsPerSlot || 5,
+                remaining: service.maxClientsPerSlot || 5,
+              };
+            }
+          }
+        }
+
+        if (isMounted) {
+          setSlotCapacities(capacities);
+        }
+      } else if (isMounted) {
+        setAvailableTimeSlots([]);
+        setSlotCapacities({});
+        toast.info("This service is not available on the selected day");
+      }
+
+      if (isMounted) {
+        setIsLoadingSlots(false);
       }
     };
+
     generateTimeSlots();
-  }, [selectedDate, service.calendar]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedDate, service.calendar, service.id, service.maxClientsPerSlot]);
 
   const resetBooking = () => {
     setSelectedDate(new Date());
@@ -483,23 +561,57 @@ export default function PublicOrganizationService({ service }) {
                           {selectedDate && (
                             <div className="flex-1 space-y-2">
                               <Label>Select Time</Label>
-                              {availableTimeSlots.length > 0 ? (
+                              {isLoadingSlots ? (
+                                <div className="flex items-center justify-center p-8">
+                                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                                </div>
+                              ) : availableTimeSlots.length > 0 ? (
                                 <div className="grid grid-cols-2 gap-2 max-h-[300px] overflow-y-auto">
-                                  {availableTimeSlots.map((time) => (
-                                    <Button
-                                      key={time}
-                                      variant={
-                                        selectedTime === time
-                                          ? "default"
-                                          : "outline"
-                                      }
-                                      onClick={() => setSelectedTime(time)}
-                                      className="text-sm"
-                                    >
-                                      <Clock className="w-3 h-3 mr-1" />
-                                      {time}
-                                    </Button>
-                                  ))}
+                                  {availableTimeSlots.map((time) => {
+                                    const capacity = slotCapacities[time];
+                                    const currentBookings =
+                                      capacity?.current || 0;
+                                    const maxCapacity =
+                                      capacity?.max ||
+                                      service.maxClientsPerSlot ||
+                                      5;
+                                    const isFull =
+                                      currentBookings >= maxCapacity;
+                                    const remaining =
+                                      capacity?.remaining ||
+                                      maxCapacity - currentBookings;
+
+                                    return (
+                                      <Button
+                                        key={time}
+                                        variant={
+                                          selectedTime === time
+                                            ? "default"
+                                            : "outline"
+                                        }
+                                        onClick={() =>
+                                          !isFull && setSelectedTime(time)
+                                        }
+                                        className="text-sm relative"
+                                        disabled={isFull}
+                                      >
+                                        <Clock className="w-3 h-3 mr-1" />
+                                        {time}
+                                        {!isFull &&
+                                          remaining > 0 &&
+                                          remaining < maxCapacity && (
+                                            <span className="ml-1 text-[10px] text-yellow-600">
+                                              ({remaining} left)
+                                            </span>
+                                          )}
+                                        {isFull && (
+                                          <span className="ml-1 text-xs text-red-500">
+                                            (Full)
+                                          </span>
+                                        )}
+                                      </Button>
+                                    );
+                                  })}
                                 </div>
                               ) : (
                                 <div className="text-center text-sm text-muted-foreground p-4 bg-muted rounded-lg">
@@ -510,7 +622,6 @@ export default function PublicOrganizationService({ service }) {
                           )}
                         </div>
 
-                        {/* Booking Summary */}
                         {/* Booking Summary */}
                         {selectedDate && selectedTime && (
                           <div className="p-3 bg-muted rounded-lg space-y-1">
