@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,7 +40,9 @@ export default function ServiceHistoryPage() {
   const fetchCompletedServices = async () => {
     try {
       // Replace with your actual API endpoint that returns completed tasks
-      const res = await RequestHandler.Get("/query/v1/task?mine&status=completed&limit=50");
+      const res = await RequestHandler.Get(
+        "/query/v1/task?mine&status=completed&limit=50",
+      );
       if (res.ok) {
         const { tasks } = await res.json();
         setCompletedServices(tasks || []);
@@ -52,13 +60,15 @@ export default function ServiceHistoryPage() {
 
   const handleRateService = async (serviceId, rating) => {
     // Call your rating API
-    const res = await RequestHandler.Post(`/api/v1/task/${serviceId}/rate`, { body: { rating } });
+    const res = await RequestHandler.Post(`/api/v1/task/${serviceId}/rate`, {
+      body: { rating },
+    });
     if (res.ok) {
       // Update local state
-      setCompletedServices(prev =>
-        prev.map(svc =>
-          svc.id === serviceId ? { ...svc, rating, rated: true } : svc
-        )
+      setCompletedServices((prev) =>
+        prev.map((svc) =>
+          svc.id === serviceId ? { ...svc, rating, rated: true } : svc,
+        ),
       );
     }
   };
@@ -68,9 +78,12 @@ export default function ServiceHistoryPage() {
     window.open(`/api/v1/task/${serviceId}/receipt`, "_blank");
   };
 
-  const filteredServices = completedServices.filter(service => {
-    const matchesSearch = service.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          service.organization?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredServices = completedServices.filter((service) => {
+    const matchesSearch =
+      service.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      service.organization?.name
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase());
     if (filter === "rated") return matchesSearch && service.rated;
     if (filter === "unrated") return matchesSearch && !service.rated;
     return matchesSearch;
@@ -81,7 +94,7 @@ export default function ServiceHistoryPage() {
       <div className="space-y-6 max-w-6xl mx-auto">
         <h1 className="text-3xl font-bold text-indigo-950">Service History</h1>
         <div className="space-y-4">
-          {[1, 2, 3].map(i => (
+          {[1, 2, 3].map((i) => (
             <Card key={i}>
               <CardContent className="p-6">
                 <Skeleton className="h-6 w-48 mb-2" />
@@ -102,8 +115,12 @@ export default function ServiceHistoryPage() {
     <div className="space-y-6 max-w-6xl mx-auto">
       <div className="flex flex-wrap justify-between items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-indigo-950">Service History</h1>
-          <p className="text-indigo-600">View all your completed services and receipts</p>
+          <h1 className="text-3xl font-bold text-indigo-950">
+            Service History
+          </h1>
+          <p className="text-indigo-600">
+            View all your completed services and receipts
+          </p>
         </div>
         <div className="flex gap-3">
           <div className="relative">
@@ -175,13 +192,18 @@ function ServiceHistoryCard({ service, onRate, onDownloadReceipt }) {
         <div className="flex flex-wrap justify-between items-start gap-4">
           <div className="flex-1">
             <div className="flex items-center gap-3 flex-wrap mb-2">
-              <h3 className="text-xl font-semibold text-indigo-950">{service.name}</h3>
+              <h3 className="text-xl font-semibold text-indigo-950">
+                {service.name}
+              </h3>
               <Badge className="bg-green-100 text-green-700 border-green-200">
                 <CheckCircle className="h-3 w-3 mr-1" />
                 Completed
               </Badge>
               {service.rated && (
-                <Badge variant="outline" className="border-yellow-400 text-yellow-700">
+                <Badge
+                  variant="outline"
+                  className="border-yellow-400 text-yellow-700"
+                >
                   <Star className="h-3 w-3 mr-1 fill-yellow-400" />
                   Rated {service.rating}
                 </Badge>
@@ -193,14 +215,16 @@ function ServiceHistoryCard({ service, onRate, onDownloadReceipt }) {
                 <CalendarDays className="h-4 w-4" />
                 <span>Completed: {completedDate}</span>
               </div>
-              <div className="flex items-center gap-1">
+              {/* <div className="flex items-center gap-1">
                 <Clock className="h-4 w-4" />
                 <span>Duration: {service.duration || "N/A"}</span>
-              </div>
+              </div> */}
             </div>
             <div className="mt-3 text-sm">
               <span className="font-medium text-indigo-800">Provider:</span>{" "}
-              <span className="text-indigo-600">{service.organization?.name || "ServeSync+"}</span>
+              <span className="text-indigo-600">
+                {service.organization?.name || "ServeSync+"}
+              </span>
             </div>
           </div>
           <div className="flex flex-col gap-2 min-w-[140px]">
@@ -226,10 +250,18 @@ function ServiceHistoryCard({ service, onRate, onDownloadReceipt }) {
                       ))}
                     </div>
                     <div className="flex gap-2">
-                      <Button size="sm" onClick={handleSubmitRating} className="bg-indigo-600">
+                      <Button
+                        size="sm"
+                        onClick={handleSubmitRating}
+                        className="bg-indigo-600"
+                      >
                         Submit
                       </Button>
-                      <Button size="sm" variant="outline" onClick={() => setShowRating(false)}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setShowRating(false)}
+                      >
                         Cancel
                       </Button>
                     </div>
@@ -256,7 +288,12 @@ function ServiceHistoryCard({ service, onRate, onDownloadReceipt }) {
               <Download className="h-4 w-4" />
               Receipt
             </Button>
-            <Button variant="link" size="sm" className="gap-1 text-indigo-600" asChild>
+            <Button
+              variant="link"
+              size="sm"
+              className="gap-1 text-indigo-600"
+              asChild
+            >
               <Link href={`/dashboard/client/appointments/${service.id}`}>
                 View Details <ChevronRight className="h-4 w-4" />
               </Link>

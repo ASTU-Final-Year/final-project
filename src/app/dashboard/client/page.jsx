@@ -39,6 +39,7 @@ import RequestHandler from "@/lib/request-handler";
 import Link from "next/link";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { ta } from "date-fns/locale";
 
 // Helper functions
 const formatDate = (dateString) => {
@@ -62,7 +63,7 @@ const getStatusColor = (status) => {
   switch (status) {
     case "completed":
       return "bg-green-100 text-green-700 border-green-200";
-    case "in-progress":
+    case "active":
       return "bg-blue-100 text-blue-700 border-blue-200";
     case "scheduled":
       return "bg-yellow-100 text-yellow-700 border-yellow-200";
@@ -209,12 +210,8 @@ const TaskRequirementsModal = ({ task, open, onClose, onComplete }) => {
     if (!confirm("Are you sure you want to delete this file?")) return;
 
     try {
-      const deleteRes = await fetch(
+      const deleteRes = await RequestHandler.Delete(
         `/api/v1/client/upload?taskId=${task.id}&requirementId=${field}`,
-        {
-          method: "DELETE",
-          credentials: "include",
-        },
       );
 
       if (deleteRes.ok) {
@@ -238,11 +235,14 @@ const TaskRequirementsModal = ({ task, open, onClose, onComplete }) => {
     setPaymentProcessing(true);
     try {
       const paymentConfig = task.requirements?.payment;
+      console.log(task);
       const res = await RequestHandler.Post("/api/v1/payment/initialize", {
         body: {
           amount: paymentConfig.amount,
           currency: paymentConfig.currency,
           reason: paymentConfig.reason,
+          email: task.client.email,
+          appointmentId: task.appointmentId,
           taskId: task.id,
         },
       });
@@ -527,7 +527,7 @@ export default function ClientDashboard() {
 
       // Fetch tasks with requirements
       const taskRes = await RequestHandler.Get(
-        '/query/v1/task?order=["createdAt.desc"]&select={"":["id","name","status","isDone","requirements","submissions","createdAt"],"appointment":["startTime"],"service":["name"],"client":["firstname","lastname"]}',
+        '/query/v1/task?order=["createdAt.desc"]&select={"":["id","appointmentId","name","status","isDone","requirements","submissions","createdAt"],"appointment":["startTime"],"service":["name"],"client":["firstname","lastname","email"]}',
       );
       if (taskRes.ok) {
         const { tasks: taskList } = await taskRes.json();
@@ -629,7 +629,9 @@ export default function ClientDashboard() {
       !t.isDone &&
       t.status !== "completed" &&
       t.requirements &&
-      (t.requirements.form || t.requirements.payment),
+      ((t.requirements.form && Object.keys(t.requirements.form).length > 0) ||
+        (t.submissions.payment &&
+          t.submissions?.payment.status !== "completed")),
   );
 
   return (
@@ -993,6 +995,19 @@ export default function ClientDashboard() {
                         <Badge variant="outline" className="gap-1">
                           <CreditCard className="h-3 w-3" />
                           Payment Required
+                        </Badge>
+                      )}
+                      {task.requirements?.payment &&
+                      task.submissions &&
+                      task.submissions.payment?.status === "completed" ? (
+                        <Badge variant="outline" className="gap-1 bg-blue-50">
+                          <CreditCard className="h-3 w-3" />
+                          Payment Completed
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="gap-1 bg-blue-50">
+                          <CreditCard className="h-3 w-3" />
+                          Payment Pending
                         </Badge>
                       )}
                       {task.requirements?.form &&

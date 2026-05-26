@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import RequestHandler from "@/lib/request-handler";
 import { toast } from "sonner";
+import PaymentButton from "@/components/payment/button";
 
 export default function TaskCompletionPage() {
   const { taskId } = useParams();
@@ -293,7 +294,7 @@ export default function TaskCompletionPage() {
   const hasPayment = task.requirements?.payment;
   const hasForm =
     task.requirements?.form && Object.keys(task.requirements.form).length > 0;
-  const isPaymentComplete = task.submissions?.paymentStatus === "completed";
+  const isPaymentComplete = task.submissions?.payment?.status === "completed";
 
   return (
     <div className="max-w-2xl mx-auto p-6 space-y-6">
@@ -468,35 +469,21 @@ export default function TaskCompletionPage() {
                           <CreditCard className="h-12 w-12 text-blue-500" />
                         </div>
                       </div>
-
-                      <div className="space-y-2">
-                        <Label>Select Payment Method</Label>
-                        <div className="grid grid-cols-2 gap-3">
-                          {task.requirements.payment.methods?.chapa
-                            ?.enabled && (
-                            <Button
-                              variant="outline"
-                              className="h-16 flex-col gap-1"
-                              onClick={handlePayment}
-                              disabled={isSubmitting}
-                            >
-                              <CreditCard className="h-5 w-5" />
-                              <span className="text-sm">Chapa</span>
-                            </Button>
-                          )}
-                          {task.requirements.payment.methods?.telebirr && (
-                            <Button
-                              variant="outline"
-                              className="h-16 flex-col gap-1"
-                              onClick={handlePayment}
-                              disabled={isSubmitting}
-                            >
-                              <CreditCard className="h-5 w-5" />
-                              <span className="text-sm">Telebirr</span>
-                            </Button>
-                          )}
-                        </div>
-                      </div>
+                      <PaymentButton
+                        amount={task.requirements.payment.amount}
+                        currency={task.requirements.payment.currency || "ETB"}
+                        taskId={task.id} // Pass the task ID
+                        appointmentId={appointment?.id}
+                        email={user?.email}
+                        reason={task.requirements.payment.reason}
+                        onSuccess={() => {
+                          toast.success("Payment completed!");
+                          fetchTask(); // Refresh task to show updated status
+                        }}
+                        onError={(error) => {
+                          toast.error("Payment failed. Please try again.");
+                        }}
+                      />
                     </>
                   )}
                 </CardContent>

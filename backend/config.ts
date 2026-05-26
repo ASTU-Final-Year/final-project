@@ -8,6 +8,7 @@ export const config = {
   port: parseInt(process.env.BACKEND_PORT || "") || 4000,
   frontendPort: parseInt(process.env.PORT || "") || 3000,
   url: process.env.URL || "http://localhost",
+  publicUrl: process.env.PUBLIC_URL || "http://localhost:3000",
   isProduction: process.env.NODE_ENV === "production",
   prodDatabase: !!process.env.PROD_DATABASE,
   loadSamples: !!process.env.LOAD_SAMPLES,
@@ -66,6 +67,19 @@ export const dbConfig = {
   superAdminFirstname: process.env.SUPER_ADMIN_FIRSTNAME || "Super",
   superAdminLastname: process.env.SUPER_ADMIN_LASTNAME || "Admin",
   superAdminPassword: process.env.SUPER_ADMIN_PASSWORD || "SuperAdmin@12345",
+};
+
+export const chapaConfig = {
+  baseUrl: process.env.CHAPA_BASE_URL || "https://api.chapa.co/v1",
+  secretKey: process.env.CHAPA_SECRET_KEY,
+  webhookSecret: process.env.CHAPA_WEBHOOK_SECRET,
+  returnUrl:
+    process.env.CHAPA_RETURN_URL || "http://localhost:3000/payment/return",
+  callbackUrl:
+    process.env.CHAPA_CALLBACK_URL ||
+    "http://localhost:3000/api/v1/payment/chapa/webhook",
+  logo: "http://localhost:3000/images/logo.png",
+  color: "#4f46e5",
 };
 
 export type EmployeeHirePayload = Required<

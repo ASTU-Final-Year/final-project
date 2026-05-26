@@ -28,6 +28,8 @@ import {
   Star,
   MessageCircle,
   Calendar,
+  Receipt,
+  ExternalLinkIcon,
 } from "lucide-react";
 import RequestHandler from "@/lib/request-handler";
 import Link from "next/link";
@@ -94,15 +96,181 @@ const StarRating = ({ rating, onRate, readonly = false }) => {
   );
 };
 
+// Payment Receipt Component
+const PaymentReceipt = ({ payment }) => {
+  const [showFullReceipt, setShowFullReceipt] = useState(false);
+  if (!payment.tx_ref) {
+    payment.tx_ref = payment.transactionId;
+  }
+
+  if (!payment) return null;
+
+  const chapaReceiptUrl = `https://chapa.link/payment-receipt/${payment.transactionId}`;
+
+  return (
+    <Card className="">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2 text-green-700">
+            <Receipt className="h-5 w-5" />
+            Payment Receipt
+          </CardTitle>
+          <Badge className="bg-green-100 text-green-700">Paid</Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <div>
+            <p className="text-muted-foreground">Amount</p>
+            <p className="font-semibold">
+              {payment.amount} {payment.currency || "ETB"}
+            </p>
+          </div>
+          <div>
+            <p className="text-muted-foreground">Payment Date</p>
+            <p className="font-semibold">
+              {new Date(
+                payment.completedAt || payment.updatedAt,
+              ).toLocaleString()}
+            </p>
+          </div>
+          <div>
+            <p className="text-muted-foreground">Transaction ID</p>
+            <p className="font-mono text-xs break-all">
+              {payment.transactionId}
+            </p>
+          </div>
+          <div>
+            <p className="text-muted-foreground">Payment Method</p>
+            <p className="font-semibold capitalize">
+              {payment.method || "Chapa"}
+            </p>
+          </div>
+        </div>
+
+        <Separator />
+
+        <div className="flex gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1"
+            onClick={() => setShowFullReceipt(!showFullReceipt)}
+          >
+            <Receipt className="h-4 w-4 mr-2" />
+            {showFullReceipt ? "Hide Details" : "View Full Receipt"}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1"
+            onClick={() => window.open(chapaReceiptUrl, "_blank")}
+          >
+            <ExternalLinkIcon className="h-4 w-4 mr-2" />
+            View on Chapa
+          </Button>
+        </div>
+
+        {showFullReceipt && (
+          <div className="mt-3 p-4 bg-white rounded-lg border text-sm space-y-2">
+            <h4 className="font-semibold">Payment Details</h4>
+            <div className="grid grid-cols-2 gap-2">
+              <pre>{JSON.stringify(payment, null, 2)}</pre>
+              {/* <p className="text-muted-foreground">Reference:</p>
+              <p className="font-mono text-xs break-all">{payment.reference}</p>
+              <p className="text-muted-foreground">Status:</p>
+              <p className="text-green-600 font-medium">Completed</p>
+              {payment.receiptUrl && (
+                <>
+                  <p className="text-muted-foreground">Receipt URL:</p>
+                  <a
+                    href={payment.receiptUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline flex items-center gap-1"
+                  >
+                    Download Receipt <Download className="h-3 w-3" />
+                  </a>
+                </>
+              )} */}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
 export default function AppointmentDetailsPage() {
   const { id } = useParams();
   const router = useRouter();
   const [appointment, setAppointment] = useState(null);
+  const [payments, setPayments] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [rating, setRating] = useState(0);
   const [submittingRating, setSubmittingRating] = useState(false);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch appointment with service and organization
+        const aptRes = await RequestHandler.Get(
+          `/query/v1/appointment?~id=${id}`,
+        );
+
+        if (!aptRes.ok) throw new Error("Appointment not found");
+
+        const {
+          appointments: [appointmentData],
+        } = await aptRes.json();
+        setAppointment(appointmentData);
+        setRating(appointmentData.service?.rating || 0);
+
+        // Fetch related tasks
+        const taskRes = await RequestHandler.Get(
+          `/query/v1/task?~appointmentId=${id}&order=["createdAt.asc","completedAt.asc"]`,
+        );
+        if (taskRes.ok) {
+          const { tasks: taskList } = await taskRes.json();
+          const taskMap = new Map(taskList.map((t) => [t.id, t]));
+          const orderedTasks = [];
+          let curTask;
+          for (const task of taskList) {
+            if (task.previousTaskId == null) {
+              orderedTasks.push(task);
+              curTask = task;
+              break;
+            }
+          }
+          if (curTask) {
+            for (let i = 1; i < taskList.length; i++) {
+              curTask = taskMap.get(curTask.nextTaskId);
+              if (curTask) orderedTasks.push(curTask);
+            }
+          }
+          setTasks(orderedTasks || []);
+        }
+
+        // Fetch payments for this appointment
+        const paymentRes = await RequestHandler.Get(
+          `/api/v1/payment?appointmentId=${id}`,
+        );
+        if (paymentRes.ok) {
+          const data = await paymentRes.json();
+          setPayments(data.payments || []);
+        }
+      } catch (err) {
+        console.error(err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) fetchData();
+  }, [id]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -214,6 +382,9 @@ export default function AppointmentDetailsPage() {
           </div>
         </CardHeader>
       </Card>
+
+      {/* Payment Receipt Section */}
+      {payments.length > 0 && <PaymentReceipt payment={payments[0]} />}
 
       {/* Appointment Info */}
       <Card>

@@ -347,14 +347,14 @@ const TimeSlotEditor = ({
                   type="time"
                   value={slot.from}
                   onChange={(e) => updateSlot(idx, "from", e.target.value)}
-                  className="w-28"
+                  // className="w-28"
                 />
                 <span className="text-muted-foreground">to</span>
                 <Input
                   type="time"
                   value={slot.to}
                   onChange={(e) => updateSlot(idx, "to", e.target.value)}
-                  className="w-28"
+                  // className="w-28"
                 />
               </div>
               <div className="flex items-center gap-1">

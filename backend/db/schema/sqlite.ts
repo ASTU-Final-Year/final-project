@@ -30,12 +30,14 @@ export const cpuuid = customType<{ data: string; driverData: string }>({
 });
 
 export const genderEnum = ["M", "F", "U"] as const;
+
 export const appointmentStatusEnum = [
   "scheduled",
   "in-progress",
   "completed",
   "canceled",
   "archived",
+  "confirmed",
 ] as const;
 
 export const billingPeriodEnum = ["monthly", "yearly"] as const;
@@ -45,6 +47,54 @@ export const rolesEnum = [
   "organization_admin",
   "employee",
   "client",
+] as const;
+
+export const notificationTypeEnum = [
+  // Appointment related
+  "appointment_created",
+  "appointment_updated",
+  "appointment_cancelled",
+  "appointment_reminder",
+
+  // Task related
+  "task_assigned",
+  "task_completed",
+  "task_requires_action",
+  "task_submission_received",
+
+  // Payment related
+  "payment_received",
+  "payment_failed",
+
+  // Service related
+  "service_rated",
+
+  // Organization related
+  "organization_created",
+  "organization_updated",
+  "employee_hired",
+  "employee_removed",
+
+  // Account related
+  "account_created", // Add this for user registration
+  "profile_updated", // Add this for profile updates
+
+  // General
+  "system_alert",
+] as const;
+
+export const notificationPriorityEnum = [
+  "low",
+  "medium",
+  "high",
+  "urgent",
+] as const;
+
+export const sqPaymentStatus = [
+  "pending",
+  "completed",
+  "failed",
+  "refunded",
 ] as const;
 
 const timestamps = {
@@ -334,48 +384,6 @@ export const sqTasks = sqliteTable("tasks", {
   completedAt: integer("completed_at", { mode: "timestamp" }),
   ...timestamps,
 });
-// backend/db/schema/sqlite.ts
-
-export const notificationTypeEnum = [
-  // Appointment related
-  "appointment_created",
-  "appointment_updated",
-  "appointment_cancelled",
-  "appointment_reminder",
-
-  // Task related
-  "task_assigned",
-  "task_completed",
-  "task_requires_action",
-  "task_submission_received",
-
-  // Payment related
-  "payment_received",
-  "payment_failed",
-
-  // Service related
-  "service_rated",
-
-  // Organization related
-  "organization_created",
-  "organization_updated",
-  "employee_hired",
-  "employee_removed",
-
-  // Account related
-  "account_created", // Add this for user registration
-  "profile_updated", // Add this for profile updates
-
-  // General
-  "system_alert",
-] as const;
-
-export const notificationPriorityEnum = [
-  "low",
-  "medium",
-  "high",
-  "urgent",
-] as const;
 
 export const sqNotifications = sqliteTable(
   "notifications",
@@ -408,6 +416,46 @@ export const sqNotifications = sqliteTable(
     index("notification_user_read_idx").on(table.userId, table.isRead),
     index("notification_user_type_idx").on(table.userId, table.type),
     index("notification_created_idx").on(table.createdAt),
+  ],
+);
+
+export const sqPayments = sqliteTable(
+  "payments",
+  {
+    id: cpuuid("id").primaryKey().notNull().$defaultFn(randomCUUID),
+    userId: cpuuid("user_id")
+      .notNull()
+      .references(() => sqUsers.id, {
+        onUpdate: "cascade",
+        onDelete: "set null",
+      }),
+    taskId: cpuuid("task_id").references(() => sqTasks.id, {
+      onUpdate: "cascade",
+      onDelete: "set null",
+    }),
+    appointmentId: cpuuid("appointment_id").references(
+      () => sqAppointments.id,
+      {
+        onUpdate: "cascade",
+        onDelete: "set null",
+      },
+    ),
+    tx_ref: text("tx_ref").unique(), // Add this field for Chapa transaction reference
+    transactionId: text("transaction_id").unique(),
+    amount: numeric("amount", { mode: "number" }).notNull(),
+    status: text("status", { enum: sqPaymentStatus })
+      .notNull()
+      .default("pending"),
+    checkoutUrl: text("checkout_url"),
+    metadata: text("metadata", { mode: "json" }).default("{}"), // Add for additional data
+    ...timestamps,
+  },
+  (table) => [
+    index("idx_payments_user_id").on(table.userId),
+    index("idx_payments_tx_ref").on(table.tx_ref), // Add index
+    index("idx_payments_transaction_id").on(table.transactionId),
+    index("idx_payments_status").on(table.status),
+    index("idx_payments_created_at").on(table.createdAt),
   ],
 );
 
@@ -517,6 +565,21 @@ export const sqNotificationsRelations = relations(
   }),
 );
 
+export const sqPaymentRelations = relations(sqPayments, ({ one }) => ({
+  user: one(sqUsers, {
+    fields: [sqPayments.userId],
+    references: [sqUsers.id],
+  }),
+  task: one(sqTasks, {
+    fields: [sqPayments.taskId],
+    references: [sqTasks.id],
+  }),
+  appointment: one(sqAppointments, {
+    fields: [sqPayments.appointmentId],
+    references: [sqAppointments.id],
+  }),
+}));
+
 export const sqTasksRelations = relations(sqTasks, ({ one }) => ({
   // appointment: one(sqAppointments, {
   //   fields: [sqTasks.appointmentId],
@@ -561,6 +624,7 @@ export const sqTables = {
   task: sqTasks,
   appointment: sqAppointments,
   notification: sqNotifications,
+  payment: sqPayments,
 };
 
 export const sqRelations = {
@@ -574,6 +638,7 @@ export const sqRelations = {
   tasksRelations: sqTasksRelations,
   appointmentRelations: sqAppointmentsRelations,
   notificationsRelations: sqNotificationsRelations,
+  paymentRelations: sqPaymentRelations,
 };
 
 export const sqSchema = {

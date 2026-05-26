@@ -1,10 +1,14 @@
-import React from 'react';
+import React from "react";
 
-export type Role = 'Client' | 'Employee';
+export type Role = "Client" | "Employee";
 
-export type AppointmentStatus = 'Booked' | 'In Progress' | 'Completed' | 'Cancelled';
+export type AppointmentStatus =
+  | "Booked"
+  | "In Progress"
+  | "Completed"
+  | "Cancelled";
 
-export type StepStatus = 'completed' | 'in-progress' | 'upcoming';
+export type StepStatus = "completed" | "in-progress" | "upcoming";
 
 export interface ProgressStep {
   id: string;
@@ -17,7 +21,9 @@ export interface Service {
   id: string;
   name: string;
   price: number;
-  duration: string;
+  startTime: Date;
+  endTime: Date;
+  // duration: string;
   description: string;
 }
 
@@ -66,6 +72,6 @@ export interface Notification {
   message: string;
   time: string;
   isRead: boolean;
-  type: 'info' | 'success' | 'warning';
+  type: "info" | "success" | "warning";
   createdAt: string;
 }

@@ -47,6 +47,7 @@ export const appointmentStatusEnum = pgEnum("appointment_status", [
   "completed",
   "canceled",
   "archived",
+  "confirmed",
 ]);
 
 export const billingPeriodEnum = pgEnum("billing_period", [
@@ -95,11 +96,19 @@ export const notificationTypeEnum = pgEnum("notification_type", [
   // General
   "system_alert",
 ]);
+
 export const notificationPriorityEnum = pgEnum("notification_priority", [
   "low",
   "medium",
   "high",
   "urgent",
+]);
+
+export const paymentStatusEnum = pgEnum("payment_status", [
+  "pending",
+  "completed",
+  "failed",
+  "refunded",
 ]);
 
 export const timestamps = {
@@ -369,7 +378,7 @@ export const pgTasks = pgTable("tasks", {
   completedAt: timestamp("completed_at", { withTimezone: true }),
   ...timestamps,
 });
-// Notifications Table
+
 export const pgNotifications = pgTable(
   "notifications",
   {
@@ -404,6 +413,41 @@ export const pgNotifications = pgTable(
     index("idx_notifications_created_at").on(table.createdAt),
     index("idx_notifications_expires_at").on(table.expiresAt),
     index("idx_notifications_user_archived").on(table.userId, table.isArchived),
+  ],
+);
+
+export const pgPayments = pgTable(
+  "payments",
+  {
+    id: cpuuid("id").primaryKey().notNull().$defaultFn(randomCUUID),
+    userId: cpuuid("user_id")
+      .notNull()
+      .references(() => pgUsers.id, {
+        onUpdate: "cascade",
+        onDelete: "set null",
+      }),
+    taskId: cpuuid("task_id").references(() => pgTasks.id, {
+      onUpdate: "cascade",
+      onDelete: "set null",
+    }),
+    appointmentId: cpuuid("appointment_id").references(
+      () => pgAppointments.id,
+      {
+        onUpdate: "cascade",
+        onDelete: "set null",
+      },
+    ),
+    tx_ref: varchar("tx_ref", { length: 256 }).unique(), // Add this field
+    transactionId: varchar("transaction_id", { length: 256 }).unique(),
+    amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
+    status: paymentStatusEnum("status").notNull().default("pending"),
+    checkoutUrl: varchar("checkout_url", { length: 256 }),
+    metadata: jsonb("metadata").default({}), // Add for additional data
+    ...timestamps,
+  },
+  (table) => [
+    index("idx_payments_tx_ref").on(table.tx_ref),
+    index("idx_payments_transaction_id").on(table.transactionId),
   ],
 );
 
@@ -502,10 +546,28 @@ export const pgAppointmentsRelations = relations(pgAppointments, ({ one }) => ({
 }));
 
 // Relations
-export const notificationsRelations = relations(pgNotifications, ({ one }) => ({
+export const pgNotificationsRelations = relations(
+  pgNotifications,
+  ({ one }) => ({
+    user: one(pgUsers, {
+      fields: [pgNotifications.userId],
+      references: [pgUsers.id],
+    }),
+  }),
+);
+
+export const pgPaymentRelations = relations(pgPayments, ({ one }) => ({
   user: one(pgUsers, {
-    fields: [pgNotifications.userId],
+    fields: [pgPayments.userId],
     references: [pgUsers.id],
+  }),
+  task: one(pgTasks, {
+    fields: [pgPayments.taskId],
+    references: [pgTasks.id],
+  }),
+  appointment: one(pgAppointments, {
+    fields: [pgPayments.appointmentId],
+    references: [pgAppointments.id],
   }),
 }));
 
@@ -553,6 +615,7 @@ export const pgTables = {
   task: pgTasks,
   appointment: pgAppointments,
   notification: pgNotifications,
+  payment: pgPayments,
 };
 
 export const pgRelations = {
@@ -565,7 +628,8 @@ export const pgRelations = {
   serviceFirstEmployeesRelations: pgServiceFirstEmployeesRelations,
   tasksRelations: pgTasksRelations,
   appointmentRelations: pgAppointmentsRelations,
-  notificationsRelations: notificationsRelations,
+  notificationsRelations: pgNotificationsRelations,
+  paymentRelations: pgPaymentRelations,
 };
 
 export const pgSchema = {

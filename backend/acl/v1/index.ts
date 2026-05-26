@@ -50,7 +50,7 @@ const employeeUser = aliasedTable(tables.user, "employee");
 const service = aliasedTable(tables.organizationService, "service");
 const employment = aliasedTable(tables.employee, "employment");
 
-// Helper function to check calendar availability with working hours
+// Helper function to check calendar availability
 async function checkCalendarAvailability(
   serviceId: string,
   startTime: Date,
@@ -62,6 +62,7 @@ async function checkCalendarAvailability(
     .select({
       calendarId: tables.organizationService.calendarId,
       calendar: tables.organizationCalendar,
+      // duration: tables.organizationService.duration,
     })
     .from(tables.organizationService)
     .leftJoin(
@@ -71,13 +72,38 @@ async function checkCalendarAvailability(
     .where(eq(tables.organizationService.id, serviceId));
 
   if (!serviceData || !serviceData.calendar) {
-    return { available: true }; // No calendar restrictions
+    return { available: false }; // No calendar restrictions
   }
+  // const cal = serviceData.calendar as any;
+  const calendar = serviceData.calendar as any;
+  // const calendar = {
+  //   ...cal,
+  //   available: {
+  //     weekly: cal.available?.weekly || [],
+  //     weeklyHours: cal.available?.weeklyHours || {},
+  //     hours: cal.available?.hours || [],
+  //     ranges:
+  //       cal.available?.ranges?.map(({ from, to }) => ({
+  //         from: new Date(from),
+  //         to: new Date(to),
+  //       })) || [],
+  //     exactly: cal.available?.exactly?.map((e) => new Date(e)) || [],
+  //   },
+  //   unavailable: {
+  //     weekly: cal.unavailable?.weekly || [],
+  //     weeklyHours: cal.unavailable?.weeklyHours || {},
+  //     hours: cal.unavailable?.hours || [],
+  //     ranges:
+  //       cal.unavailable?.ranges?.map(({ from, to }) => ({
+  //         from: new Date(from),
+  //         to: new Date(to),
+  //       })) || [],
+  //     exactly: cal.unavailable?.exactly?.map((e) => new Date(e)) || [],
+  //   },
+  // };
 
-  const calendar = serviceData.calendar;
   const dayOfWeek = startTime.getDay();
   const adjustedDay = dayOfWeek === 0 ? 7 : dayOfWeek;
-
   // Check weekly availability
   const availableDays = calendar.available?.weekly || [];
   if (!availableDays.includes(adjustedDay)) {
@@ -103,9 +129,10 @@ async function checkCalendarAvailability(
     };
   }
 
-  // Check if date is specifically unavailable
+  // Check if date is specifically unavailable - FIX: Convert string to Date
   const isSpecificallyUnavailable = calendar.unavailable?.exactly?.some(
-    (date: Date) => {
+    (dateStr: string | Date) => {
+      const date = dateStr instanceof Date ? dateStr : new Date(dateStr);
       return date.toDateString() === startTime.toDateString();
     },
   );
@@ -378,7 +405,6 @@ export const queryAuth = {
               Status._400_BadRequest,
             );
           }
-
           // Validate organization is active
           const [organization] = await ctx.transaction
             .select({ isActive: tables.organization.isActive })
@@ -416,7 +442,6 @@ export const queryAuth = {
             endTime,
             ctx.transaction,
           );
-
           if (!isAvailable) {
             throw new HttpError(
               "Selected time slot is not available. Please choose another time.",
@@ -491,7 +516,7 @@ export const queryAuth = {
           }
         },
 
-        onQueryError,
+        // onQueryError,
       },
     },
 

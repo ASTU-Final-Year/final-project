@@ -1,22 +1,49 @@
-
-import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, TextInput, Image, FlatList } from 'react-native';
-import { useAuthStore, useUIStore, useAppointmentStore, useBookingStore, useNotificationStore } from '../store';
-import { Search, Bell, Star, Clock, MapPin, ChevronRight, Sliders } from 'lucide-react-native';
-import { CATEGORIES } from '../data/mockData';
-import { tw } from '../lib/native-utils';
-import { apiClient } from '../lib/apiClient';
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  TextInput,
+  Image,
+  FlatList,
+} from "react-native";
+import {
+  useAuthStore,
+  useUIStore,
+  useAppointmentStore,
+  useBookingStore,
+  useNotificationStore,
+} from "../store";
+import {
+  Search,
+  Bell,
+  Star,
+  Clock,
+  MapPin,
+  ChevronRight,
+  Sliders,
+} from "lucide-react-native";
+import { CATEGORIES } from "../data/mockData";
+import { tw } from "../lib/native-utils";
+import { apiClient } from "../lib/apiClient";
 
 export default function HomeScreen() {
   const { user } = useAuthStore();
   const { setActiveScreen, setViewingAppointment } = useUIStore();
   const { appointments } = useAppointmentStore();
-  const { selectedCategory, setCategory, setBusiness, businessesData, setBusinessesData } = useBookingStore();
+  const {
+    selectedCategory,
+    setCategory,
+    setBusiness,
+    businessesData,
+    setBusinessesData,
+  } = useBookingStore();
   const { notifications } = useNotificationStore();
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const unreadCount = notifications.filter(n => !n.isRead).length;
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   const recentAppointments = appointments.slice(0, 2);
 
@@ -26,60 +53,69 @@ export default function HomeScreen() {
       try {
         const queryFilter = searchQuery
           ? `&~name.ilike=%25${encodeURIComponent(searchQuery)}%25|~description.ilike=%25${encodeURIComponent(searchQuery)}%25|~organization.name.ilike=%25${encodeURIComponent(searchQuery)}%25`
-          : '';
-        const res = await apiClient(`/query/v1/organizationService?guest&limit=20&~isActive=true${queryFilter}`);
+          : "";
+        const res = await apiClient(
+          `/query/v1/organizationService?guest&limit=20&~isActive=true${queryFilter}`,
+        );
         if (res.ok) {
           const { organizationServices } = await res.json();
           const orgMap = new Map();
-          
+
           const mapSectorToCategory = (sector: string) => {
-            if (!sector) return 'home';
+            if (!sector) return "home";
             const s = sector.toLowerCase();
-            if (s.includes('auto')) return 'auto';
-            if (s.includes('health') || s.includes('medical')) return 'health';
-            if (s.includes('gov')) return 'gov';
-            if (s.includes('beauty') || s.includes('salon')) return 'beauty';
-            if (s.includes('legal') || s.includes('law')) return 'legal';
-            if (s.includes('civil')) return 'civil';
-            return 'home';
+            if (s.includes("auto")) return "auto";
+            if (s.includes("health") || s.includes("medical")) return "health";
+            if (s.includes("gov")) return "gov";
+            if (s.includes("beauty") || s.includes("salon")) return "beauty";
+            if (s.includes("legal") || s.includes("law")) return "legal";
+            if (s.includes("civil")) return "civil";
+            return "home";
           };
-          
+
           (organizationServices || []).forEach((os: any) => {
             const org = os.organization;
             if (!org) return;
-            
+
             if (!orgMap.has(org.id)) {
               orgMap.set(org.id, {
                 id: org.id,
-                name: org.name || 'Unknown Business',
+                name: org.name || "Unknown Business",
                 category: mapSectorToCategory(org.sector),
                 rating: org.rating || 4.5,
-                location: org.address || 'Addis Ababa',
-                image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&auto=format',
-                availableTimes: ['9:00 AM', '10:00 AM', '11:00 AM', '2:00 PM', '4:00 PM'],
-                services: []
+                location: org.address || "Addis Ababa",
+                image:
+                  "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&auto=format",
+                availableTimes: [
+                  "9:00 AM",
+                  "10:00 AM",
+                  "11:00 AM",
+                  "2:00 PM",
+                  "4:00 PM",
+                ],
+                services: [],
               });
             }
-            
+
             const b = orgMap.get(org.id);
             b.services.push({
               id: os.id,
               name: os.name,
               price: os.price || 500,
-              duration: '30 mins',
-              description: os.description || 'Service description'
+              duration: "30 mins",
+              description: os.description || "Service description",
             });
           });
-          
+
           setBusinessesData(Array.from(orgMap.values()));
         }
       } catch (err) {
-        console.error('Failed to load businesses', err);
+        console.error("Failed to load businesses", err);
       } finally {
         setIsLoading(false);
       }
     };
-    
+
     const timeoutId = setTimeout(() => {
       fetchBusinesses();
     }, 300);
@@ -94,17 +130,27 @@ export default function HomeScreen() {
       <View style={tw`px-6 pt-10 pb-6 bg-white rounded-b-[40px] shadow-sm`}>
         <View style={tw`flex-row justify-between items-center mb-6`}>
           <View>
-            <Text style={tw`text-2xl font-black text-gray-900`}>Hello, {user?.name || 'Guest'}!</Text>
-            <Text style={tw`text-sm font-medium text-gray-500`}>Find your next service</Text>
+            <Text style={tw`text-2xl font-black text-gray-900`}>
+              Hello, {user?.name || "Guest"}!
+            </Text>
+            <Text style={tw`text-sm font-medium text-gray-500`}>
+              Find your next service
+            </Text>
           </View>
           <TouchableOpacity
-            onPress={() => setActiveScreen('NOTIFICATIONS')}
+            onPress={() => setActiveScreen("NOTIFICATIONS")}
             style={tw`relative p-3 bg-gray-100 rounded-2xl`}
             activeOpacity={0.7}
           >
-            <Bell size={22} color={unreadCount > 0 ? "#2563EB" : "#4B5563"} fill={unreadCount > 0 ? "#2563EB" : "none"} />
+            <Bell
+              size={22}
+              color={unreadCount > 0 ? "#2563EB" : "#4B5563"}
+              fill={unreadCount > 0 ? "#2563EB" : "none"}
+            />
             {unreadCount > 0 && (
-              <View style={tw`absolute top-2.5 right-2.5 w-3 h-3 bg-red-500 rounded-full border-2 border-white`} />
+              <View
+                style={tw`absolute top-2.5 right-2.5 w-3 h-3 bg-red-500 rounded-full border-2 border-white`}
+              />
             )}
           </TouchableOpacity>
         </View>
@@ -132,10 +178,15 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={tw`pb-10`}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={tw`pb-10`}
+      >
         {/* Choose what you want (Sector Selection) */}
         <View style={tw`px-6 pt-6`}>
-          <Text style={tw`text-lg font-bold text-gray-900 mb-4`}>Choose what you want</Text>
+          <Text style={tw`text-lg font-bold text-gray-900 mb-4`}>
+            Choose what you want
+          </Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -149,15 +200,21 @@ export default function HomeScreen() {
                   key={cat.id}
                   onPress={() => {
                     setCategory(cat.id);
-                    setActiveScreen('BOOKING');
+                    setActiveScreen("BOOKING");
                   }}
                   style={tw`items-center gap-2`}
                   activeOpacity={0.7}
                 >
-                  <View style={tw`w-16 h-16 rounded-[22px] ${isSelected ? 'bg-blue-600 shadow-lg shadow-blue-100' : 'bg-white border border-gray-100'} items-center justify-center shadow-sm`}>
-                    <Icon size={24} color={isSelected ? 'white' : '#2563EB'} />
+                  <View
+                    style={tw`w-16 h-16 rounded-[22px] ${isSelected ? "bg-blue-600 shadow-lg shadow-blue-100" : "bg-white border border-gray-100"} items-center justify-center shadow-sm`}
+                  >
+                    <Icon size={24} color={isSelected ? "white" : "#2563EB"} />
                   </View>
-                  <Text style={tw`text-[10px] font-bold ${isSelected ? 'text-blue-600' : 'text-gray-600'} uppercase tracking-tight`}>{cat.name}</Text>
+                  <Text
+                    style={tw`text-[10px] font-bold ${isSelected ? "text-blue-600" : "text-gray-600"} uppercase tracking-tight`}
+                  >
+                    {cat.name}
+                  </Text>
                 </TouchableOpacity>
               );
             })}
@@ -168,9 +225,10 @@ export default function HomeScreen() {
         <View style={tw`px-6 mb-8`}>
           <View style={tw`flex-row justify-between items-center mb-4`}>
             <Text style={tw`text-base font-bold text-gray-800`}>
-              {CATEGORIES.find(c => c.id === selectedCategory)?.name || 'All'} Providers
+              {CATEGORIES.find((c) => c.id === selectedCategory)?.name || "All"}{" "}
+              Providers
             </Text>
-            <TouchableOpacity onPress={() => setActiveScreen('BOOKING')}>
+            <TouchableOpacity onPress={() => setActiveScreen("BOOKING")}>
               <Text style={tw`text-xs font-bold text-blue-600`}>View All</Text>
             </TouchableOpacity>
           </View>
@@ -180,56 +238,82 @@ export default function HomeScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={tw`gap-4`}
           >
-            {popularBusinesses.filter(b => !selectedCategory || b.category === selectedCategory).map((biz) => (
-              <TouchableOpacity
-                key={biz.id}
-                onPress={() => {
-                  setBusiness(biz);
-                  setActiveScreen('BOOKING');
-                }}
-                style={tw`w-72 bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm`}
-              >
-                <View style={tw`relative h-32`}>
-                  <Image source={typeof biz.image === 'string' ? { uri: biz.image } : biz.image} style={tw`w-full h-full`} resizeMode="cover" />
-                  <View style={tw`absolute top-3 right-3 bg-white/90 px-2 py-1 rounded-lg flex-row items-center gap-1 shadow-sm`}>
-                    <Star size={12} color="#FBBF24" fill="#FBBF24" />
-                    <Text style={tw`text-[10px] font-bold`}>{biz.rating}</Text>
-                  </View>
-                </View>
-                <View style={tw`p-4`}>
-                  <View style={tw`flex-row justify-between items-start mb-2`}>
-                    <View style={tw`flex-1`}>
-                      <Text style={tw`font-bold text-gray-900 text-sm`}>{biz.name}</Text>
-                      <Text style={tw`text-[10px] text-gray-500 font-medium`}>Starting {biz.services[0].price} ETB</Text>
+            {popularBusinesses
+              .filter(
+                (b) => !selectedCategory || b.category === selectedCategory,
+              )
+              .map((biz) => (
+                <TouchableOpacity
+                  key={biz.id}
+                  onPress={() => {
+                    setBusiness(biz);
+                    setActiveScreen("BOOKING");
+                  }}
+                  style={tw`w-72 bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm`}
+                >
+                  <View style={tw`relative h-32`}>
+                    <Image
+                      source={
+                        typeof biz.image === "string"
+                          ? { uri: biz.image }
+                          : biz.image
+                      }
+                      style={tw`w-full h-full`}
+                      resizeMode="cover"
+                    />
+                    <View
+                      style={tw`absolute top-3 right-3 bg-white/90 px-2 py-1 rounded-lg flex-row items-center gap-1 shadow-sm`}
+                    >
+                      <Star size={12} color="#FBBF24" fill="#FBBF24" />
+                      <Text style={tw`text-[10px] font-bold`}>
+                        {biz.rating}
+                      </Text>
                     </View>
-                    <View style={tw`bg-blue-600 px-3 py-1.5 rounded-lg`}>
-                      <Text style={tw`text-white text-[10px] font-bold`}>Book</Text>
-                    </View>
                   </View>
-                  <View style={tw`flex-row items-center gap-3 mt-1`}>
-                    <View style={tw`flex-row items-center gap-1`}>
+                  <View style={tw`p-4`}>
+                    <View style={tw`flex-row justify-between items-start mb-2`}>
+                      <View style={tw`flex-1`}>
+                        <Text style={tw`font-bold text-gray-900 text-sm`}>
+                          {biz.name}
+                        </Text>
+                        <Text style={tw`text-[10px] text-gray-500 font-medium`}>
+                          Starting {biz.services[0].price} ETB
+                        </Text>
+                      </View>
+                      <View style={tw`bg-blue-600 px-3 py-1.5 rounded-lg`}>
+                        <Text style={tw`text-white text-[10px] font-bold`}>
+                          Book
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={tw`flex-row items-center gap-3 mt-1`}>
+                      {/* <View style={tw`flex-row items-center gap-1`}>
                       <Clock color="#9CA3AF" size={10} />
                       <Text style={tw`text-[9px] font-bold text-gray-500`}>{biz.services[0].duration}</Text>
-                    </View>
-                    <View style={tw`flex-row items-center gap-1 flex-1`}>
-                      <MapPin color="#9CA3AF" size={10} />
-                      <Text style={tw`text-[9px] font-bold text-gray-500`} numberOfLines={1}>{biz.location}</Text>
+                    </View> */}
+                      <View style={tw`flex-row items-center gap-1 flex-1`}>
+                        <MapPin color="#9CA3AF" size={10} />
+                        <Text
+                          style={tw`text-[9px] font-bold text-gray-500`}
+                          numberOfLines={1}
+                        >
+                          {biz.location}
+                        </Text>
+                      </View>
                     </View>
                   </View>
-                </View>
-              </TouchableOpacity>
-            ))}
+                </TouchableOpacity>
+              ))}
           </ScrollView>
         </View>
-
-
-
 
         {/* Recent Appointments */}
         <View style={tw`px-6`}>
           <View style={tw`flex-row justify-between items-center mb-4`}>
-            <Text style={tw`text-lg font-bold text-gray-900`}>Recent Appointments</Text>
-            <TouchableOpacity onPress={() => setActiveScreen('ACTIVE')}>
+            <Text style={tw`text-lg font-bold text-gray-900`}>
+              Recent Appointments
+            </Text>
+            <TouchableOpacity onPress={() => setActiveScreen("ACTIVE")}>
               <Text style={tw`text-xs font-bold text-blue-600`}>See All</Text>
             </TouchableOpacity>
           </View>
@@ -242,18 +326,29 @@ export default function HomeScreen() {
                 style={tw`w-full bg-white p-4 rounded-3xl border border-gray-100 flex-row items-center gap-4 shadow-sm`}
                 activeOpacity={0.7}
               >
-                <View style={tw`w-12 h-12 rounded-2xl bg-blue-50 items-center justify-center`}>
+                <View
+                  style={tw`w-12 h-12 rounded-2xl bg-blue-50 items-center justify-center`}
+                >
                   <Clock color="#2563EB" size={20} />
                 </View>
                 <View style={tw`flex-1`}>
                   <View style={tw`flex-row justify-between items-start mb-1`}>
-                    <Text style={tw`font-bold text-sm text-gray-900 flex-1`} numberOfLines={1}>{app.businessName}</Text>
+                    <Text
+                      style={tw`font-bold text-sm text-gray-900 flex-1`}
+                      numberOfLines={1}
+                    >
+                      {app.businessName}
+                    </Text>
                     <StatusBadge status={app.status} />
                   </View>
-                  <Text style={tw`text-xs text-gray-500 mb-1`}>{app.serviceName}</Text>
+                  <Text style={tw`text-xs text-gray-500 mb-1`}>
+                    {app.serviceName}
+                  </Text>
                   <View style={tw`flex-row items-center gap-2`}>
                     <Clock color="#9CA3AF" size={12} />
-                    <Text style={tw`text-[10px] font-medium text-gray-400`}>{app.date} • {app.time}</Text>
+                    <Text style={tw`text-[10px] font-medium text-gray-400`}>
+                      {app.date} • {app.time}
+                    </Text>
                   </View>
                 </View>
                 <ChevronRight color="#D1D5DB" size={16} />
@@ -268,14 +363,18 @@ export default function HomeScreen() {
 
 function StatusBadge({ status }: { status: string }) {
   const colors = {
-    'Booked': 'bg-blue-100 text-blue-700',
-    'In Progress': 'bg-yellow-100 text-yellow-700',
-    'Completed': 'bg-green-100 text-green-700',
-    'Cancelled': 'bg-red-100 text-red-700'
+    Booked: "bg-blue-100 text-blue-700",
+    "In Progress": "bg-yellow-100 text-yellow-700",
+    Completed: "bg-green-100 text-green-700",
+    Cancelled: "bg-red-100 text-red-700",
   } as any;
   return (
-    <View style={tw`px-2 py-0.5 rounded-full ${colors[status] || 'bg-gray-100 text-gray-700'}`}>
-      <Text style={tw`text-[9px] font-bold uppercase tracking-wider ${colors[status]?.split(' ')[1] || 'text-gray-700'}`}>
+    <View
+      style={tw`px-2 py-0.5 rounded-full ${colors[status] || "bg-gray-100 text-gray-700"}`}
+    >
+      <Text
+        style={tw`text-[9px] font-bold uppercase tracking-wider ${colors[status]?.split(" ")[1] || "text-gray-700"}`}
+      >
         {status}
       </Text>
     </View>

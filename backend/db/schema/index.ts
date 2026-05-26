@@ -42,6 +42,7 @@ export const appointments = prodDatabase
 export const notifications = prodDatabase
   ? pgTables.notification
   : sqTables.notification;
+export const payments = prodDatabase ? pgTables.payment : sqTables.payment;
 
 export const usersRelations = prodDatabase
   ? pgRelations.usersRelations
@@ -73,6 +74,9 @@ export const appointmentRelations = prodDatabase
 export const notificationsRelations = prodDatabase
   ? pgRelations.notificationsRelations
   : sqRelations.notificationsRelations;
+export const paymentRelations = prodDatabase
+  ? pgRelations.paymentRelations
+  : sqRelations.paymentRelations;
 
 export type Notification = typeof notifications.$inferSelect;
 export type NewNotification = typeof notifications.$inferInsert;

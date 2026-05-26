@@ -17,7 +17,7 @@
       "cwd": "${workspaceFolder}/backend",
 
       // The environment variables to pass to the program.
-      "env": {},
+      "env": { "PROD_DATABASE": "1" },
 
       // If the environment variables should not be inherited from the parent process.
       "strictEnv": false,

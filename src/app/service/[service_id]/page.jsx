@@ -36,7 +36,7 @@ export default function OrganizationServicePublicPage() {
                 to,
               ]);
           }
-          // Parse unavailable ranges
+          // Parse unavailable dates - ensure they're Date objects
           if (organizationService.calendar.unavailable?.ranges) {
             organizationService.calendar.unavailable.ranges =
               organizationService.calendar.unavailable.ranges.map(
@@ -46,7 +46,26 @@ export default function OrganizationServicePublicPage() {
                 }),
               );
           }
+          // Parse specific unavailable dates
+          if (organizationService.calendar.unavailable?.exactly) {
+            organizationService.calendar.unavailable.exactly =
+              organizationService.calendar.unavailable.exactly.map(
+                (date) => new Date(date),
+              );
+          }
+          // Parse specific available dates
+          if (organizationService.calendar.available?.exactly) {
+            organizationService.calendar.available.exactly =
+              organizationService.calendar.available.exactly.map(
+                (date) => new Date(date),
+              );
+          }
         }
+
+        // Set default duration if not provided
+        // if (!organizationService.duration) {
+        //   organizationService.duration = 60; // 60 minutes default
+        // }
 
         setService(organizationService);
       }

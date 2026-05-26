@@ -1435,7 +1435,6 @@ export default function EmployeeTaskDetailsPage() {
   const isCompleted = task.status === "completed" || task.isDone;
   const hasRequirements =
     task.requirements && (task.requirements.form || task.requirements.payment);
-
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-6">
       {/* Header */}
@@ -1696,6 +1695,62 @@ export default function EmployeeTaskDetailsPage() {
                         <p className="text-sm">
                           {task.submissions.changesRequestedComments}
                         </p>
+                      </div>
+                    )}
+                    {task.requirement?.payment?.Status && (
+                      <div className="border rounded-lg p-3">
+                        <Label className="text-xs text-muted-foreground">
+                          Payment Status
+                        </Label>
+                        <div className="mt-1">
+                          {task.submissions.payments?.status === "pending" ? (
+                            <Badge className="bg-yellow-100 text-yellow-700">
+                              Awaiting Payment
+                            </Badge>
+                          ) : task.submissions.payments?.status ===
+                            "completed" ? (
+                            <Badge className="bg-green-100 text-green-700">
+                              Payment Received
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-red-100 text-red-700">
+                              Payment Failed
+                            </Badge>
+                          )}
+                        </div>
+                        {task.submissions?.payment?.completed && (
+                          <div className="p-3 bg-green-50 rounded-lg">
+                            <div className="flex items-center gap-2">
+                              <CheckCircle className="h-5 w-5 text-green-600" />
+                              <div>
+                                <p className="font-medium text-green-800">
+                                  Payment Completed
+                                </p>
+                                <p className="text-sm text-green-700">
+                                  Amount: {task.submissions.payment.amount}{" "}
+                                  {task.submissions.payment.currency}
+                                </p>
+                                <p className="text-xs text-green-600">
+                                  Transaction:{" "}
+                                  {task.submissions.payment.transactionId}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        {/* {task.submissions.paymentAmount && (
+                          <p className="text-sm mt-2">
+                            Amount: {task.submissions.paymentAmount} ETB
+                          </p>
+                        )}
+                        {task.submissions.paymentCompletedAt && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Paid on:{" "}
+                            {new Date(
+                              task.submissions.paymentCompletedAt,
+                            ).toLocaleString()}
+                          </p>
+                        )} */}
                       </div>
                     )}
                   </div>

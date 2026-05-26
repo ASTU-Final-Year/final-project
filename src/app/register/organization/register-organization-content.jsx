@@ -1,3 +1,4 @@
+// /src/app/register/organization/register-organization-content.jsx
 "use client";
 
 import { useState, useEffect, use } from "react";

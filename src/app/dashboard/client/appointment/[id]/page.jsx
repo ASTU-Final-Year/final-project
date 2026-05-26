@@ -28,6 +28,9 @@ import {
   Star,
   MessageCircle,
   Calendar,
+  Receipt,
+  Download,
+  ExternalLink,
 } from "lucide-react";
 import RequestHandler from "@/lib/request-handler";
 import Link from "next/link";
@@ -95,11 +98,117 @@ const StarRating = ({ rating, onRate, readonly = false }) => {
   );
 };
 
+// Payment Receipt Component
+const PaymentReceipt = ({ payment }) => {
+  const [showFullReceipt, setShowFullReceipt] = useState(false);
+  if (!payment.tx_ref) {
+    payment.tx_ref = payment.transactionId;
+  }
+
+  if (!payment) return null;
+
+  const chapaReceiptUrl = `https://chapa.link/payment-receipt/${payment.transactionId}`;
+
+  return (
+    <Card className="">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2 text-green-700">
+            <Receipt className="h-5 w-5" />
+            Payment Receipt
+          </CardTitle>
+          <Badge className="bg-green-100 text-green-700">Paid</Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <div>
+            <p className="text-muted-foreground">Amount</p>
+            <p className="font-semibold">
+              {payment.amount} {payment.currency || "ETB"}
+            </p>
+          </div>
+          <div>
+            <p className="text-muted-foreground">Payment Date</p>
+            <p className="font-semibold">
+              {new Date(
+                payment.completedAt || payment.updatedAt,
+              ).toLocaleString()}
+            </p>
+          </div>
+          <div>
+            <p className="text-muted-foreground">Transaction ID</p>
+            <p className="font-mono text-xs break-all">
+              {payment.transactionId}
+            </p>
+          </div>
+          <div>
+            <p className="text-muted-foreground">Payment Method</p>
+            <p className="font-semibold capitalize">
+              {payment.method || "Chapa"}
+            </p>
+          </div>
+        </div>
+
+        <Separator />
+
+        <div className="flex gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1"
+            onClick={() => setShowFullReceipt(!showFullReceipt)}
+          >
+            <Receipt className="h-4 w-4 mr-2" />
+            {showFullReceipt ? "Hide Details" : "View Full Receipt"}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1"
+            onClick={() => window.open(chapaReceiptUrl, "_blank")}
+          >
+            <ExternalLink className="h-4 w-4 mr-2" />
+            View on Chapa
+          </Button>
+        </div>
+
+        {showFullReceipt && (
+          <div className="mt-3 p-4 bg-white rounded-lg border text-sm space-y-2">
+            <h4 className="font-semibold">Payment Details</h4>
+            <div className="grid grid-cols-2 gap-2">
+              <pre>{JSON.stringify(payment, null, 2)}</pre>
+              {/* <p className="text-muted-foreground">Reference:</p>
+              <p className="font-mono text-xs break-all">{payment.reference}</p>
+              <p className="text-muted-foreground">Status:</p>
+              <p className="text-green-600 font-medium">Completed</p>
+              {payment.receiptUrl && (
+                <>
+                  <p className="text-muted-foreground">Receipt URL:</p>
+                  <a
+                    href={payment.receiptUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline flex items-center gap-1"
+                  >
+                    Download Receipt <Download className="h-3 w-3" />
+                  </a>
+                </>
+              )} */}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
 export default function AppointmentDetailsPage() {
   const { id } = useParams();
   const router = useRouter();
   const [appointment, setAppointment] = useState(null);
   const [tasks, setTasks] = useState([]);
+  const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [rating, setRating] = useState(0);
@@ -110,7 +219,6 @@ export default function AppointmentDetailsPage() {
       try {
         // Fetch appointment with service and organization
         const aptRes = await RequestHandler.Get(
-          // `/query/v1/appointment?~id=${id}&select={"":["id","startTime","endTime","status","notes"],"service":["id","name","description","price","imageUrl","rating"],"organization":["id","name","address","email","phone","sector"],"client":["firstname","lastname","email","phone"]}`,
           `/query/v1/appointment?~id=${id}`,
         );
 
@@ -125,27 +233,35 @@ export default function AppointmentDetailsPage() {
         // Fetch related tasks
         const taskRes = await RequestHandler.Get(
           `/query/v1/task?~appointmentId=${id}&order=["createdAt.asc","completedAt.asc"]`,
-          // `/query/v1/task?~appointmentId=${id}&order=["createdAt.asc"]&select={"":["id","name","status","isDone","requirements","submissions","createdAt","completedAt"],"employee":{"user":["firstname","lastname"]}}`,
         );
         if (taskRes.ok) {
-          const { tasks } = await taskRes.json();
-          const taskMap = new Map(tasks.map((t) => [t.id, t]));
-          const taskList = [];
+          const { tasks: taskList } = await taskRes.json();
+          const taskMap = new Map(taskList.map((t) => [t.id, t]));
+          const orderedTasks = [];
           let curTask;
-          for (const task of tasks) {
+          for (const task of taskList) {
             if (task.previousTaskId == null) {
-              taskList.push(task);
+              orderedTasks.push(task);
               curTask = task;
               break;
             }
           }
           if (curTask) {
-            for (let i = 1; i < tasks.length; i++) {
+            for (let i = 1; i < taskList.length; i++) {
               curTask = taskMap.get(curTask.nextTaskId);
-              taskList.push(curTask);
+              if (curTask) orderedTasks.push(curTask);
             }
           }
-          setTasks(taskList || []);
+          setTasks(orderedTasks || []);
+        }
+
+        // Fetch payments for this appointment
+        const paymentRes = await RequestHandler.Get(
+          `/api/v1/payment?appointmentId=${id}`,
+        );
+        if (paymentRes.ok) {
+          const data = await paymentRes.json();
+          setPayments(data.payments || []);
         }
       } catch (err) {
         console.error(err);
@@ -178,10 +294,6 @@ export default function AppointmentDetailsPage() {
     } finally {
       setSubmittingRating(false);
     }
-  };
-
-  const handleReschedule = () => {
-    toast.info("Reschedule functionality coming soon");
   };
 
   const handleCancel = async () => {
@@ -234,17 +346,10 @@ export default function AppointmentDetailsPage() {
   const canReschedule =
     appointment.status === "scheduled" &&
     new Date(appointment.startTime) > new Date();
+  const hasPayments = payments.length > 0;
 
   return (
     <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-6">
-      {/* Header */}
-      {/* <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => router.back()}>
-          <ChevronLeft className="h-5 w-5" />
-        </Button>
-        <h1 className="text-2xl font-bold">Appointment Details</h1>
-      </div> */}
-
       {/* Service Header with Image */}
       <Card className="overflow-hidden pt-0">
         {(appointment.service?.imageUrl || config.fallbackServiceImage) && (
@@ -272,6 +377,9 @@ export default function AppointmentDetailsPage() {
           </div>
         </CardHeader>
       </Card>
+
+      {/* Payment Receipt Section */}
+      {hasPayments && <PaymentReceipt payment={payments[0]} />}
 
       {/* Appointment Info */}
       <Card>
@@ -356,11 +464,12 @@ export default function AppointmentDetailsPage() {
                   (task.requirements.form || task.requirements.payment);
                 const needsAction =
                   !isCompleted && hasRequirements && !task.submissions;
+                const hasPayment = task.submissions?.payment?.completed;
 
                 return (
                   <div
                     key={task.id}
-                    className="flex gap-2 items-start rounded hover:bg-primary/10 p-1"
+                    className="flex gap-2 items-start rounded hover:bg-primary/10 p-2"
                   >
                     <div className="mt-0.5">
                       {isCompleted ? (
@@ -371,22 +480,31 @@ export default function AppointmentDetailsPage() {
                         <Circle className="h-5 w-5 text-gray-300" />
                       )}
                     </div>
-                    <div className="flex-1  grid grid-cols-4 gap-2">
-                      <p
-                        className={`font-medium ${isCompleted ? "text-gray-500 line-through" : "text-gray-900"}`}
-                      >
-                        {task.name}
-                      </p>
+                    <div className="flex-1">
+                      <div className="flex flex-wrap justify-between items-center gap-2">
+                        <p
+                          className={`font-medium ${isCompleted ? "text-gray-500 line-through" : "text-gray-900"}`}
+                        >
+                          {task.name}
+                        </p>
+                        {hasPayment && (
+                          <Badge
+                            variant="outline"
+                            className="text-green-600 border-green-200"
+                          >
+                            <CreditCard className="h-3 w-3 mr-1" />
+                            Payment Completed
+                          </Badge>
+                        )}
+                      </div>
                       {task.employee && (
-                        <>
-                          <span className="text-right">
-                            {task.employment.jobTitle}
-                          </span>
-                          <span className="text-xs text-gray-500">
+                        <div className="grid grid-cols-3 gap-2 text-sm text-muted-foreground mt-1">
+                          <span>{task.employment?.jobTitle}</span>
+                          <span>
                             {task.employee.firstname} {task.employee.lastname}
                           </span>
                           <span>{task.employee.email}</span>
-                        </>
+                        </div>
                       )}
                       {needsAction && (
                         <Button
@@ -475,11 +593,6 @@ export default function AppointmentDetailsPage() {
         <Button variant="outline" onClick={() => router.back()}>
           Back
         </Button>
-        {/* {canReschedule && (
-          <Button variant="outline" onClick={handleReschedule}>
-            Reschedule
-          </Button>
-        )} */}
         {appointment.status === "scheduled" && (
           <Button variant="destructive" onClick={handleCancel}>
             Cancel Appointment

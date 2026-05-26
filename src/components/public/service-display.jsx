@@ -14,14 +14,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
@@ -32,12 +24,12 @@ import {
   MapPin,
   Phone,
   Mail,
-  User,
   CheckCircle,
   AlertCircle,
   Building2,
-  Star,
   MessageCircle,
+  CreditCard,
+  Loader2,
   Scissors,
   Stethoscope,
   Dumbbell,
@@ -46,14 +38,14 @@ import {
   Laptop,
   Landmark,
   Wifi,
-  Loader2,
 } from "lucide-react";
 import RequestHandler from "@/lib/request-handler";
 import { CalendarDatePicker } from "../calendar-date-picker";
-import { redirect, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useSessionStore } from "@/store";
 import Link from "next/link";
 import { fallbackServiceImage } from "@/lib/constants";
+import PaymentButton from "@/components/payment/button";
 
 const sectorIcons = {
   Beauty: Scissors,
@@ -71,20 +63,15 @@ const fallbackImage = fallbackServiceImage;
 
 export default function PublicOrganizationService({ service }) {
   const router = useRouter();
-  const [isBooking, setIsBooking] = useState(false);
   const [showBookingDialog, setShowBookingDialog] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedTime, setSelectedTime] = useState(null);
   const [availableTimeSlots, setAvailableTimeSlots] = useState([]);
-  const [bookingForm, setBookingForm] = useState({
-    notes: "",
-  });
+  const [bookingForm, setBookingForm] = useState({ notes: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [organization, setOrganization] = useState(null);
   const [isClient, setIsClient] = useState(false);
   const [user, setUser] = useState(null);
-
-  const SectorIcon = sectorIcons[service.organization?.sector] || Building2;
+  const [createdAppointment, setCreatedAppointment] = useState(null);
 
   // Check if user is logged in
   useEffect(() => {
@@ -107,10 +94,10 @@ export default function PublicOrganizationService({ service }) {
 
   // Generate available time slots based on selected date and calendar
   useEffect(() => {
-    (async () => {
+    const generateTimeSlots = async () => {
       if (selectedDate && service.calendar) {
-        const dayOfWeek = selectedDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
-        const adjustedDay = dayOfWeek === 0 ? 7 : dayOfWeek; // Convert to 1-7 (Monday=1, Sunday=7)
+        const dayOfWeek = selectedDate.getDay();
+        const adjustedDay = dayOfWeek === 0 ? 7 : dayOfWeek;
         const isToday =
           selectedDate.setHours(0, 0, 0, 0) === new Date().setHours(0, 0, 0, 0);
         const todayHour = new Date().getHours();
@@ -119,56 +106,38 @@ export default function PublicOrganizationService({ service }) {
 
         const calendar = service.calendar;
         const availableDays = calendar.available?.weekly || [];
-        const availableHours = calendar.available?.hours || [
-          ["08:00", "17:30"],
-        ];
-        const unavailableHours = calendar.unavailable?.hours || [
-          ["11:00", "14:00"],
-        ];
+        const availableHours =
+          calendar.available?.hours?.length > 0
+            ? calendar.available.hours
+            : [["00:00", "24:00"]];
+        const unavailableHours = calendar.unavailable?.hours || [];
 
-        // Check if service is available on this day
         const slots = [];
         if (availableDays.includes(adjustedDay)) {
-          // Generate time slots based on available hours
-          availableHours.map((availableHour, idx) => {
+          availableHours.forEach((availableHour, idx) => {
             const unavailableHour = unavailableHours[idx];
-            const [startHour, startMinute] = availableHour[0]
+            const [startHour, startMinute] = (availableHour?.[0] || "00:00")
               .split(":")
               .map(Number);
-            const [endHour, endMinute] = availableHour[1]
+            const [endHour, endMinute] = (availableHour?.[1] || "24:00")
               .split(":")
               .map(Number);
-
-            const [startHourU, startMinuteU] = unavailableHour[0]
+            const [startHourU, startMinuteU] = (unavailableHour?.[0] || "00:00")
               .split(":")
               .map(Number);
-            const [endHourU, endMinuteU] = unavailableHour[1]
+            const [endHourU, endMinuteU] = (unavailableHour?.[1] || "00:00")
               .split(":")
               .map(Number);
 
             for (let hour = startHour; hour < endHour; hour++) {
-              if (!(isToday & (hour * 60 < todayTime))) {
+              const isBeforeNow = isToday && hour * 60 < todayTime;
+              const isInUnavailable = hour >= startHourU && hour < endHourU;
+
+              if (!isBeforeNow && !isInUnavailable) {
                 const ampm = hour >= 12 ? "PM" : "AM";
-                if (!(hour >= startHourU && hour < endHourU)) {
-                  const displayHour =
-                    hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-                  slots.push(`${displayHour}:00 ${ampm}`);
-                  // if (hour < endHour || (hour === endHour - 1 && endMinute > 0)) {
-                  //   slots.push(`${displayHour}:30 ${ampm}`);
-                  // }
-                }
-              } else if (!(isToday & (hour * 60 + 30 < todayTime))) {
-                const ampm = hour >= 12 ? "PM" : "AM";
-                if (!(hour >= startHourU && hour < endHourU)) {
-                  const displayHour =
-                    hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-                  if (
-                    hour < endHour ||
-                    (hour === endHour - 1 && endMinute > 0)
-                  ) {
-                    slots.push(`${displayHour}:30 ${ampm}`);
-                  }
-                }
+                const displayHour =
+                  hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+                slots.push(`${displayHour}:00 ${ampm}`);
               }
             }
           });
@@ -179,16 +148,23 @@ export default function PublicOrganizationService({ service }) {
         }
         setSelectedTime(null);
       }
-    })();
+    };
+    generateTimeSlots();
   }, [selectedDate, service.calendar]);
 
-  const handleBookAppointment = async () => {
+  const resetBooking = () => {
+    setSelectedDate(new Date());
+    setSelectedTime(null);
+    setBookingForm({ notes: "" });
+    setCreatedAppointment(null);
+  };
+  const handleCreateAppointment = async () => {
     if (!selectedDate || !selectedTime) {
       toast.error("Please select both date and time");
       return;
     }
 
-    if (!user || (user && !isClient)) {
+    if (!user || !isClient) {
       toast.error("Please login as a client to book an appointment");
       return;
     }
@@ -203,7 +179,6 @@ export default function PublicOrganizationService({ service }) {
     const startDateTime = new Date(selectedDate);
     startDateTime.setHours(hours, parseInt(minutes), 0);
 
-    // Calculate end time (assuming 1 hour service duration)
     const endDateTime = new Date(startDateTime);
     endDateTime.setHours(endDateTime.getHours() + 1);
 
@@ -221,21 +196,28 @@ export default function PublicOrganizationService({ service }) {
       if (res.ok) {
         const { appointments } = await res.json();
         if (appointments.length > 0) {
-          toast.success("Appointment booked successfully!");
-          setShowBookingDialog(false);
-          setSelectedDate(null);
-          setSelectedTime(null);
-          setBookingForm({ notes: "" });
-          setTimeout(() => {
-            router.push(
-              `/success/appointment?id=${encodeURIComponent(appointments[0].id)}`,
-            );
-          });
-          return;
+          const newAppointment = appointments[0];
+
+          if (requiresPayment) {
+            // Paid service - show payment step
+            setCreatedAppointment(newAppointment);
+            toast.success("Appointment created! Please complete payment.");
+          } else {
+            // Free service - redirect to success directly
+            toast.success("Appointment booked successfully!");
+            setShowBookingDialog(false);
+            resetBooking();
+            setTimeout(() => {
+              router.push(
+                `/success/appointment?id=${encodeURIComponent(newAppointment.id)}`,
+              );
+            }, 1000);
+          }
         }
+      } else {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to book appointment");
       }
-      const error = await res.json();
-      throw new Error(error.error || "Failed to book appointment");
     } catch (error) {
       console.error("Booking error:", error);
       toast.error(error.message || "Failed to book appointment");
@@ -244,7 +226,25 @@ export default function PublicOrganizationService({ service }) {
     }
   };
 
+  const handlePaymentSuccess = (paymentData) => {
+    toast.success("Payment completed! Your appointment is confirmed.");
+    setShowBookingDialog(false);
+    resetBooking();
+    setTimeout(() => {
+      router.push(
+        `/success/appointment?id=${encodeURIComponent(createdAppointment?.id)}`,
+      );
+    }, 1000);
+  };
+
+  const handlePaymentError = () => {
+    toast.error("Payment failed. You can retry or contact support.");
+  };
+
   if (!service) return null;
+
+  const requiresPayment = service.price > 0;
+  const showPaymentStep = requiresPayment && createdAppointment;
 
   return (
     <div className="container mx-auto px-4 pb-8 max-w-6xl">
@@ -256,16 +256,6 @@ export default function PublicOrganizationService({ service }) {
         }}
       >
         <div className="p-4 text-white bg-black/50 rounded-[5px] backdrop-blur-md">
-          {/* <Badge variant="secondary" className="mb-4 gap-2">
-            {service.isActive ? (
-              <>
-                <CheckCircle className="w-3 h-3" />
-                Available
-              </>
-            ) : (
-              "Unavailable"
-            )}
-          </Badge> */}
           <h1 className="text-3xl md:text-4xl font-bold mb-4">
             {service.name}
           </h1>
@@ -316,7 +306,6 @@ export default function PublicOrganizationService({ service }) {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  {/* <SectorIcon className="w-5 h-5" /> */}
                   Service Provider
                 </CardTitle>
               </CardHeader>
@@ -353,29 +342,6 @@ export default function PublicOrganizationService({ service }) {
               </CardContent>
             </Card>
           )}
-
-          {/* Additional Info */}
-          {/* <Card>
-            <CardHeader>
-              <CardTitle>What to Expect</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2">
-                <li className="flex items-start gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-500 mt-0.5" />
-                  <span>Professional service delivery</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-500 mt-0.5" />
-                  <span>Timely appointment handling</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-500 mt-0.5" />
-                  <span>Quality assurance guaranteed</span>
-                </li>
-              </ul>
-            </CardContent>
-          </Card> */}
         </div>
 
         {/* Booking Sidebar - Right Column */}
@@ -398,8 +364,10 @@ export default function PublicOrganizationService({ service }) {
 
               <Dialog
                 open={showBookingDialog}
-                onOpenChange={setShowBookingDialog}
-                className="min-w-xl"
+                onOpenChange={(open) => {
+                  setShowBookingDialog(open);
+                  if (!open) resetBooking();
+                }}
               >
                 <DialogTrigger asChild>
                   <Button
@@ -412,7 +380,11 @@ export default function PublicOrganizationService({ service }) {
                 </DialogTrigger>
                 <DialogContent className="w-full min-w-xl sm:max-w-2xl">
                   <DialogHeader>
-                    <DialogTitle>Book Appointment</DialogTitle>
+                    <DialogTitle>
+                      {showPaymentStep && createdAppointment
+                        ? "Complete Payment"
+                        : "Book Appointment"}
+                    </DialogTitle>
                   </DialogHeader>
 
                   <div className="space-y-4 py-4">
@@ -430,135 +402,194 @@ export default function PublicOrganizationService({ service }) {
                         </div>
                       </div>
                     )}
-                    <div className="flex gap-2">
-                      {/* Date Selection */}
-                      <div className="space-y-2">
-                        <Label>Select Date</Label>
-                        <CalendarDatePicker
-                          mode="single"
-                          selected={selectedDate}
-                          onSelect={setSelectedDate}
-                          disabled={(date) => {
-                            // Disable past dates
-                            if (
-                              date <
-                              new Date(new Date().getTime() - 24 * 60 * 60000)
-                            )
-                              return true;
-                            // Check if available on this day of week
-                            if (service.calendar) {
-                              const dayOfWeek = date.getDay();
-                              const adjustedDay =
-                                dayOfWeek === 0 ? 7 : dayOfWeek;
-                              return !service.calendar.available?.weekly?.includes(
-                                adjustedDay,
-                              );
-                            }
-                            return false;
-                          }}
-                          className="rounded-md border"
-                        />
-                      </div>
 
-                      {/* Time Selection */}
-                      {selectedDate && availableTimeSlots.length > 0 && (
-                        <div className="space-y-2">
-                          <Label>Select Time</Label>
-                          <div className="grid grid-cols-3 gap-2">
-                            {availableTimeSlots.map((time) => (
-                              <Button
-                                key={time}
-                                variant={
-                                  selectedTime === time ? "default" : "outline"
-                                }
-                                onClick={() => setSelectedTime(time)}
-                                className="text-sm"
-                              >
-                                <Clock className="w-3 h-3 mr-1" />
-                                {time}
-                              </Button>
-                            ))}
+                    {/* Payment Step */}
+                    {showPaymentStep && createdAppointment ? (
+                      <div className="space-y-4">
+                        <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">
+                                Amount Due
+                              </p>
+                              <p className="text-3xl font-bold">
+                                ETB {service.price?.toFixed(2)}
+                              </p>
+                              <p className="text-sm text-gray-500 mt-1">
+                                Payment for {service.name}
+                              </p>
+                            </div>
+                            <CreditCard className="h-12 w-12 text-blue-500" />
                           </div>
                         </div>
-                      )}
-                    </div>
 
-                    {selectedDate && availableTimeSlots.length === 0 && (
-                      <div className="text-center text-sm text-muted-foreground p-4 bg-muted rounded-lg">
-                        No available time slots for this date
+                        <div className="p-3 bg-green-50 dark:bg-green-950 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle className="h-5 w-5 text-green-600" />
+                            <div>
+                              <p className="font-medium text-green-800 dark:text-green-400">
+                                Appointment Created!
+                              </p>
+                              <p className="text-sm text-green-700 dark:text-green-500">
+                                Please complete payment to confirm your booking.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <PaymentButton
+                          amount={service.price}
+                          appointmentId={createdAppointment.id}
+                          email={user?.email}
+                          reason={`Payment for ${service.name}`}
+                          onSuccess={handlePaymentSuccess}
+                          onError={handlePaymentError}
+                        />
                       </div>
+                    ) : (
+                      /* Step 1: Date & Time Selection */
+                      <>
+                        <div className="flex gap-4">
+                          {/* Date Selection */}
+                          <div className="flex-1 space-y-2">
+                            <Label>Select Date</Label>
+                            <CalendarDatePicker
+                              mode="single"
+                              selected={selectedDate}
+                              onSelect={setSelectedDate}
+                              disabled={(date) => {
+                                if (
+                                  date <
+                                  new Date(
+                                    new Date().getTime() - 24 * 60 * 60000,
+                                  )
+                                )
+                                  return true;
+                                if (service.calendar) {
+                                  const dayOfWeek = date.getDay();
+                                  const adjustedDay =
+                                    dayOfWeek === 0 ? 7 : dayOfWeek;
+                                  return !service.calendar.available?.weekly?.includes(
+                                    adjustedDay,
+                                  );
+                                }
+                                return false;
+                              }}
+                              className="rounded-md border"
+                            />
+                          </div>
+
+                          {/* Time Selection */}
+                          {selectedDate && (
+                            <div className="flex-1 space-y-2">
+                              <Label>Select Time</Label>
+                              {availableTimeSlots.length > 0 ? (
+                                <div className="grid grid-cols-2 gap-2 max-h-[300px] overflow-y-auto">
+                                  {availableTimeSlots.map((time) => (
+                                    <Button
+                                      key={time}
+                                      variant={
+                                        selectedTime === time
+                                          ? "default"
+                                          : "outline"
+                                      }
+                                      onClick={() => setSelectedTime(time)}
+                                      className="text-sm"
+                                    >
+                                      <Clock className="w-3 h-3 mr-1" />
+                                      {time}
+                                    </Button>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="text-center text-sm text-muted-foreground p-4 bg-muted rounded-lg">
+                                  No available time slots for this date
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Booking Summary */}
+                        {/* Booking Summary */}
+                        {selectedDate && selectedTime && (
+                          <div className="p-3 bg-muted rounded-lg space-y-1">
+                            <p className="font-medium text-sm">
+                              Booking Summary
+                            </p>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">
+                                Service:
+                              </span>
+                              <span>{service.name}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">
+                                Date:
+                              </span>
+                              <span>
+                                {selectedDate?.toLocaleDateString()} at{" "}
+                                {selectedTime}
+                              </span>
+                            </div>
+                            <div className="flex justify-between text-sm font-medium pt-1 border-t">
+                              <span>Total:</span>
+                              <span>
+                                ETB {service.price?.toFixed(2) || "0.00"}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Notes */}
+                        <div className="space-y-2">
+                          <Label htmlFor="notes">
+                            Additional Notes (Optional)
+                          </Label>
+                          <Textarea
+                            id="notes"
+                            placeholder="Any special requests or notes for the service provider..."
+                            value={bookingForm.notes}
+                            onChange={(e) =>
+                              setBookingForm({
+                                ...bookingForm,
+                                notes: e.target.value,
+                              })
+                            }
+                            rows={3}
+                          />
+                        </div>
+                        <Button
+                          onClick={handleCreateAppointment}
+                          disabled={
+                            !user ||
+                            !isClient ||
+                            !selectedDate ||
+                            !selectedTime ||
+                            isSubmitting
+                          }
+                          className="w-full"
+                        >
+                          {isSubmitting ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Creating Appointment...
+                            </>
+                          ) : requiresPayment ? (
+                            "Continue to Payment"
+                          ) : (
+                            "Book Appointment"
+                          )}
+                        </Button>
+                      </>
                     )}
-
-                    {/* Notes */}
-                    <div className="space-y-2">
-                      <Label htmlFor="notes">Additional Notes (Optional)</Label>
-                      <Textarea
-                        id="notes"
-                        placeholder="Any special requests or notes for the service provider..."
-                        value={bookingForm.notes}
-                        onChange={(e) =>
-                          setBookingForm({
-                            ...bookingForm,
-                            notes: e.target.value,
-                          })
-                        }
-                        rows={3}
-                      />
-                    </div>
-
-                    {/* Booking Summary */}
-                    {selectedDate && selectedTime && (
-                      <div className="p-3 bg-muted rounded-lg space-y-1">
-                        <p className="font-medium text-sm">Booking Summary</p>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">
-                            Service:
-                          </span>
-                          <span>{service.name}</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Date:</span>
-                          <span>
-                            {selectedDate?.toLocaleDateString()} at{" "}
-                            {selectedTime}
-                          </span>
-                        </div>
-                        <div className="flex justify-between text-sm font-medium pt-1 border-t">
-                          <span>Total:</span>
-                          <span>ETB {service.price?.toFixed(2) || "0.00"}</span>
-                        </div>
-                      </div>
-                    )}
-
-                    <Button
-                      onClick={handleBookAppointment}
-                      disabled={
-                        !user ||
-                        !isClient ||
-                        !selectedDate ||
-                        !selectedTime ||
-                        isSubmitting
-                      }
-                      className="w-full"
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Booking...
-                        </>
-                      ) : isClient ? (
-                        "Confirm Booking"
-                      ) : (
-                        "Login as a Client First"
-                      )}
-                    </Button>
                   </div>
                 </DialogContent>
               </Dialog>
 
               <div className="text-center text-sm text-muted-foreground">
                 <MessageCircle className="w-4 h-4 inline mr-1" />
-                You'll receive a confirmation email and SMS
+                You'll receive a confirmation email and SMS after payment
               </div>
             </CardContent>
           </Card>
