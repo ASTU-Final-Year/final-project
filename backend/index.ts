@@ -188,18 +188,18 @@ process.on("unhandledRejection", (reason, promise) => {
   process.exit(1);
 });
 
-// setInterval(async () => {
-//   const res = await router.respond(
-//     new Request("http://localhost:4000/api/v1/cron/process-tasks", {
-//       headers: [["Authorization", `Bearer ${process.env.CRON_SECRET}`]],
-//     }),
-//     {
-//       address: {
-//         family: "AFINET",
-//         address: "127.0.0.1",
-//         port: 23243,
-//       },
-//     },
-//   );
-//   console.log("-- running cron " + res.status);
-// }, 30_000);
+setInterval(async () => {
+  const res = await router.respond(
+    new Request(`${config.url}:${config.port}/api/v1/cron/process-tasks`, {
+      headers: [["Authorization", `Bearer ${process.env.CRON_SECRET}`]],
+    }),
+    {
+      address: {
+        family: "AFINET",
+        address: "127.0.0.1",
+        port: 23243,
+      },
+    },
+  );
+  // console.log("-- running cron " + res.status);
+}, 60_000);
